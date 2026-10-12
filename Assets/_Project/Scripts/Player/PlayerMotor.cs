@@ -41,6 +41,8 @@ namespace SurvivalEnTren.Player
         // Posición de los pies relativa a la referencia, en los dos últimos tics.
         private Vector3 _previousLocal;
         private Vector3 _currentLocal;
+        private Vector3 _tickStartPosition;
+        private bool _referenceChangedThisTick;
 
         // Velocidad que trae al estar en el aire (inercia), en el mundo, en m/s.
         private Vector3 _inheritedVelocity;
@@ -91,6 +93,7 @@ namespace SurvivalEnTren.Player
         private void FixedUpdate()
         {
             float dt = Time.fixedDeltaTime;
+            _referenceChangedThisTick = false;
 
             // 1) Viajar con la plataforma: aplicar lo que se movió desde el tic anterior.
             if (_platform != null)
@@ -101,6 +104,8 @@ namespace SurvivalEnTren.Player
                 Physics.SyncTransforms();
                 _lastCarryVelocity = (carried - before) / dt;
             }
+            // Dónde terminó de dibujarse el tic anterior: punto de partida del suavizado.
+            _tickStartPosition = transform.position;
             transform.rotation = ReferenceRotation(usePhysicsPose: true) * Quaternion.Euler(0f, _yaw, 0f);
 
             // 2) Caminar, correr, saltar y caer.
@@ -140,8 +145,12 @@ namespace SurvivalEnTren.Player
             }
 
             // 4) Guardar la posición relativa a la referencia, para el próximo tic y para dibujar.
-            _previousLocal = _currentLocal;
-            _currentLocal = ToReferenceLocal(transform.position);
+            //    (Si la referencia cambió en este tic, SetReference ya dejó ambas en la nueva.)
+            if (!_referenceChangedThisTick)
+            {
+                _previousLocal = _currentLocal;
+                _currentLocal = ToReferenceLocal(transform.position);
+            }
         }
 
         private void OnControllerColliderHit(ControllerColliderHit hit)
@@ -163,8 +172,11 @@ namespace SurvivalEnTren.Player
             Quaternion localFacing = Quaternion.Inverse(ReferenceRotation(usePhysicsPose: true)) * worldFacing;
             _yaw = localFacing.eulerAngles.y;
 
-            // Al cambiar de referencia no hay tic anterior comparable: se arranca sin suavizado.
+            // Pasar las dos posiciones del suavizado a la nueva referencia, así el cuadro del
+            // cambio (subir o bajar del tren) no da un saltito.
+            _previousLocal = ToReferenceLocal(_tickStartPosition);
             _currentLocal = ToReferenceLocal(transform.position);
+            _referenceChangedThisTick = true;
         }
 
         private Vector3 ToReferenceLocal(Vector3 world)

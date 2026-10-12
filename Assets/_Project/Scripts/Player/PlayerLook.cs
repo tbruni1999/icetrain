@@ -15,7 +15,15 @@ namespace SurvivalEnTren.Player
         [SerializeField] private Transform head;
         [SerializeField] private InputActionReference look;
 
+        // Subida mínima en un cuadro para considerarla un escalón (y no una rampa), y máxima
+        // para no confundir un teletransporte con un escalón. En metros.
+        private const float StepRiseThresholdMeters = 0.04f;
+        private const float MaxStepRiseMeters = 0.7f;
+
         private float _pitch;
+        private float _stepSmoothing;
+        private float _lastFeetHeight;
+        private bool _hasLastFeet;
 
         private void OnEnable()
         {
@@ -41,7 +49,17 @@ namespace SurvivalEnTren.Player
         private void LateUpdate()
         {
             Quaternion body = motor.RenderBodyRotation;
-            Vector3 eye = motor.RenderFeetPosition + body * Vector3.up * motor.Settings.EyeHeightMeters;
+            Vector3 feet = motor.RenderFeetPosition;
+
+            // Al subir un escalón el cuerpo sube de golpe; la cámara lo alcanza en unas décimas.
+            float rise = feet.y - _lastFeetHeight;
+            if (_hasLastFeet && motor.IsGrounded && rise > StepRiseThresholdMeters && rise < MaxStepRiseMeters)
+                _stepSmoothing -= rise;
+            _lastFeetHeight = feet.y;
+            _hasLastFeet = true;
+            _stepSmoothing *= Mathf.Exp(-motor.Settings.StepSmoothingSpeed * Time.deltaTime);
+
+            Vector3 eye = feet + Vector3.up * (motor.Settings.EyeHeightMeters + _stepSmoothing);
             head.SetPositionAndRotation(eye, body * Quaternion.Euler(_pitch, 0f, 0f));
         }
 

@@ -30,6 +30,21 @@ Implementación: el tren es un Rigidbody cinemático movido con `MovePosition` e
 | 3 cajas soltadas con G a 60 km/h | se asientan normalmente | 0,07 mm | 0 |
 | Frenazo fuerte 3 m/s² en curva | 0,08 cm | 0,25 mm | 0 |
 
+### Bajar y subir (prueba automática `Tools/SpikeTests/bajar_subir.cs`, 60 FPS fijos)
+
+Un "piloto automático" maneja al jugador con un teclado virtual: sale por la puerta derecha, baja los escalones al suelo y vuelve a subir. Con el tren a 10 km/h, después de bajar corre por el costado hasta alcanzar la puerta y sube en marcha. La cámara se muestrea al final de cada cuadro (lo que se dibuja); se marca "salto" todo cuadro donde la cámara se mueva a más de 10 m/s aparentes (correr + tren = 9,3 m/s).
+
+| Situación | Resultado | Saltos de cámara |
+|---|---|---|
+| Tren detenido: bajar y subir, 5 veces | 10/10 OK | 0 |
+| Tren a 10 km/h: bajar, correr y subir en marcha, 3 veces | 6/6 OK | 0 |
+
+Correcciones que salieron de esta prueba:
+- Al cambiar de referencia (tren ↔ suelo) la cámara perdía el suavizado durante un tic y adelantaba unos cm. Ahora las dos posiciones del suavizado se pasan a la nueva referencia.
+- Al subir escalones el CharacterController sube el cuerpo de golpe (hasta 0,32 m). Ahora la cámara lo alcanza en ~0,1 s (`stepSmoothingSpeed` en PlayerMotorSettings).
+
+**Riesgo probable (no verificado todavía)**: el CharacterController no recibe empujes de objetos cinemáticos, así que un tren en marcha que choca a un jugador parado a su costado probablemente lo atraviese o lo desplace de golpe. Solo importa si uno se queda pegado a un tren que arranca. No afecta a M1; anotarlo para cuando se diseñe qué pasa si el tren te atropella.
+
 **Lectura**: a 60 km/h no hay temblor ni deriva perceptibles para el jugador. Las cajas tiemblan como máximo ~1 mm en la curva (menos de un píxel a 2 m de distancia). Validación manual de Tomi: "todo increíble".
 
 **Límites de esta medición**: el tren está a menos de 1 km del origen del mundo. La precisión a varios kilómetros (motivo de la estrategia C) todavía no está medida.

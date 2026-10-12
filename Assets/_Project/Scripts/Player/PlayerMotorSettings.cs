@@ -29,6 +29,10 @@ namespace SurvivalEnTren.Player
         [Tooltip("Cuánto se puede mirar hacia arriba o hacia abajo, en grados.")]
         [SerializeField, Range(30f, 89f)] private float maxPitchDegrees = 85f;
 
+        [Tooltip("Qué tan rápido la vista alcanza al cuerpo al subir un escalón (más alto = más brusco). " +
+                 "El cuerpo sube de golpe; esto solo suaviza la cámara.")]
+        [SerializeField, Range(1f, 60f)] private float stepSmoothingSpeed = 15f;
+
         [Header("Cuerpo")]
         [Tooltip("Altura total del cuerpo, en metros.")]
         [SerializeField, Range(1f, 2.2f)] private float bodyHeightMeters = 1.8f;
@@ -51,6 +55,7 @@ namespace SurvivalEnTren.Player
         public float GravityMetersPerSecondSquared => gravityMetersPerSecondSquared;
         public float MouseSensitivityDegreesPerPixel => mouseSensitivityDegreesPerPixel;
         public float MaxPitchDegrees => maxPitchDegrees;
+        public float StepSmoothingSpeed => stepSmoothingSpeed;
         public float BodyHeightMeters => bodyHeightMeters;
         public float BodyRadiusMeters => bodyRadiusMeters;
         public float EyeHeightMeters => eyeHeightMeters;
