@@ -43,6 +43,7 @@ namespace SurvivalEnTren.EditorTools
         private const string CarrySettingsPath = "Assets/_Project/Data/Interaction/CarrySettings.asset";
         private const string SurvivalSettingsPath = "Assets/_Project/Data/Survival/SurvivalSettings.asset";
         private const string BodyFeedbackProfilePath = "Assets/_Project/Data/Survival/BodyFeedbackProfile.asset";
+        private const string ProbeSettingsPath = "Assets/_Project/Data/Probe/ProbeSettings.asset";
         private const string InputPath = "Assets/_Project/Data/Input/IceTrainInput.inputactions";
 
         // Vía de prueba: un óvalo de dos rectas y dos curvas (~2,46 km por vuelta).
@@ -119,6 +120,7 @@ namespace SurvivalEnTren.EditorTools
             EnsureFolder("Assets/_Project/Data", "World");
             EnsureFolder("Assets/_Project/Data", "Interaction");
             EnsureFolder("Assets/_Project/Data", "Survival");
+            EnsureFolder("Assets/_Project/Data", "Probe");
 
             // La escena nueva va primero: crearla descarga de memoria los assets recién
             // creados y las referencias a ellos quedarían vacías.
@@ -564,7 +566,7 @@ namespace SurvivalEnTren.EditorTools
             var cab = Group("Zona_Cabina", interior);
             BuildCabControls(root, cab, p);
             BoxMinMax("Cabina_Asiento", cab, new Vector3(0.6f, FloorTop, 7.6f), new Vector3(1.1f, FloorTop + 0.5f, 8.1f), p.Furniture);
-            BoxMinMax("Cabina_ConsolaSonda", cab, new Vector3(-InnerHalfWidth, FloorTop, 6.8f), new Vector3(-(InnerHalfWidth - 0.6f), FloorTop + 1.2f, 7.6f), p.Controls);
+            BuildProbeConsole(root, cab, p);
 
             var rest = Group("Zona_Descanso", interior);
             BoxMinMax("Descanso_Cama", rest, new Vector3(InnerHalfWidth - 0.9f, FloorTop, 3.5f), new Vector3(InnerHalfWidth, FloorTop + 0.45f, 5.5f), p.Furniture).AddComponent<Bed>(); // hoy: "lugar miserable" (M4); se mejora en M8
@@ -692,6 +694,95 @@ namespace SurvivalEnTren.EditorTools
             SetReference(cabin, "powerDown", FindActionReference("Train/PowerDown"));
             SetReference(cabin, "reverserForward", FindActionReference("Train/ReverserForward"));
             SetReference(cabin, "reverserBack", FindActionReference("Train/ReverserBack"));
+        }
+
+        // Consola de la sonda principal (M5): mueble con una pantalla tipo CRT verde que mira al pasillo.
+        // Agrega a la raíz del tren el ProbeScanner (los cálculos) y a la consola la pantalla (ProbeConsole).
+        private static void BuildProbeConsole(GameObject trainRoot, Transform cab, Palette p)
+        {
+            var console = Group("Cabina_ConsolaSonda", cab);
+            float top = FloorTop + 1.2f;
+            BoxMinMax("Mueble", console, new Vector3(-InnerHalfWidth, FloorTop, 6.8f), new Vector3(-(InnerHalfWidth - 0.6f), top, 7.6f), p.Controls);
+
+            Material back = UnlitMat("Pantalla_Fondo", new Color(0.02f, 0.06f, 0.035f));
+            Material trace = UnlitMat("Pantalla_Trazo", new Color(0.45f, 1f, 0.55f));
+            Material dim = UnlitMat("Pantalla_Trazo_Tenue", new Color(0.12f, 0.32f, 0.16f));
+
+            // Pantalla inclinada, mirando al pasillo (+x del tren) y un poco hacia arriba.
+            var screen = Group("Pantalla", console);
+            screen.localPosition = new Vector3(-InnerHalfWidth + 0.32f, top + 0.21f, 7.2f);
+            screen.localRotation = Quaternion.LookRotation(Vector3.left) * Quaternion.Euler(20f, 0f, 0f);
+            BoxMinMax("Carcasa", screen, new Vector3(-0.27f, -0.22f, 0.012f), new Vector3(0.27f, 0.22f, 0.07f), p.Track);
+            BoxMinMax("Vidrio", screen, new Vector3(-0.25f, -0.2f, 0f), new Vector3(0.25f, 0.2f, 0.012f), back);
+
+            // Radar: centro, anillos (1,25 y 2,5 km), el tren apuntando arriba (= adelante) y el barrido.
+            const float radius = 0.13f;
+            var center = Group("Radar_Centro", screen);
+            center.localPosition = new Vector3(0f, 0.045f, -0.002f);
+            foreach (float ring in new[] { radius * 0.5f, radius })
+                for (int i = 0; i < 32; i++)
+                {
+                    float a = i / 32f * Mathf.PI * 2f;
+                    Vector3 c = center.localPosition + new Vector3(Mathf.Sin(a), Mathf.Cos(a), 0f) * ring;
+                    BoxMinMax("Anillo", screen, c - Vector3.one * 0.002f, c + Vector3.one * 0.002f, dim, false);
+                }
+            BoxMinMax("Tren", screen, center.localPosition + new Vector3(-0.004f, -0.012f, -0.001f),
+                center.localPosition + new Vector3(0.004f, 0.012f, 0.001f), trace, false);
+            var sweep = Group("Barrido", screen);
+            sweep.localPosition = center.localPosition;
+            BoxMinMax("Linea", sweep, new Vector3(-0.0012f, 0f, -0.0012f), new Vector3(0.0012f, radius, 0.0005f), trace, false);
+            var blips = new Transform[5];
+            for (int i = 0; i < blips.Length; i++)
+                blips[i] = BoxMinMax($"Punto_{i}", screen, center.localPosition - Vector3.one * 0.006f, center.localPosition + Vector3.one * 0.006f, trace, false).transform;
+
+            TextMesh ScreenText(string name, float y)
+            {
+                var go = new GameObject(name);
+                go.transform.SetParent(screen, false);
+                go.transform.localPosition = new Vector3(-0.235f, y, -0.003f);
+                var mesh = go.AddComponent<TextMesh>();
+                mesh.fontSize = 48;
+                mesh.characterSize = 0.0032f;
+                mesh.anchor = TextAnchor.UpperLeft;
+                mesh.color = new Color(0.45f, 1f, 0.55f);
+                Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                mesh.font = font;
+                go.GetComponent<MeshRenderer>().sharedMaterial = font.material;
+                return mesh;
+            }
+
+            var scanner = trainRoot.AddComponent<ProbeScanner>();
+            SetReference(scanner, "settings", LoadOrCreateAsset<ProbeSettings>(ProbeSettingsPath));
+            SetReference(scanner, "train", trainRoot.GetComponent<TrainMover>());
+
+            var display = console.gameObject.AddComponent<ProbeConsole>();
+            SetReference(display, "scanner", scanner);
+            SetReference(display, "radarCenter", center);
+            SetReference(display, "sweep", sweep);
+            var so = new SerializedObject(display);
+            so.FindProperty("radarRadius").floatValue = radius;
+            var list = so.FindProperty("blips");
+            list.arraySize = blips.Length;
+            for (int i = 0; i < blips.Length; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = blips[i];
+            so.ApplyModifiedPropertiesWithoutUndo();
+            SetReference(display, "header", ScreenText("Encabezado", 0.19f));
+            SetReference(display, "line1", ScreenText("Linea_1", -0.105f));
+            SetReference(display, "line2", ScreenText("Linea_2", -0.135f));
+            SetReference(display, "line3", ScreenText("Linea_3", -0.165f));
+        }
+
+        private static Material UnlitMat(string name, Color color)
+        {
+            string path = $"{MaterialsFolder}/{name}.mat";
+            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (material == null)
+            {
+                material = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+                AssetDatabase.CreateAsset(material, path);
+            }
+            material.SetColor("_BaseColor", color);
+            EditorUtility.SetDirty(material);
+            return material;
         }
 
         // Texto 3D chico (etiquetas del pupitre). Por defecto apoyado sobre una superficie horizontal,

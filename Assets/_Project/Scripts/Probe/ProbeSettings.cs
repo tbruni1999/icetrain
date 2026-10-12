@@ -46,6 +46,15 @@ namespace SurvivalEnTren.Probe
 
         public float BearingError(float farness) => Mathf.Lerp(bearingErrorNearDegrees, bearingErrorFarDegrees, farness);
         public float DistanceError(float farness) => Mathf.Lerp(distanceErrorNear, distanceErrorFar, farness);
-        public float Rounding(float farness) => Mathf.Lerp(roundingNearMeters, roundingFarMeters, farness);
+        /// <summary>Paso de redondeo "redondo" (10, 25, 50, 100, 250...) según qué tan lejos está.</summary>
+        public float Rounding(float farness)
+        {
+            float raw = Mathf.Lerp(roundingNearMeters, roundingFarMeters, farness);
+            float step = NiceSteps[0];
+            foreach (float s in NiceSteps) if (s <= raw) step = s;
+            return step;
+        }
+
+        private static readonly float[] NiceSteps = { 1f, 5f, 10f, 25f, 50f, 100f, 250f, 500f, 1000f };
     }
 }
