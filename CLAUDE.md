@@ -25,9 +25,9 @@ M1 — Tren estable (spike del Anexo C). Plan aprobado por Tomi el 2026-10-12:
 3. Jugador dentro del tren en movimiento (estrategia A: el tren se mueve por el mundo; sin parenting) — HECHO, validado por Tomi y medido (ver `Docs/Spike_M1_Resultados.md`).
 4. Props (cajas) estables en mesa/estante/piso + tecla de prueba para soltar cajas — HECHO con física pura, medido (falta prueba manual de Tomi).
 5. Bajar y subir del tren (detenido y a baja velocidad) — HECHO, prueba automática 16/16 (falta prueba manual de Tomi).
-6. Estrategias B (mundo se mueve) y C (floating origin), medir las tres y que Tomi elija.
+6. Estrategias B (mundo se mueve) y C (floating origin), medir las tres y que Tomi elija — EN CURSO: medida la precisión de A lejos del origen (se degrada desde ~5 km, inusable a 100 km). Falta construir C (y B) y repetir 10 km.
 - Fuera de M1: controles reales del tren y cambios de vía (M2), sistema de interacción (M3), supervivencia, combustible, HUD, guardado, arte final.
-- Decisiones: velocidad de prueba máx. 60 km/h (probar a 20/40/60). Locomotora 3 m x 19 m con zonas reservadas para la V1 (cabina, descanso, taller, entrada/carga, sala de máquinas, boca de combustible exterior), porque en la V1 es el único espacio habitable.
+- Decisiones: velocidad de prueba máx. 60 km/h (probar a 20/40/60). Idea de Tomi para M2: al principio el tren va más lento y gana velocidad con mejoras. Locomotora 3 m x 19 m con zonas reservadas para la V1 (cabina, descanso, taller, entrada/carga, sala de máquinas, boca de combustible exterior), porque en la V1 es el único espacio habitable.
 - Escena: `Scenes/Spike/Spike_TrenEstable.unity`, generada por el menú "Survival en tren > M1 > Construir escena Spike". Se regenera entera: cambiar el script `M1SpikeSceneBuilder.cs`, no la escena a mano.
 - Commit + push a GitHub al final de cada paso (pedido de Tomi).
 

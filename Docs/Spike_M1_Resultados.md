@@ -47,4 +47,18 @@ Correcciones que salieron de esta prueba:
 
 **Lectura**: a 60 km/h no hay temblor ni deriva perceptibles para el jugador. Las cajas tiemblan como máximo ~1 mm en la curva (menos de un píxel a 2 m de distancia). Validación manual de Tomi: "todo increíble".
 
-**Límites de esta medición**: el tren está a menos de 1 km del origen del mundo. La precisión a varios kilómetros (motivo de la estrategia C) todavía no está medida.
+### Lejos del origen del mundo (prueba `Tools/SpikeTests/lejos_del_origen.cs`, 60 FPS fijos)
+
+Se corre todo el mundo X metros en el eje X (el tren va siempre a 60 km/h; la distancia no es velocidad) y se repite la medición: jugador quieto en el tren y 9 cajas, 75 s de recta y curva.
+
+| Distancia al origen | Temblor jugador | Deriva jugador quieto | Temblor cajas | Corrimiento cajas |
+|---|---|---|---|---|
+| ~0 km | 0,06 mm | 0,07 cm | 1,2 mm | 0,10 cm |
+| 5 km | 1,0 mm | 0,77 cm en 77 s | 3,0 mm | 0,14 cm |
+| 10 km | (dato dudoso: 135 mm en un pico aislado; la deriva se reinició, el jugador se movió) | — | 5,9 mm | 0,27 cm |
+| 20 km | 4,1 mm | 7,4 cm en 77 s | 11,6 mm | 1,2 cm |
+| 100 km | 72 mm | 191 cm en 77 s | 47 mm | 64 cm |
+
+**Lectura**: la estrategia A sola se degrada con la distancia (precisión de números con coma de 32 bits). A 5 km ya hay deriva medible del jugador (~1 cm por minuto); a 20 km es claramente visible (las cajas tiemblan ~1 cm, el jugador se corre 7 cm por minuto); a 100 km es inusable. Conclusión provisional: si la red ferroviaria va a superar unos pocos kilómetros, hace falta la estrategia C (A + re-centrar el mundo cada ~2 km). Repetir la medición de 10 km.
+
+**Límites de esta medición**: B (mundo que se mueve) y C (re-centrado) todavía no están construidas.
