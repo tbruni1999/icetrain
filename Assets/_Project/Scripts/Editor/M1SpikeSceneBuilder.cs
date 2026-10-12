@@ -108,12 +108,17 @@ namespace SurvivalEnTren.EditorTools
             SetReference(driver, "faster", FindActionReference("Debug/TrainFaster"));
             SetReference(driver, "slower", FindActionReference("Debug/TrainSlower"));
             SetReference(driver, "brake", FindActionReference("Debug/TrainBrake"));
-            var overlay = controls.AddComponent<SpikeOverlay>();
-            SetReference(overlay, "driver", driver);
-
             // El jugador arranca en la nieve, frente a la puerta derecha del tren.
             Vector3 door = train.transform.TransformPoint(new Vector3(BodyHalfWidth, 0f, DoorCenterZ));
-            BuildPlayer(new Vector3(door.x + 6f, 0.05f, door.z), Quaternion.LookRotation(-train.transform.right, Vector3.up));
+            PlayerMotor motor = BuildPlayer(new Vector3(door.x + 6f, 0.05f, door.z), Quaternion.LookRotation(-train.transform.right, Vector3.up));
+
+            var metrics = controls.AddComponent<SpikeRideMetrics>();
+            SetReference(metrics, "motor", motor);
+            SetReference(metrics, "head", motor.transform.Find("Cabeza"));
+            var overlay = controls.AddComponent<SpikeOverlay>();
+            SetReference(overlay, "driver", driver);
+            SetReference(overlay, "motor", motor);
+            SetReference(overlay, "metrics", metrics);
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             AssetDatabase.SaveAssets();
@@ -122,7 +127,7 @@ namespace SurvivalEnTren.EditorTools
 
         // ---------------------------------------------------------------- Jugador
 
-        private static void BuildPlayer(Vector3 position, Quaternion rotation)
+        private static PlayerMotor BuildPlayer(Vector3 position, Quaternion rotation)
         {
             PlayerMotorSettings settings = LoadOrCreateAsset<PlayerMotorSettings>(PlayerSettingsPath);
 
@@ -147,9 +152,10 @@ namespace SurvivalEnTren.EditorTools
             SetReference(motor, "run", FindActionReference("Player/Run"));
 
             var look = player.AddComponent<PlayerLook>();
-            SetReference(look, "settings", settings);
+            SetReference(look, "motor", motor);
             SetReference(look, "head", head.transform);
             SetReference(look, "look", FindActionReference("Player/Look"));
+            return motor;
         }
 
         // ---------------------------------------------------------------- Locomotora

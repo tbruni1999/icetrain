@@ -4,22 +4,18 @@ using UnityEngine.InputSystem;
 namespace SurvivalEnTren.Player
 {
     /// <summary>
-    /// Mirar con el mouse: el giro horizontal rota todo el cuerpo y el vertical
-    /// solo la cabeza (la cámara). Al darle Play el cursor queda oculto y fijo;
-    /// Escape lo libera dentro del Editor.
+    /// Mirar con el mouse y ubicar la cámara. El giro horizontal gira el cuerpo
+    /// (PlayerMotor) y el vertical solo la cabeza. En LateUpdate la cámara se coloca
+    /// en la posición suavizada que da PlayerMotor, así acompaña al tren sin temblar.
+    /// Al darle Play el cursor queda oculto y fijo; Escape lo libera dentro del Editor.
     /// </summary>
     public class PlayerLook : MonoBehaviour
     {
-        [SerializeField] private PlayerMotorSettings settings;
+        [SerializeField] private PlayerMotor motor;
         [SerializeField] private Transform head;
         [SerializeField] private InputActionReference look;
 
         private float _pitch;
-
-        private void Start()
-        {
-            head.localPosition = Vector3.up * settings.EyeHeightMeters;
-        }
 
         private void OnEnable()
         {
@@ -36,10 +32,17 @@ namespace SurvivalEnTren.Player
         {
             if (Cursor.lockState != CursorLockMode.Locked) return;
 
+            PlayerMotorSettings settings = motor.Settings;
             Vector2 delta = look.action.ReadValue<Vector2>() * settings.MouseSensitivityDegreesPerPixel;
-            transform.Rotate(0f, delta.x, 0f, Space.Self);
+            motor.AddYaw(delta.x);
             _pitch = Mathf.Clamp(_pitch - delta.y, -settings.MaxPitchDegrees, settings.MaxPitchDegrees);
-            head.localRotation = Quaternion.Euler(_pitch, 0f, 0f);
+        }
+
+        private void LateUpdate()
+        {
+            Quaternion body = motor.RenderBodyRotation;
+            Vector3 eye = motor.RenderFeetPosition + body * Vector3.up * motor.Settings.EyeHeightMeters;
+            head.SetPositionAndRotation(eye, body * Quaternion.Euler(_pitch, 0f, 0f));
         }
 
         private static void LockCursor()
