@@ -19,17 +19,20 @@ Survival en primera persona en un mundo cubierto de nieve, donde el jugador vive
 Tomi es director de arte en 3D y diseño de producto digital, sin experiencia en programación. Explicar cada resultado en palabras simples, evitar jerga sin definirla, y para cada entrega decir paso a paso qué mirar o probar dentro de Unity.
 
 ## Milestone actual
-M1 — Tren estable (spike del Anexo C). Plan aprobado por Tomi el 2026-10-12:
+M1 — Tren estable (spike del Anexo C): APROBADO por Tomi el 2026-10-12 ("quedó bastante bien, sigamos"). Estrategia elegida: C. Próximo: proponer plan de M2 y esperar aprobación.
+Plan que se ejecutó:
 1. Vía en óvalo + locomotora greybox moviéndose — HECHO.
 2. Jugador en primera persona (caminar, mirar, saltar) en el suelo — HECHO.
 3. Jugador dentro del tren en movimiento (estrategia A: el tren se mueve por el mundo; sin parenting) — HECHO, validado por Tomi y medido (ver `Docs/Spike_M1_Resultados.md`).
-4. Props (cajas) estables en mesa/estante/piso + tecla de prueba para soltar cajas — HECHO con física pura, medido (falta prueba manual de Tomi).
-5. Bajar y subir del tren (detenido y a baja velocidad) — HECHO, prueba automática 16/16 (falta prueba manual de Tomi).
+4. Props (cajas) estables en mesa/estante/piso + tecla de prueba para soltar cajas — HECHO con física pura, medido y probado por Tomi (se corrigieron: viajar parado sobre cajas, cajas soltadas en el aire, pasar por encima de cajas).
+5. Bajar y subir del tren (detenido y a baja velocidad) — HECHO, prueba automática 16/16 y probado por Tomi.
 6. Estrategias B (mundo se mueve) y C (floating origin), medir las tres — HECHO. Elegida C (Tomi delegó la elección): A se degrada desde ~5 km, B cuesta CPU cada tic, C estable hasta 100 km con ~1–2 ms cada ~2 km. Ver `Docs/Spike_M1_Resultados.md`.
 - Fuera de M1: controles reales del tren y cambios de vía (M2), sistema de interacción (M3), supervivencia, combustible, HUD, guardado, arte final.
 - Decisiones: velocidad de prueba máx. 60 km/h (probar a 20/40/60). Idea de Tomi para M2: al principio el tren va más lento y gana velocidad con mejoras. Locomotora 3 m x 19 m con zonas reservadas para la V1 (cabina, descanso, taller, entrada/carga, sala de máquinas, boca de combustible exterior), porque en la V1 es el único espacio habitable.
 - Escena: `Scenes/Spike/Spike_TrenEstable.unity`, generada por el menú "Survival en tren > M1 > Construir escena Spike". Se regenera entera: cambiar el script `M1SpikeSceneBuilder.cs`, no la escena a mano.
 - Commit + push a GitHub al final de cada paso (pedido de Tomi).
+- Pruebas automáticas en `Tools/SpikeTests/` (se corren con `unity command eval_file`). Las que usan teclado virtual necesitan la ventana de Unity con foco; Windows no deja traerla al frente desde afuera: pedirle a Tomi un clic en Unity.
+- Limitación conocida: caminar sobre muchas cajas sueltas queda "bastante bien", no perfecto (CharacterController). Revisar si molesta en M3/M7.
 
 ### Estado del M0: TERMINADO (2026-10-12)
 - Editor fijado: 6000.6.5f1 (Unity 6.6). Paquetes: URP 17.6.0, Input System 1.20.0, y com.unity.pipeline 0.8.0-exp.1 (experimental; solo sirve para que Claude Code se conecte al Editor, se puede quitar sin afectar el juego).
