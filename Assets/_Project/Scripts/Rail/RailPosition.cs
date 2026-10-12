@@ -29,6 +29,26 @@ namespace SurvivalEnTren.Rail
         /// pasando a los tramos conectados cuando se termina el actual.
         /// Si no hay tramo conectado, se queda en el extremo.
         /// </summary>
+        /// <summary>
+        /// Cuántos metros de vía quedan hasta un final sin continuación (un tope), yendo hacia adelante
+        /// (direction &gt; 0) o hacia atrás. Si no hay final dentro de maxDistance, devuelve infinito.
+        /// Sigue los cambios de vía igual que Advanced.
+        /// </summary>
+        public float DistanceToEnd(float direction, float maxDistance)
+        {
+            RailSegment segment = Segment;
+            float distance = direction > 0f ? segment.Length - Distance : Distance;
+            for (int guard = 0; guard < 64; guard++)
+            {
+                if (distance >= maxDistance) return float.PositiveInfinity;
+                RailSegment following = direction > 0f ? segment.Next : segment.Previous;
+                if (following == null) return distance;
+                segment = following;
+                distance += segment.Length;
+            }
+            return float.PositiveInfinity;
+        }
+
         public RailPosition Advanced(float meters) => Advanced(meters, out _);
 
         /// <summary>Igual que Advanced, y avisa si se llegó a un extremo de vía sin continuación (un tope).</summary>

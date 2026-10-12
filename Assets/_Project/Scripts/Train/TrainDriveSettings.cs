@@ -27,6 +27,22 @@ namespace SurvivalEnTren.Train
         [Tooltip("El reversor solo se puede mover con el tren casi detenido: por debajo de esta velocidad, en km/h.")]
         [SerializeField, Range(0.1f, 5f)] private float reverserMaxSpeedKmh = 0.5f;
 
+        [Header("Topes de fin de vía (resorte amortiguado)")]
+        [Tooltip("Rigidez del resorte del tope: cuánto empuja por cada metro comprimido, en m/s² por metro. " +
+                 "Más blando = el tope se hunde más y el golpe es más suave.")]
+        [SerializeField, Range(10f, 1000f)] private float bufferStiffnessPerSecondSquared = 30f;
+
+        [Tooltip("Amortiguación del tope (cuánta energía se come), en 1/s. Más alto = rebota menos.")]
+        [SerializeField, Range(0f, 60f)] private float bufferDampingPerSecond = 10f;
+
+        [Tooltip("En cuántos metros de compresión entra la amortiguación del tope. Evita el golpe seco del " +
+                 "primer instante del choque.")]
+        [SerializeField, Range(0.01f, 0.5f)] private float bufferDampingRampMeters = 0.12f;
+
+        public float BufferStiffnessPerSecondSquared => bufferStiffnessPerSecondSquared;
+        public float BufferDampingPerSecond => bufferDampingPerSecond;
+        public float BufferDampingRampMeters => bufferDampingRampMeters;
+
         public int PowerNotchCount => powerNotchTopSpeedsKmh.Length;
         public int BrakeNotchCount => brakeNotchDecelerationsMetersPerSecondSquared.Length;
         public float TractionAccelerationMetersPerSecondSquared => tractionAccelerationMetersPerSecondSquared;

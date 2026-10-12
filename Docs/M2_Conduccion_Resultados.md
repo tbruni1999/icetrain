@@ -40,3 +40,16 @@ La prueba de parada demuestra que la física permite parar con precisión; la pr
 - Cambio "a resorte": se puede endurecer (por ejemplo, descarrilar o trabarse) cuando se diseñe el rail gating (M10).
 - Sonidos de palancas, motor y frenos: M13.
 - Mientras se maneja el jugador queda parado donde apretó E (no se sienta). Revisar en M3 con el sistema de interacción completo.
+
+## Tope con resorte (pedido de Tomi: "un mini rebote")
+
+Antes el tren frenaba en seco contra el tope y todo salía volando. Ahora el tope es un resorte amortiguado (`TrainDriveSettings`: rigidez 30, amortiguación 10, la amortiguación entra en los primeros 12 cm) y la placa del tope se hunde (`BufferStop`). Medido (`Tools/SpikeTests/m2_tope_ajuste.cs`):
+
+| Choque a | Compresión | Golpe máx. | Rebote |
+|---|---|---|---|
+| 5 km/h | 12 cm | 0,8 g | 1,2 km/h |
+| 10 km/h | 22 cm | 2,5 g | 1,7 km/h |
+| 20 km/h | 40 cm | 5,6 g | 3,1 km/h |
+| 30 km/h | 58 cm | 8,9 g | 4,6 km/h |
+
+A velocidad de maniobra es un toque; a 20–30 km/h es un choque (frenar en medio metro es violento) y las cajas se sacuden. El freno de seguridad (si un bogie llegara al final de la vía) no se activó en ninguna prueba. Por indicación de Tomi no se pule más: no es prioritario.

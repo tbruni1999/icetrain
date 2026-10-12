@@ -20,14 +20,18 @@ namespace SurvivalEnTren.Train
         [SerializeField] private float bogieSpacingMeters = 13f;
         [Tooltip("Medio largo del tren, del centro a cada punta, en metros (geometría del modelo).")]
         [SerializeField] private float halfLengthMeters = 9.5f;
-        [Tooltip("Distancia que el tren deja libre antes de un final de vía (el tope), en metros.")]
-        [SerializeField] private float endOfTrackMarginMeters = 1.5f;
+        [Tooltip("Freno de seguridad: el tren se detiene en seco si un bogie quedaría a menos de esta distancia " +
+                 "de un final de vía, en metros. Normalmente lo frena antes el resorte del tope (TrainDynamics).")]
+        [SerializeField] private float hardStopBogieMarginMeters = 0.3f;
 
         private Rigidbody _body;
         private RailPosition _railPosition;
 
         /// <summary>Velocidad sobre la vía en metros por segundo (negativa = marcha atrás).</summary>
         public float SpeedMetersPerSecond { get; set; }
+
+        /// <summary>Del centro a cada punta del tren, en metros.</summary>
+        public float HalfLengthMeters => halfLengthMeters;
 
         /// <summary>Dónde está el centro del tren sobre la vía.</summary>
         public RailPosition RailPosition => _railPosition;
@@ -49,8 +53,8 @@ namespace SurvivalEnTren.Train
             float step = SpeedMetersPerSecond * Time.fixedDeltaTime;
             if (step != 0f && WouldPassEndOfTrack(step))
             {
-                // Llegó a un final de vía (un tope): se detiene en seco. Qué pasa en un choque
-                // fuerte (daños, sacudón) se define más adelante.
+                // Freno de seguridad: un bogie llegaría al final de la vía. Normalmente el resorte del
+                // tope ya lo frenó antes; esto solo pasa en un choque muy fuerte.
                 SpeedMetersPerSecond = 0f;
                 ReachedEndOfTrack?.Invoke();
                 return;
@@ -62,14 +66,27 @@ namespace SurvivalEnTren.Train
             _body.MoveRotation(rotation);
         }
 
-        // ¿El extremo del tren (el de adelante si avanza, el de atrás si retrocede) pasaría un final de vía?
+        // ¿El bogie de adelante (o el de atrás si retrocede) pasaría un final de vía? Es el freno de
+        // seguridad: los bogies no pueden salirse de la vía.
         private bool WouldPassEndOfTrack(float step)
         {
             float sign = Mathf.Sign(step);
             RailPosition moved = _railPosition.Advanced(step, out bool centerHitEnd);
             if (centerHitEnd) return true;
-            moved.Advanced(sign * (halfLengthMeters + endOfTrackMarginMeters), out bool endHitEnd);
-            return endHitEnd;
+            moved.Advanced(sign * (bogieSpacingMeters * 0.5f + hardStopBogieMarginMeters), out bool bogieHitEnd);
+            return bogieHitEnd;
+        }
+
+        /// <summary>
+        /// Distancia entre la punta del tren (la de adelante si direction &gt; 0, la de atrás si no) y un
+        /// final de vía, en metros. Negativa si la punta ya pasó el final (está comprimiendo el tope).
+        /// Infinita si no hay un final cerca.
+        /// </summary>
+        public float GapToTrackEnd(int direction)
+        {
+            const float lookAheadMeters = 30f;
+            float toEnd = _railPosition.DistanceToEnd(direction, halfLengthMeters + lookAheadMeters);
+            return toEnd - halfLengthMeters;
         }
 
         /// <summary>Se dispara cuando el tren se detiene contra un final de vía.</summary>

@@ -121,7 +121,6 @@ namespace SurvivalEnTren.EditorTools
             if (kind == Kind.Driving)
             {
                 BuildSwitchStand(railSwitch, palette);
-                BuildBufferStop(spur, palette);
                 BuildStopSign(firstSegment, palette);
             }
 
@@ -129,6 +128,7 @@ namespace SurvivalEnTren.EditorTools
             var mover = train.GetComponent<TrainMover>();
             SetReference(mover, "startSegment", firstSegment);
             mover.SnapToRail();
+            if (kind == Kind.Driving) BuildBufferStop(spur, mover, palette);
 
             var controls = new GameObject(kind == Kind.Spike ? "Spike_Controles" : "Pruebas_Controles");
             TrainTestDriver driver = null;
@@ -600,15 +600,24 @@ namespace SurvivalEnTren.EditorTools
             SetReference(lever, "indicatorPivot", indicator);
         }
 
-        // Tope al final de la vía muerta.
-        private static void BuildBufferStop(RailSegment spur, Palette p)
+        // Tope al final de la vía muerta: la cara de la placa coincide con el final de la vía; la placa
+        // se hunde en el bloque cuando el tren la comprime (BufferStop), la física está en TrainDynamics.
+        private static void BuildBufferStop(RailSegment spur, TrainMover train, Palette p)
         {
             Vector3 end = spur.GetPosition(spur.Length);
             Vector3 direction = spur.GetDirection(spur.Length);
             var stop = new GameObject("Tope_ViaMuerta").transform;
-            stop.position = new Vector3(end.x, 0f, end.z);
+            stop.position = new Vector3(end.x, end.y, end.z);
             stop.rotation = Quaternion.LookRotation(new Vector3(direction.x, 0f, direction.z), Vector3.up);
-            BoxMinMax("Bloque", stop, new Vector3(-1.4f, 0f, 0.2f), new Vector3(1.4f, 1.5f, 1.0f), p.PostMarker);
+            BoxMinMax("Bloque", stop, new Vector3(-1.4f, -0.6f, 1.0f), new Vector3(1.4f, 1.2f, 1.8f), p.PostMarker);
+            BoxMinMax("Resorte_Izq", stop, new Vector3(-0.9f, 0.4f, 0.1f), new Vector3(-0.7f, 0.6f, 1.0f), p.Track, false);
+            BoxMinMax("Resorte_Der", stop, new Vector3(0.7f, 0.4f, 0.1f), new Vector3(0.9f, 0.6f, 1.0f), p.Track, false);
+            var plate = Group("Placa", stop);
+            BoxMinMax("Cara", plate, new Vector3(-1.2f, 0.1f, 0f), new Vector3(1.2f, 0.9f, 0.12f), p.Fuel);
+
+            var buffer = stop.gameObject.AddComponent<BufferStop>();
+            SetReference(buffer, "train", train);
+            SetReference(buffer, "plate", plate);
         }
 
         // Cartel de parada para practicar detener el tren en un punto (sección 24: "detener el tren en un

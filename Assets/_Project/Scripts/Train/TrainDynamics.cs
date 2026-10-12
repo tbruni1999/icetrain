@@ -10,12 +10,15 @@ namespace SurvivalEnTren.Train
     /// - El freno y el rozamiento siempre se oponen al movimiento y nunca lo invierten.
     /// - Si se baja la potencia por debajo de la velocidad actual, el tren sigue "por inercia" y
     ///   pierde velocidad solo por rozamiento (hay que frenar para bajar rápido).
+    /// - Los topes de fin de vía son un resorte amortiguado: frenan al tren en unos centímetros y lo
+    ///   hacen rebotar un poco (pedido de Tomi; antes frenaba en seco y todo salía volando).
     /// </summary>
     [RequireComponent(typeof(TrainMover))]
     public class TrainDynamics : MonoBehaviour
     {
         // Margen (en m/s) antes de la velocidad de la posición en el que la aceleración se va apagando.
         private const float ApproachWindowMetersPerSecond = 0.4f;
+        private static readonly int[] BufferDirections = { 1, -1 };
 
         [SerializeField] private TrainControls controls;
 
@@ -50,6 +53,17 @@ namespace SurvivalEnTren.Train
             // Freno + rozamiento: se oponen al movimiento, sin pasarse de cero.
             float slowdown = (settings.BrakeDeceleration(controls.BrakeNotch) + settings.RollingResistanceMetersPerSecondSquared) * dt;
             speed = Mathf.Abs(speed) <= slowdown ? 0f : speed - Mathf.Sign(speed) * slowdown;
+
+            // Topes de fin de vía: si la punta del tren entra en el tope, el tope empuja como un resorte
+            // amortiguado. Frena al tren en unos centímetros y lo devuelve un poco hacia atrás.
+            foreach (int end in BufferDirections)
+            {
+                float compression = -_train.GapToTrackEnd(end);
+                if (compression <= 0f) continue;
+                float damping = settings.BufferDampingPerSecond * Mathf.Clamp01(compression / settings.BufferDampingRampMeters);
+                float push = -end * settings.BufferStiffnessPerSecondSquared * compression - damping * speed;
+                speed += push * dt;
+            }
 
             _train.SpeedMetersPerSecond = speed;
         }
