@@ -19,7 +19,9 @@ Survival en primera persona en un mundo cubierto de nieve, donde el jugador vive
 Tomi es director de arte en 3D y diseño de producto digital, sin experiencia en programación. Explicar cada resultado en palabras simples, evitar jerga sin definirla, y para cada entrega decir paso a paso qué mirar o probar dentro de Unity.
 
 ## Milestone actual
-M1 — Tren estable (spike del Anexo C): APROBADO por Tomi el 2026-10-12 ("quedó bastante bien, sigamos"). Estrategia elegida: C. Próximo: proponer plan de M2 y esperar aprobación.
+M2 — Conducción: plan APROBADO por Tomi el 2026-10-12. Pasos: 1) física de conducción (reversor, potencia 4 posiciones 10/20/30/40 km/h, freno 4 posiciones, palanca combinada) — HECHO; 2) cabina: palancas + velocímetro de aguja, tomar los controles con E (interacción mínima "mirar + E", base del M3), W/S potencia-freno, R/F reversor; 3) cambio de vía manual con palanca física + vía muerta con tope; 4) pruebas: parar junto a un cartel, entrar y salir de la vía muerta, repetir estabilidad del M1. Escena nueva `Scenes/Pruebas/M2_Conduccion`. Fuera: combustible (M6), sonido (M13), cambios automáticos, sonda (M5), interacción completa (M3), arte final. Tomi pidió ayuda también con el arte (ver en M13).
+
+M1 — Tren estable (spike del Anexo C): APROBADO por Tomi el 2026-10-12 ("quedó bastante bien, sigamos"). Estrategia elegida: C.
 Plan que se ejecutó:
 1. Vía en óvalo + locomotora greybox moviéndose — HECHO.
 2. Jugador en primera persona (caminar, mirar, saltar) en el suelo — HECHO.
