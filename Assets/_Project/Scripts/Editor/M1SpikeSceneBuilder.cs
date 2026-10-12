@@ -4,6 +4,7 @@ using SurvivalEnTren.Player;
 using SurvivalEnTren.Rail;
 using SurvivalEnTren.Spike;
 using SurvivalEnTren.Train;
+using SurvivalEnTren.World;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -26,6 +27,7 @@ namespace SurvivalEnTren.EditorTools
         private const string DriveSettingsPath = "Assets/_Project/Data/Train/TrainTestDriveSettings.asset";
         private const string PlayerSettingsPath = "Assets/_Project/Data/Player/PlayerMotorSettings.asset";
         private const string BoxPrefabPath = "Assets/_Project/Prefabs/Spike/Caja_Prueba.prefab";
+        private const string FloatingOriginSettingsPath = "Assets/_Project/Data/World/FloatingOriginSettings.asset";
         private const string InputPath = "Assets/_Project/Data/Input/IceTrainInput.inputactions";
 
         // Vía de prueba: un óvalo de dos rectas y dos curvas (~2,46 km por vuelta).
@@ -85,6 +87,7 @@ namespace SurvivalEnTren.EditorTools
             EnsureFolder("Assets/_Project", "Data");
             EnsureFolder("Assets/_Project/Data", "Train");
             EnsureFolder("Assets/_Project/Data", "Player");
+            EnsureFolder("Assets/_Project/Data", "World");
 
             // La escena nueva va primero: crearla descarga de memoria los assets recién
             // creados y las referencias a ellos quedarían vacías.
@@ -136,7 +139,14 @@ namespace SurvivalEnTren.EditorTools
             SetReference(dropper, "boxPrefab", boxPrefab);
             SetReference(dropper, "metrics", propMetrics);
 
+            // Estrategia C: re-centrar el mundo cuando el jugador se aleja del origen.
+            var originObject = new GameObject("Mundo_Origen");
+            var floatingOrigin = originObject.AddComponent<FloatingOrigin>();
+            SetReference(floatingOrigin, "settings", LoadOrCreateAsset<FloatingOriginSettings>(FloatingOriginSettingsPath));
+            SetReference(floatingOrigin, "reference", motor.transform);
+
             var overlay = controls.AddComponent<SpikeOverlay>();
+            SetReference(overlay, "floatingOrigin", floatingOrigin);
             SetReference(overlay, "driver", driver);
             SetReference(overlay, "motor", motor);
             SetReference(overlay, "metrics", metrics);

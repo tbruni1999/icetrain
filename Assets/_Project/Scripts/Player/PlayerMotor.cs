@@ -1,3 +1,4 @@
+using SurvivalEnTren.World;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -19,7 +20,7 @@ namespace SurvivalEnTren.Player
     /// </summary>
     [DefaultExecutionOrder(-100)]
     [RequireComponent(typeof(CharacterController))]
-    public class PlayerMotor : MonoBehaviour
+    public class PlayerMotor : MonoBehaviour, IOriginShiftListener
     {
         // Qué tan "piso" tiene que ser una superficie para pararse (1 = horizontal).
         private const float GroundNormalMinY = 0.6f;
@@ -151,6 +152,15 @@ namespace SurvivalEnTren.Player
                 _previousLocal = _currentLocal;
                 _currentLocal = ToReferenceLocal(transform.position);
             }
+        }
+
+        /// <summary>El mundo se re-centró: corregir las posiciones guardadas en coordenadas del mundo.</summary>
+        public void OnOriginShifted(Vector3 delta)
+        {
+            _tickStartPosition += delta;
+            if (_platform != null) return; // relativas a la plataforma: no cambian
+            _previousLocal += delta;
+            _currentLocal += delta;
         }
 
         private void OnControllerColliderHit(ControllerColliderHit hit)

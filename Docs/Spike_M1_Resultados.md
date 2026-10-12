@@ -85,3 +85,52 @@ Conclusión: la V1 ya pasa el límite de ~5 km donde la estrategia A sola empiez
 | POIs, guardado, sonda (Anexo C.1) | Simple | Complicado | Simple si las posiciones se guardan como "tramo + distancia" (ya es así) |
 
 Expectativa: C es la mejor para optimización y escala; B es la peor (paga el costo todos los cuadros y anula optimizaciones de objetos estáticos); A sola no alcanza para el tamaño del mundo. Esto es razonamiento, no medición: el Anexo C pide medir antes de elegir.
+
+## Estrategia C — A + re-centrado del mundo (medido)
+
+Implementación: `Scripts/World/FloatingOrigin.cs`. Cuando el jugador se aleja más de `recenterDistanceMeters` (2000 m por defecto, en `Data/World/FloatingOriginSettings`) del origen, en el tic de física se mueven todos los objetos raíz de las escenas cargadas, se sincroniza la física y se avisa a quien guarda posiciones propias (`IOriginShiftListener`, hoy solo PlayerMotor). Lleva el origen absoluto en doble precisión.
+
+### ¿Se nota el re-centrado? (`Tools/SpikeTests/recentrado.cs`, umbral bajado a 150 m para forzar muchos re-centrados, 60 km/h, 60 FPS)
+
+| Medida | Resultado |
+|---|---|
+| Re-centrados en 75 s | 6 |
+| Costo máximo de un re-centrado (escena del spike) | 0,55 ms |
+| Velocidad aparente máxima de cámara y tren en los cuadros de re-centrado | 16,7 m/s = la velocidad real del tren (ningún salto) |
+| Temblor jugador / deriva quieto | 0,03 mm / 0,02 cm en 77 s |
+| Temblor / corrimiento de cajas | 1,12 mm / 0,10 cm, 0 caídas |
+
+### Lejos del origen con C activa (`Tools/SpikeTests/lejos_del_origen.cs`)
+
+| Distancia | Temblor jugador | Deriva quieto | Temblor cajas | Corrimiento cajas |
+|---|---|---|---|---|
+| 10 km | 0,13 mm | 0,07 cm | 1,2 mm | 0,09 cm |
+| 100 km | 0,14 mm | 0,06 cm | 3,1 mm (pico del re-centrado inicial) | 0,09 cm |
+
+Igual que en el origen (A sola a 100 km: 72 mm, 191 cm, 47 mm, 64 cm).
+
+## Estrategia B — prototipo para medir costo (`Tools/SpikeTests/costo_b_vs_c.cs`)
+
+Prototipo mínimo: en cada tic de física se mueve todo el mundo para que el tren quede quieto (solo traslación, sin rotar el mundo en las curvas). Mundo de prueba con 5.000 objetos con colisión. Sin límite de FPS, medido con ProfilerRecorder en el Editor.
+
+| | C entre re-centrados | C al re-centrar | B |
+|---|---|---|---|
+| CPU hilo principal por cuadro | 1,55 ms | — | 1,96 ms (+26 %) |
+| Física por cuadro | 0,008 ms | — | 0,025 ms (×3) |
+| Mover el mundo | — | 1,15 ms promedio, 2,17 ms peor, una vez cada ~2 km | 1,07 ms en cada tic (50 por segundo) |
+
+A 60 FPS, B gasta ~0,9 ms por cuadro (≈5 % del presupuesto de 16,7 ms) solo en mover 5.000 cubos simples, y crece con todo lo que tenga una región real. Además (no medido, razonado) impide usar optimizaciones que el documento quiere para POIs y exteriores (sección 23, Anexo E): geometría estática agrupada, luz horneada, occlusion culling horneado. Y complica POIs, físicas exteriores y persistencia (Anexo C.1).
+
+## Elección: estrategia C (2026-10-12)
+
+Tomi delegó la elección ("elegí lo mejor en base al documento"). Se elige **C**:
+- A sola no alcanza: la V1 ya necesita ~10–20 km de vía y A se degrada desde ~5 km (medido).
+- B cuesta procesador en cada tic y choca con las optimizaciones del documento (medido el costo; el resto razonado).
+- C conserva la estabilidad de A (medido igual) a cualquier distancia (medido hasta 100 km), con un costo puntual de ~1–2 ms cada ~2 km.
+
+Pendientes que quedan para milestones posteriores (no bloquean M1):
+- Repetir las mediciones de costo en una build (las de arriba son en el Editor).
+- Streaming (Anexo C.2): las regiones que se carguen deben aparecer ya desplazadas según el origen actual. FloatingOrigin mueve todas las escenas cargadas, así que las escenas aditivas encajan.
+- Verificar con el primer POI con luz horneada (M6) que la iluminación y las sondas de luz toleren el re-centrado. Si no, re-centrar solo con el tren detenido o lejos de POIs.
+- Guardado (M12): guardar la posición ferroviaria (tramo + distancia) y el origen absoluto.
+- Riesgo de bajar/subir ya anotado: el tren no empuja al jugador parado a su costado.

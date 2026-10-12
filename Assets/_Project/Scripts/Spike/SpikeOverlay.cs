@@ -1,5 +1,6 @@
 using SurvivalEnTren.Player;
 using SurvivalEnTren.Train;
+using SurvivalEnTren.World;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -17,6 +18,7 @@ namespace SurvivalEnTren.Spike
         [SerializeField] private SpikeRideMetrics metrics;
         [SerializeField] private SpikePropMetrics propMetrics;
         [SerializeField] private InputActionReference resetMeasure;
+        [SerializeField] private FloatingOrigin floatingOrigin;
 
         private float _smoothedFrameMs;
         private GUIStyle _style;
@@ -62,7 +64,9 @@ namespace SurvivalEnTren.Spike
                 : "Temblor / deriva: se miden estando en el tren";
 
             string text =
-                "Estrategia A: el tren se mueve por el mundo\n" +
+                "Estrategia C: el tren se mueve por el mundo y el mundo se re-centra\n" +
+                $"Re-centrados: {floatingOrigin.ShiftCount} (último {floatingOrigin.LastShiftMilliseconds:0.00} ms)   " +
+                $"origen absoluto: {floatingOrigin.AbsoluteOriginX / 1000.0:0.000} km, {floatingOrigin.AbsoluteOriginZ / 1000.0:0.000} km\n" +
                 $"Velocidad: {driver.CurrentSpeedKmh:0} km/h   (objetivo {driver.TargetSpeedKmh:0})\n" +
                 $"Cuadro: {_smoothedFrameMs:0.0} ms  (~{1000f / Mathf.Max(0.01f, _smoothedFrameMs):0} FPS)\n" +
                 $"Jugador: {reference}\n" +
@@ -72,7 +76,7 @@ namespace SurvivalEnTren.Spike
                 "Tren:  ↑ más rápido   ↓ más lento   B frenar\n" +
                 "Jugador:  WASD caminar   Shift correr   mouse mirar   Espacio saltar\n" +
                 "Prueba:  G soltar caja   R reiniciar medición de cajas   (Esc libera el mouse)";
-            GUI.Box(new Rect(12, 12, 720, 196), text, _style);
+            GUI.Box(new Rect(12, 12, 720, 236), text, _style);
         }
     }
 }
