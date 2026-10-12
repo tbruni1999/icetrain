@@ -7,8 +7,8 @@ namespace SurvivalEnTren.Spike
     /// <summary>
     /// Tecla de prueba del spike M1 (G): suelta una caja delante de la cámara.
     /// No es el sistema de interacción (eso es del M3): solo sirve para probar
-    /// cajas apoyadas en el tren en movimiento. Si el jugador viaja en el tren,
-    /// la caja nace con la velocidad del tren en ese punto, como si la soltara de la mano.
+    /// cajas apoyadas en el tren en movimiento. La caja nace con la velocidad del jugador,
+    /// como si la soltara de la mano (si viaja en el tren o salta adentro, la del tren).
     /// </summary>
     public class SpikePropDropper : MonoBehaviour
     {
@@ -35,9 +35,10 @@ namespace SurvivalEnTren.Spike
         {
             Vector3 position = head.position + head.forward * distanceMeters;
             var box = Instantiate(boxPrefab, position, Quaternion.LookRotation(Vector3.ProjectOnPlane(head.forward, Vector3.up)));
+            // La caja sale con la velocidad del jugador, como al soltarla de la mano: si está parado
+            // o saltando dentro del tren en marcha, es la velocidad del tren.
             var body = box.GetComponent<Rigidbody>();
-            if (motor.Platform != null)
-                body.linearVelocity = motor.Platform.GetPointVelocity(position);
+            body.linearVelocity = motor.Velocity;
             metrics.Add(body);
         }
     }

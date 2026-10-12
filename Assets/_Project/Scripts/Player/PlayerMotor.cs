@@ -62,6 +62,8 @@ namespace SurvivalEnTren.Player
         public Rigidbody Platform => _platform;
         public bool IsGrounded => _body != null && _body.isGrounded;
         public bool HasMoveInput { get; private set; }
+        /// <summary>Velocidad real del jugador en el mundo en el último tic (incluye viajar con el tren), en m/s.</summary>
+        public Vector3 Velocity { get; private set; }
         public PlayerMotorSettings Settings => settings;
 
         private void Awake()
@@ -100,6 +102,7 @@ namespace SurvivalEnTren.Player
         {
             float dt = Time.fixedDeltaTime;
             _referenceChangedThisTick = false;
+            Vector3 positionAtTickStart = transform.position;
 
             // 1) Viajar con la plataforma: aplicar lo que se movió desde el tic anterior.
             if (_platform != null)
@@ -155,6 +158,8 @@ namespace SurvivalEnTren.Player
                 _inheritedVelocity = Vector3.ProjectOnPlane(_lastCarryVelocity, Vector3.up);
                 SetReference(null);
             }
+
+            Velocity = (transform.position - positionAtTickStart) / dt;
 
             // 4) Guardar la posición relativa a la referencia, para el próximo tic y para dibujar.
             //    (Si la referencia cambió en este tic, SetReference ya dejó ambas en la nueva.)
