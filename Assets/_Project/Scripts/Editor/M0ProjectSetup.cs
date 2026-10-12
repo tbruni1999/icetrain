@@ -20,6 +20,7 @@ namespace SurvivalEnTren.EditorTools
         [MenuItem("Survival en tren/M0/Configurar proyecto (URP + Input System)")]
         public static void Run()
         {
+            EnsureFolder("Assets/_Project", "Data");
             EnsureFolder("Assets/_Project/Data", "Rendering");
 
             var pipeline = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(PipelinePath);
