@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using SurvivalEnTren.Interaction;
 using SurvivalEnTren.Player;
+using SurvivalEnTren.Probe;
 using SurvivalEnTren.Rail;
 using SurvivalEnTren.Spike;
 using SurvivalEnTren.Train;
@@ -126,13 +127,14 @@ namespace SurvivalEnTren.EditorTools
             Palette palette = CreatePalette();
             GameObject locomotivePrefab = BuildLocomotivePrefab(palette);
 
-            BuildEnvironment(palette);
+            BuildEnvironment(palette, kind == Kind.Driving ? 0.009f : 0.004f); // más niebla en la de M2: sin ver el tren de lejos (M5)
             RailSegment firstSegment = BuildTrack(palette, kind, out RailSwitch railSwitch, out RailSegment spur);
             BuildPosts(firstSegment, palette, kind == Kind.Driving ? -1f : 1f);
             if (kind == Kind.Driving)
             {
                 BuildSwitchStand(railSwitch, palette);
                 BuildStopSign(firstSegment, palette);
+                BuildProbeSignals(palette);
             }
 
             var train = (GameObject)PrefabUtility.InstantiatePrefab(locomotivePrefab);
@@ -343,6 +345,66 @@ namespace SurvivalEnTren.EditorTools
             material.SetColor("_BaseColor", new Color(1f, 1f, 1f, 0.6f));
             EditorUtility.SetDirty(material);
             return material;
+        }
+
+        // ---------------------------------------------------------------- Señales de sonda (M5)
+
+        // Tres señales preparadas a mano (sección 21.2: "1–3 señales"), a 150–400 m de la vía, con un
+        // marcador simple en la nieve (los POIs reales son del M6). Cada una con su ancla en la vía.
+        private static void BuildProbeSignals(Palette p)
+        {
+            var root = new GameObject("Senales_Sonda").transform;
+            RailSegment straight1a = GameObject.Find("Tramo_1a_Recta").GetComponent<RailSegment>();
+            RailSegment straight1b = GameObject.Find("Tramo_1b_Recta").GetComponent<RailSegment>();
+            RailSegment straight3 = GameObject.Find("Tramo_3_Recta").GetComponent<RailSegment>();
+
+            Signal("poi_prueba_rail1a_001", ProbeSignalType.EstructuraBajoNieve, 1f, new Vector3(40f, 0f, -200f), straight1a, root,
+                marker => BoxMinMax("Bulto_Enterrado", marker, new Vector3(-3f, -0.5f, -4f), new Vector3(3f, 1.4f, 4f), p.Ballast));
+            Signal("poi_prueba_rail1b_002", ProbeSignalType.MasaMetalica, 1f, new Vector3(480f, 0f, 150f), straight1b, root,
+                marker => BoxMinMax("Restos_Metalicos", marker, new Vector3(-1.5f, 0f, -3.5f), new Vector3(1.5f, 2.2f, 3.5f), p.Track));
+            Signal("poi_prueba_rail3_003", ProbeSignalType.CalorResidual, 0.25f, new Vector3(-520f, 0f, 50f), straight3, root,
+                marker =>
+                {
+                    BoxMinMax("Refugio", marker, new Vector3(-1.5f, 0f, -1.5f), new Vector3(1.5f, 2.4f, 1.5f), p.Body);
+                    var light = new GameObject("Calor").AddComponent<Light>();
+                    light.transform.SetParent(marker, false);
+                    light.transform.localPosition = new Vector3(0f, 1.2f, -1.8f);
+                    light.type = LightType.Point;
+                    light.color = new Color(1f, 0.6f, 0.3f);
+                    light.range = 6f;
+                    light.intensity = 3f;
+                });
+        }
+
+        private static void Signal(string id, ProbeSignalType type, float strength, Vector3 position, RailSegment segment,
+            Transform root, System.Action<Transform> buildMarker)
+        {
+            var go = new GameObject($"Senal_{type}");
+            go.transform.SetParent(root, false);
+            go.transform.position = position;
+            buildMarker(go.transform);
+            var signal = go.AddComponent<ProbeSignal>();
+
+            // Ancla: el punto del tramo más cercano, de qué lado está y a qué distancia.
+            float bestDistance = 0f, bestSqr = float.PositiveInfinity;
+            for (float d = 0f; d <= segment.Length; d += 1f)
+            {
+                float sqr = (segment.GetPosition(d) - position).sqrMagnitude;
+                if (sqr < bestSqr) { bestSqr = sqr; bestDistance = d; }
+            }
+            Vector3 onRail = segment.GetPosition(bestDistance);
+            Vector3 right = Vector3.Cross(Vector3.up, segment.GetDirection(bestDistance));
+            var so = new SerializedObject(signal);
+            so.FindProperty("stableId").stringValue = id;
+            so.FindProperty("type").enumValueIndex = (int)type;
+            so.FindProperty("strength").floatValue = strength;
+            so.FindProperty("anchorSegment").objectReferenceValue = segment;
+            so.FindProperty("anchorDistanceMeters").floatValue = bestDistance;
+            so.FindProperty("anchorSide").intValue = Vector3.Dot(position - onRail, right) >= 0f ? 1 : -1;
+            Vector3 lateral = position - onRail;
+            lateral.y = 0f;
+            so.FindProperty("anchorLateralMeters").floatValue = lateral.magnitude;
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
 
         // ---------------------------------------------------------------- Cajas de prueba
@@ -667,7 +729,7 @@ namespace SurvivalEnTren.EditorTools
 
         // ---------------------------------------------------------------- Mundo
 
-        private static void BuildEnvironment(Palette p)
+        private static void BuildEnvironment(Palette p, float fogDensity)
         {
             var sun = new GameObject("Luz_Sol");
             var light = sun.AddComponent<Light>();
@@ -681,7 +743,7 @@ namespace SurvivalEnTren.EditorTools
             RenderSettings.skybox = AssetDatabase.GetBuiltinExtraResource<Material>("Default-Skybox.mat");
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
-            RenderSettings.fogDensity = 0.004f;
+            RenderSettings.fogDensity = fogDensity;
             RenderSettings.fogColor = new Color(0.78f, 0.82f, 0.87f);
 
             var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
