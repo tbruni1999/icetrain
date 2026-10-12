@@ -20,5 +20,5 @@ MonoBehaviour:
   bodyHeightMeters: 1.8
   bodyRadiusMeters: 0.3
   eyeHeightMeters: 1.65
-  stepOffsetMeters: 0.35
+  stepOffsetMeters: 0.4
   slopeLimitDegrees: 50

@@ -141,9 +141,10 @@ namespace SurvivalEnTren.Player
             bool wasGrounded = _body.isGrounded;
             _body.Move(velocity * dt);
 
-            // Si salió caminando de un borde (sin saltar), la caída arranca desde quieto: el pequeño
-            // empuje hacia abajo que lo mantiene pegado al piso no debe convertirse en un tirón.
-            if (wasGrounded && !_body.isGrounded && _verticalSpeed < 0f)
+            // Salió caminando de un borde (sin saltar). Si el piso está a menos de un escalón (bajar de
+            // una caja, de un escalón), baja pegado a él como en una escalera. Si es una caída real,
+            // arranca desde quieto: el pequeño empuje hacia abajo no debe convertirse en un tirón.
+            if (wasGrounded && !_body.isGrounded && _verticalSpeed < 0f && !SnapDownToGround())
                 _verticalSpeed = 0f;
 
             // 3) Decidir la referencia para el próximo tic.
@@ -168,6 +169,25 @@ namespace SurvivalEnTren.Player
                 _previousLocal = _currentLocal;
                 _currentLocal = ToReferenceLocal(transform.position);
             }
+        }
+
+        // Busca piso a menos de un escalón debajo del cuerpo y, si lo hay, baja hasta él.
+        private bool SnapDownToGround()
+        {
+            float radius = _body.radius * 0.95f;
+            Vector3 center = transform.position + _body.center;
+            Vector3 offset = Vector3.up * (_body.height * 0.5f - _body.radius);
+            float reach = settings.StepOffsetMeters + _body.skinWidth;
+
+            if (!Physics.CapsuleCast(center + offset, center - offset, radius, Vector3.down, out RaycastHit hit,
+                    reach, ~0, QueryTriggerInteraction.Ignore))
+                return false;
+            if (hit.normal.y < GroundNormalMinY) return false;
+
+            _groundHit = false;
+            _groundBody = null;
+            _body.Move(Vector3.down * (hit.distance + _body.skinWidth));
+            return _body.isGrounded;
         }
 
         /// <summary>El mundo se re-centró: corregir las posiciones guardadas en coordenadas del mundo.</summary>

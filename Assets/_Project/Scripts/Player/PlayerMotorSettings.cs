@@ -43,8 +43,9 @@ namespace SurvivalEnTren.Player
         [Tooltip("Altura de los ojos (la cámara) desde los pies, en metros.")]
         [SerializeField, Range(0.8f, 2.1f)] private float eyeHeightMeters = 1.65f;
 
-        [Tooltip("Escalón más alto que se sube caminando, en metros.")]
-        [SerializeField, Range(0.05f, 0.6f)] private float stepOffsetMeters = 0.35f;
+        [Tooltip("Escalón más alto que se sube o se baja caminando (sin saltar), en metros. " +
+                 "Tiene que superar la altura de las cajas chicas (35 cm) y los escalones del tren (32 cm).")]
+        [SerializeField, Range(0.05f, 0.6f)] private float stepOffsetMeters = 0.4f;
 
         [Tooltip("Pendiente máxima por la que se puede caminar, en grados.")]
         [SerializeField, Range(10f, 80f)] private float slopeLimitDegrees = 50f;

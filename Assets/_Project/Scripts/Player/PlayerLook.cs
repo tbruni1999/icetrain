@@ -24,6 +24,7 @@ namespace SurvivalEnTren.Player
         private float _stepSmoothing;
         private float _lastFeetHeight;
         private bool _hasLastFeet;
+        private bool _wasGrounded;
 
         private void OnEnable()
         {
@@ -51,11 +52,15 @@ namespace SurvivalEnTren.Player
             Quaternion body = motor.RenderBodyRotation;
             Vector3 feet = motor.RenderFeetPosition;
 
-            // Al subir un escalón el cuerpo sube de golpe; la cámara lo alcanza en unas décimas.
-            float rise = feet.y - _lastFeetHeight;
-            if (_hasLastFeet && motor.IsGrounded && rise > StepRiseThresholdMeters && rise < MaxStepRiseMeters)
-                _stepSmoothing -= rise;
+            // Al subir o bajar un escalón (o una caja) el cuerpo cambia de altura de golpe; la cámara
+            // lo alcanza en unas décimas. Solo caminando apoyado: saltos y caídas no se suavizan.
+            float step = feet.y - _lastFeetHeight;
+            bool grounded = motor.IsGrounded;
+            if (_hasLastFeet && grounded && _wasGrounded &&
+                Mathf.Abs(step) > StepRiseThresholdMeters && Mathf.Abs(step) < MaxStepRiseMeters)
+                _stepSmoothing -= step;
             _lastFeetHeight = feet.y;
+            _wasGrounded = grounded;
             _hasLastFeet = true;
             _stepSmoothing *= Mathf.Exp(-motor.Settings.StepSmoothingSpeed * Time.deltaTime);
 
