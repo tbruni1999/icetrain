@@ -142,6 +142,13 @@ namespace SurvivalEnTren.EditorTools
                 // tren la física de conducción y el pupitre, para que no haya dos que manejen el tren.
                 Object.DestroyImmediate(train.GetComponent<TrainDynamics>());
                 Object.DestroyImmediate(train.GetComponentInChildren<TrainCab>());
+                // Las puertas arrancan abiertas: las pruebas del spike (bajar/subir) usan los huecos.
+                foreach (SlidingDoor slidingDoor in train.GetComponentsInChildren<SlidingDoor>())
+                {
+                    var so = new SerializedObject(slidingDoor);
+                    so.FindProperty("startOpen").boolValue = true;
+                    so.ApplyModifiedPropertiesWithoutUndo();
+                }
                 driver = controls.AddComponent<TrainTestDriver>();
                 SetReference(driver, "train", mover);
                 SetReference(driver, "settings", LoadOrCreateAsset<TrainTestDriveSettings>(DriveSettingsPath));
@@ -341,6 +348,9 @@ namespace SurvivalEnTren.EditorTools
                 }
             }
 
+            BuildDoor("Puerta_Derecha", exterior, 1f, p);
+            BuildDoor("Puerta_Izquierda", exterior, -1f, p);
+
             BoxMinMax("Exterior_BocaCombustible", exterior, new Vector3(BodyHalfWidth, FloorTop + 0.3f, -8.7f), new Vector3(BodyHalfWidth + 0.1f, FloorTop + 0.6f, -8.3f), p.Fuel);
 
             // Interior dividido en zonas reservadas para los sistemas de la V1.
@@ -378,6 +388,33 @@ namespace SurvivalEnTren.EditorTools
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
             Object.DestroyImmediate(root);
             return prefab;
+        }
+
+        // Puerta corrediza de un costado (M3): la hoja va por afuera de la pared y se corre hacia atrás.
+        // Una zona "trigger" en el hueco permite cerrarla apuntando al hueco desde adentro.
+        private static void BuildDoor(string name, Transform parent, float side, Palette p)
+        {
+            var door = Group(name, parent);
+            door.localPosition = new Vector3(side * BodyHalfWidth, FloorTop, DoorCenterZ);
+
+            var leaf = Group("Hoja", door);
+            BoxMinMax("Panel", leaf, new Vector3(side > 0 ? 0.01f : -0.06f, 0f, -DoorHalfWidth - 0.02f),
+                new Vector3(side > 0 ? 0.06f : -0.01f, DoorHeight + 0.02f, DoorHalfWidth + 0.02f), p.Furniture);
+            BoxMinMax("Manija", leaf, new Vector3(side > 0 ? 0.06f : -0.09f, 1.0f, DoorHalfWidth - 0.15f),
+                new Vector3(side > 0 ? 0.09f : -0.06f, 1.2f, DoorHalfWidth - 0.1f), p.Track, false);
+
+            var zone = BoxMinMax("Zona_Uso", door, new Vector3(-0.15f, 0.05f, -DoorHalfWidth + 0.05f),
+                new Vector3(0.15f, DoorHeight - 0.05f, DoorHalfWidth - 0.05f), p.Furniture);
+            zone.GetComponent<Collider>().isTrigger = true;
+            Object.DestroyImmediate(zone.GetComponent<MeshRenderer>());
+
+            var sliding = door.gameObject.AddComponent<SlidingDoor>();
+            SetReference(sliding, "leaf", leaf);
+            var so = new SerializedObject(sliding);
+            so.FindProperty("openOffset").vector3Value = new Vector3(0f, 0f, -(DoorHalfWidth * 2f + 0.05f));
+            so.FindProperty("doorwayCenter").vector3Value = new Vector3(0f, 1.05f, 0f);
+            so.FindProperty("doorwayHalfExtents").vector3Value = new Vector3(0.35f, 1.0f, DoorHalfWidth);
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
 
         // Pupitre de conducción (M2): mueble, tres palancas (reversor, potencia, freno), velocímetro

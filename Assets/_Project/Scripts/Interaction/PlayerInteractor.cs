@@ -104,12 +104,20 @@ namespace SurvivalEnTren.Interaction
 
         private IInteractable FindTarget()
         {
-            int count = Physics.RaycastNonAlloc(head.position, head.forward, Hits, settings.ReachMeters, ~0, QueryTriggerInteraction.Ignore);
+            int count = Physics.RaycastNonAlloc(head.position, head.forward, Hits, settings.ReachMeters, ~0, QueryTriggerInteraction.Collide);
             System.Array.Sort(Hits, 0, count, HitDistanceComparer.Instance);
             for (int i = 0; i < count; i++)
             {
-                if (Hits[i].collider.transform.IsChildOf(transform)) continue; // el propio cuerpo
-                return Hits[i].collider.GetComponentInParent<IInteractable>();  // lo primero que tapa la vista
+                Collider c = Hits[i].collider;
+                if (c.transform.IsChildOf(transform)) continue; // el propio cuerpo
+                if (c.isTrigger)
+                {
+                    // Una zona de interacción (ej. el hueco de una puerta) cuenta; otros triggers se ignoran.
+                    var zone = c.GetComponentInParent<IInteractable>();
+                    if (zone != null) return zone;
+                    continue;
+                }
+                return c.GetComponentInParent<IInteractable>(); // lo primero sólido que tapa la vista
             }
             return null;
         }
