@@ -164,6 +164,24 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "DropBox",
+                    "type": "Button",
+                    "id": "5e2a8c41-9b6d-4f37-a1c8-2d7e9b4f6a34",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "ResetMeasure",
+                    "type": "Button",
+                    "id": "7a4c0e63-1d8f-4b59-c3ea-4f9a1d6b8c35",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -197,6 +215,28 @@
                     "processors": "",
                     "groups": "",
                     "action": "TrainBrake",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "9c6e2a85-3fa1-4d7b-e50c-6b1c3f8d0e36",
+                    "path": "<Keyboard>/g",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "DropBox",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "be8a4c07-5b3d-4f9e-a72e-8d3e5a0f2b37",
+                    "path": "<Keyboard>/r",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ResetMeasure",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

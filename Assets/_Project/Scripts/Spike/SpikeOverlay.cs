@@ -1,6 +1,7 @@
 using SurvivalEnTren.Player;
 using SurvivalEnTren.Train;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace SurvivalEnTren.Spike
 {
@@ -14,9 +15,27 @@ namespace SurvivalEnTren.Spike
         [SerializeField] private TrainTestDriver driver;
         [SerializeField] private PlayerMotor motor;
         [SerializeField] private SpikeRideMetrics metrics;
+        [SerializeField] private SpikePropMetrics propMetrics;
+        [SerializeField] private InputActionReference resetMeasure;
 
         private float _smoothedFrameMs;
         private GUIStyle _style;
+
+        private void OnEnable()
+        {
+            resetMeasure.action.performed += OnResetMeasure;
+            resetMeasure.action.Enable();
+        }
+
+        private void OnDisable()
+        {
+            resetMeasure.action.performed -= OnResetMeasure;
+        }
+
+        private void OnResetMeasure(InputAction.CallbackContext _)
+        {
+            propMetrics.ResetAnchors();
+        }
 
         private void Update()
         {
@@ -48,10 +67,12 @@ namespace SurvivalEnTren.Spike
                 $"Cuadro: {_smoothedFrameMs:0.0} ms  (~{1000f / Mathf.Max(0.01f, _smoothedFrameMs):0} FPS)\n" +
                 $"Jugador: {reference}\n" +
                 stability + "\n" +
+                $"Cajas: {propMetrics.SettledCount}/{propMetrics.Count} asentadas   corrimiento máx. {propMetrics.MaxDisplacementCentimeters:0.00} cm   " +
+                $"temblor {propMetrics.JitterMillimeters:0.0} mm   fuera del tren {propMetrics.OutsideCount}\n" +
                 "Tren:  ↑ más rápido   ↓ más lento   B frenar\n" +
                 "Jugador:  WASD caminar   Shift correr   mouse mirar   Espacio saltar\n" +
-                "Esc libera el mouse; clic en Game para volver";
-            GUI.Box(new Rect(12, 12, 600, 176), text, _style);
+                "Prueba:  G soltar caja   R reiniciar medición de cajas   (Esc libera el mouse)";
+            GUI.Box(new Rect(12, 12, 720, 196), text, _style);
         }
     }
 }

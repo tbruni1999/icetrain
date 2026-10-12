@@ -25,6 +25,7 @@ namespace SurvivalEnTren.EditorTools
         private const string MaterialsFolder = "Assets/_Project/Materials/Greybox";
         private const string DriveSettingsPath = "Assets/_Project/Data/Train/TrainTestDriveSettings.asset";
         private const string PlayerSettingsPath = "Assets/_Project/Data/Player/PlayerMotorSettings.asset";
+        private const string BoxPrefabPath = "Assets/_Project/Prefabs/Spike/Caja_Prueba.prefab";
         private const string InputPath = "Assets/_Project/Data/Input/IceTrainInput.inputactions";
 
         // Vía de prueba: un óvalo de dos rectas y dos curvas (~2,46 km por vuelta).
@@ -61,7 +62,7 @@ namespace SurvivalEnTren.EditorTools
 
         private class Palette
         {
-            public Material Snow, Ballast, Track, Body, Floor, Furniture, Controls, Fuel, Post, PostMarker;
+            public Material Snow, Ballast, Track, Body, Floor, Furniture, Controls, Fuel, Post, PostMarker, Box;
         }
 
         [MenuItem("Survival en tren/M1/Construir escena Spike (tren estable)")]
@@ -78,6 +79,7 @@ namespace SurvivalEnTren.EditorTools
             EnsureFolder("Assets/_Project/Scenes", "Spike");
             EnsureFolder("Assets/_Project", "Prefabs");
             EnsureFolder("Assets/_Project/Prefabs", "Train");
+            EnsureFolder("Assets/_Project/Prefabs", "Spike");
             EnsureFolder("Assets/_Project", "Materials");
             EnsureFolder("Assets/_Project/Materials", "Greybox");
             EnsureFolder("Assets/_Project", "Data");
@@ -115,14 +117,83 @@ namespace SurvivalEnTren.EditorTools
             var metrics = controls.AddComponent<SpikeRideMetrics>();
             SetReference(metrics, "motor", motor);
             SetReference(metrics, "head", motor.transform.Find("Cabeza"));
+
+            // Cajas de prueba apoyadas en el tren (paso 4) y tecla para soltar más.
+            GameObject boxPrefab = BuildBoxPrefab(palette);
+            List<Rigidbody> boxes = PlaceTrainBoxes(train.transform, boxPrefab);
+            var propMetrics = controls.AddComponent<SpikePropMetrics>();
+            SetReference(propMetrics, "train", train.GetComponent<Rigidbody>());
+            var propsProperty = new SerializedObject(propMetrics);
+            var list = propsProperty.FindProperty("props");
+            list.arraySize = boxes.Count;
+            for (int i = 0; i < boxes.Count; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = boxes[i];
+            propsProperty.ApplyModifiedPropertiesWithoutUndo();
+
+            var dropper = controls.AddComponent<SpikePropDropper>();
+            SetReference(dropper, "motor", motor);
+            SetReference(dropper, "head", motor.transform.Find("Cabeza"));
+            SetReference(dropper, "drop", FindActionReference("Debug/DropBox"));
+            SetReference(dropper, "boxPrefab", boxPrefab);
+            SetReference(dropper, "metrics", propMetrics);
+
             var overlay = controls.AddComponent<SpikeOverlay>();
             SetReference(overlay, "driver", driver);
             SetReference(overlay, "motor", motor);
             SetReference(overlay, "metrics", metrics);
+            SetReference(overlay, "propMetrics", propMetrics);
+            SetReference(overlay, "resetMeasure", FindActionReference("Debug/ResetMeasure"));
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             AssetDatabase.SaveAssets();
             Debug.Log("[M1] Escena del spike construida en " + ScenePath);
+        }
+
+        // ---------------------------------------------------------------- Cajas de prueba
+
+        private static GameObject BuildBoxPrefab(Palette p)
+        {
+            var box = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            box.name = "Caja_Prueba";
+            box.transform.localScale = Vector3.one * 0.35f;
+            box.GetComponent<MeshRenderer>().sharedMaterial = p.Box;
+            var body = box.AddComponent<Rigidbody>();
+            body.mass = 4f;
+            body.interpolation = RigidbodyInterpolation.Interpolate;
+            GameObject prefab = PrefabUtility.SaveAsPrefabAsset(box, BoxPrefabPath);
+            Object.DestroyImmediate(box);
+            return prefab;
+        }
+
+        // Cajas sobre el workbench, el estante, la cama y el piso, en coordenadas del tren.
+        // Quedan fuera de la jerarquía del tren a propósito: son cuerpos físicos libres.
+        private static List<Rigidbody> PlaceTrainBoxes(Transform train, GameObject boxPrefab)
+        {
+            var group = new GameObject("Cajas_Tren").transform;
+            var boxes = new List<Rigidbody>();
+
+            void Box(string name, Vector3 localBottomCenter, Vector3 size, float massKg)
+            {
+                var go = (GameObject)PrefabUtility.InstantiatePrefab(boxPrefab, group);
+                go.name = name;
+                go.transform.localScale = size;
+                go.transform.SetPositionAndRotation(
+                    train.TransformPoint(localBottomCenter + Vector3.up * (size.y * 0.5f + 0.01f)), train.rotation);
+                var body = go.GetComponent<Rigidbody>();
+                body.mass = massKg;
+                boxes.Add(body);
+            }
+
+            float bench = FloorTop + 0.9f;
+            Box("Caja_Workbench_Chica", new Vector3(-1.0f, bench, 0.5f), Vector3.one * 0.3f, 3f);
+            Box("Caja_Workbench_Herramientas", new Vector3(-1.0f, bench, -0.4f), new Vector3(0.25f, 0.2f, 0.5f), 5f);
+            Box("Caja_Estante_Baja", new Vector3(1.2f, FloorTop + 0.13f, -1.5f), Vector3.one * 0.25f, 2f);
+            Box("Caja_Estante_Media", new Vector3(1.2f, FloorTop + 0.73f, -2.0f), Vector3.one * 0.25f, 2f);
+            Box("Caja_Estante_Alta", new Vector3(1.2f, FloorTop + 1.33f, -1.0f), Vector3.one * 0.25f, 2f);
+            Box("Caja_Cama", new Vector3(0.95f, FloorTop + 0.45f, 4.5f), Vector3.one * 0.2f, 1f);
+            Box("Caja_Piso_Grande", new Vector3(0.3f, FloorTop, -4.5f), Vector3.one * 0.5f, 10f);
+            Box("Caja_Piso_Grande_2", new Vector3(-0.7f, FloorTop, -5.0f), Vector3.one * 0.5f, 10f);
+            Box("Caja_Cabina", new Vector3(0.6f, FloorTop, 7.2f), Vector3.one * 0.3f, 3f);
+            return boxes;
         }
 
         // ---------------------------------------------------------------- Jugador
@@ -383,6 +454,7 @@ namespace SurvivalEnTren.EditorTools
                 Fuel = Mat("Combustible", new Color(0.8f, 0.6f, 0.15f)),
                 Post = Mat("Poste", new Color(0.25f, 0.25f, 0.27f)),
                 PostMarker = Mat("Poste_Marca", new Color(0.85f, 0.35f, 0.15f)),
+                Box = Mat("Caja", new Color(0.62f, 0.45f, 0.26f)),
             };
         }
 
