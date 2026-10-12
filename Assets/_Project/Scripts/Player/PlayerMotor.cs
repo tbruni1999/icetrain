@@ -135,7 +135,13 @@ namespace SurvivalEnTren.Player
 
             _groundHit = false;
             _groundBody = null;
+            bool wasGrounded = _body.isGrounded;
             _body.Move(velocity * dt);
+
+            // Si salió caminando de un borde (sin saltar), la caída arranca desde quieto: el pequeño
+            // empuje hacia abajo que lo mantiene pegado al piso no debe convertirse en un tirón.
+            if (wasGrounded && !_body.isGrounded && _verticalSpeed < 0f)
+                _verticalSpeed = 0f;
 
             // 3) Decidir la referencia para el próximo tic.
             if (_body.isGrounded && _groundHit)
