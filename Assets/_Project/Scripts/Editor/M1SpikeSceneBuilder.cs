@@ -144,6 +144,7 @@ namespace SurvivalEnTren.EditorTools
             SetReference(motor, "settings", settings);
             SetReference(motor, "move", FindActionReference("Player/Move"));
             SetReference(motor, "jump", FindActionReference("Player/Jump"));
+            SetReference(motor, "run", FindActionReference("Player/Run"));
 
             var look = player.AddComponent<PlayerLook>();
             SetReference(look, "settings", settings);

@@ -4,7 +4,7 @@ using UnityEngine.InputSystem;
 namespace SurvivalEnTren.Player
 {
     /// <summary>
-    /// Mueve al jugador: caminar con WASD, gravedad y salto.
+    /// Mueve al jugador: caminar con WASD (correr con Shift), gravedad y salto.
     /// Usa un CharacterController (cuerpo de cápsula que no rebota como un objeto
     /// de física). Seguir al tren en movimiento se agrega en el paso 3 del M1.
     /// </summary>
@@ -14,6 +14,7 @@ namespace SurvivalEnTren.Player
         [SerializeField] private PlayerMotorSettings settings;
         [SerializeField] private InputActionReference move;
         [SerializeField] private InputActionReference jump;
+        [SerializeField] private InputActionReference run;
 
         private CharacterController _body;
         private float _verticalSpeed;
@@ -34,6 +35,7 @@ namespace SurvivalEnTren.Player
         private void OnEnable()
         {
             move.action.Enable();
+            run.action.Enable();
             jump.action.performed += OnJump;
             jump.action.Enable();
         }
@@ -49,7 +51,8 @@ namespace SurvivalEnTren.Player
 
             Vector2 input = move.action.ReadValue<Vector2>();
             Vector3 walk = transform.right * input.x + transform.forward * input.y;
-            walk = Vector3.ClampMagnitude(walk, 1f) * settings.WalkSpeedMetersPerSecond;
+            float speed = run.action.IsPressed() ? settings.RunSpeedMetersPerSecond : settings.WalkSpeedMetersPerSecond;
+            walk = Vector3.ClampMagnitude(walk, 1f) * speed;
 
             if (_body.isGrounded)
             {

@@ -13,6 +13,9 @@ namespace SurvivalEnTren.Player
         [Tooltip("Velocidad al caminar, en metros por segundo.")]
         [SerializeField, Range(0.5f, 10f)] private float walkSpeedMetersPerSecond = 3.5f;
 
+        [Tooltip("Velocidad al correr (Shift mantenido), en metros por segundo.")]
+        [SerializeField, Range(0.5f, 15f)] private float runSpeedMetersPerSecond = 6.5f;
+
         [Tooltip("Altura máxima del salto, en metros.")]
         [SerializeField, Range(0.1f, 2f)] private float jumpHeightMeters = 0.9f;
 
@@ -43,6 +46,7 @@ namespace SurvivalEnTren.Player
         [SerializeField, Range(10f, 80f)] private float slopeLimitDegrees = 50f;
 
         public float WalkSpeedMetersPerSecond => walkSpeedMetersPerSecond;
+        public float RunSpeedMetersPerSecond => runSpeedMetersPerSecond;
         public float JumpHeightMeters => jumpHeightMeters;
         public float GravityMetersPerSecondSquared => gravityMetersPerSecondSquared;
         public float MouseSensitivityDegreesPerPixel => mouseSensitivityDegreesPerPixel;
