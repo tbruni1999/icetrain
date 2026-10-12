@@ -25,7 +25,26 @@ namespace SurvivalEnTren.Train
         [Tooltip("Qué tan rápido se mueven las palancas hasta su posición (más alto = más brusco).")]
         [SerializeField] private float leverSpeed = 14f;
 
+        [Tooltip("Cuánto se sacude la palanca del reversor si se la quiere mover con el tren en marcha, en grados.")]
+        [SerializeField] private float blockedShakeDegrees = 7f;
+        [Tooltip("Cuánto dura esa sacudida, en segundos.")]
+        [SerializeField] private float blockedShakeSeconds = 0.35f;
+
         private float _reverser, _power, _brake;
+        private float _shakeTimeLeft;
+
+        private void OnEnable()
+        {
+            controls.ReverserBlocked += OnReverserBlocked;
+        }
+
+        private void OnDisable()
+        {
+            controls.ReverserBlocked -= OnReverserBlocked;
+        }
+
+        // El reversor no se puede mover en marcha: la palanca se sacude y vuelve, como si estuviera trabada.
+        private void OnReverserBlocked() => _shakeTimeLeft = blockedShakeSeconds;
 
         private void LateUpdate()
         {
@@ -36,7 +55,13 @@ namespace SurvivalEnTren.Train
             _reverser = Mathf.Lerp(_reverser, (int)controls.Reverser * leverMaxDegrees, k);
             _power = Mathf.Lerp(_power, leverMaxDegrees * controls.PowerNotch / Mathf.Max(1, settings.PowerNotchCount), k);
             _brake = Mathf.Lerp(_brake, -leverMaxDegrees * controls.BrakeNotch / Mathf.Max(1, settings.BrakeNotchCount), k);
-            reverserPivot.localRotation = Quaternion.Euler(_reverser, 0f, 0f);
+            float shake = 0f;
+            if (_shakeTimeLeft > 0f)
+            {
+                _shakeTimeLeft -= Time.deltaTime;
+                shake = Mathf.Sin(_shakeTimeLeft * 45f) * blockedShakeDegrees * Mathf.Clamp01(_shakeTimeLeft / blockedShakeSeconds);
+            }
+            reverserPivot.localRotation = Quaternion.Euler(_reverser + shake, 0f, 0f);
             powerPivot.localRotation = Quaternion.Euler(_power, 0f, 0f);
             brakePivot.localRotation = Quaternion.Euler(_brake, 0f, 0f);
 

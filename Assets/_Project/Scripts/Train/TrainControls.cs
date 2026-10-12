@@ -32,6 +32,12 @@ namespace SurvivalEnTren.Train
         /// <summary>Se dispara cuando cambia cualquier control (para palancas, sonidos, etc.).</summary>
         public event Action Changed;
 
+        /// <summary>
+        /// Se dispara cuando se intenta mover el reversor con el tren en marcha (la palanca está
+        /// trabada). Sirve para que la cabina lo muestre físicamente en vez de con texto.
+        /// </summary>
+        public event Action ReverserBlocked;
+
         private void Awake()
         {
             BrakeNotch = settings.BrakeNotchCount;
@@ -44,7 +50,11 @@ namespace SurvivalEnTren.Train
         public bool TryMoveReverser(int step)
         {
             float speedKmh = Mathf.Abs(train.SpeedMetersPerSecond) * 3.6f;
-            if (speedKmh > settings.ReverserMaxSpeedKmh) return false;
+            if (speedKmh > settings.ReverserMaxSpeedKmh)
+            {
+                ReverserBlocked?.Invoke();
+                return false;
+            }
 
             int next = Mathf.Clamp((int)Reverser + Math.Sign(step), -1, 1);
             if (next == (int)Reverser) return false;
