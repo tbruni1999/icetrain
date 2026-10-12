@@ -1,0 +1,87 @@
+using SurvivalEnTren.Interaction;
+using UnityEngine;
+
+namespace SurvivalEnTren.Survival
+{
+    /// <summary>
+    /// Temperatura del aire dentro del tren (secciones 7, 19 y 20.7): la calefacción la empuja hacia
+    /// su temperatura objetivo; se pierde calor hacia afuera por las paredes y mucho más por cada
+    /// puerta abierta. Así, al cerrar la puerta, vuelve el calor.
+    /// - El volumen interior es una caja en coordenadas del tren (se mueve con el tren).
+    /// - Avanza con el reloj del juego, también en las horas que se saltan (dormir).
+    /// - En M6 la calefacción va a depender del combustible (sección 8.1): por ahora siempre funciona.
+    /// </summary>
+    public class TrainInteriorClimate : MonoBehaviour
+    {
+        private const float SkipStepHours = 0.05f;
+
+        [SerializeField] private SurvivalSettings settings;
+        [SerializeField] private GameClock clock;
+        [Tooltip("Centro y tamaño del espacio interior, en coordenadas del tren (metros).")]
+        [SerializeField] private Vector3 interiorCenter;
+        [SerializeField] private Vector3 interiorSize = Vector3.one;
+
+        [Header("Calefacción y pérdidas (valores generosos)")]
+        [Tooltip("Temperatura a la que la calefacción lleva el interior, en °C (refugio precario: templado, no cálido).")]
+        [SerializeField, Range(-10f, 30f)] private float heaterTargetC = 15f;
+        [Tooltip("Cuántos grados por hora puede subir la calefacción el aire interior.")]
+        [SerializeField, Range(0f, 200f)] private float heaterPowerCPerHour = 30f;
+        [Tooltip("Pérdida por las paredes: fracción de la diferencia con el exterior que se pierde por hora.")]
+        [SerializeField, Range(0f, 5f)] private float wallLossPerHour = 0.5f;
+        [Tooltip("Pérdida extra por cada puerta abierta: fracción de la diferencia con el exterior por hora.")]
+        [SerializeField, Range(0f, 20f)] private float openDoorLossPerHour = 3f;
+
+        private SlidingDoor[] _doors;
+
+        public float InteriorTemperatureC { get; private set; }
+        /// <summary>La calefacción está encendida (en M6 dependerá del combustible).</summary>
+        public bool HeaterOn { get; set; } = true;
+        public int OpenDoors { get; private set; }
+
+        private void Awake()
+        {
+            _doors = GetComponentsInChildren<SlidingDoor>();
+            InteriorTemperatureC = heaterTargetC;
+        }
+
+        private void OnEnable() => clock.Skipped += OnSkipped;
+        private void OnDisable() => clock.Skipped -= OnSkipped;
+
+        private void Update() => Simulate(clock.DeltaHours);
+
+        private void OnSkipped(float hours)
+        {
+            for (float done = 0f; done < hours; done += SkipStepHours)
+                Simulate(Mathf.Min(SkipStepHours, hours - done));
+        }
+
+        private void Simulate(float hours)
+        {
+            if (hours <= 0f) return;
+            OpenDoors = 0;
+            foreach (SlidingDoor door in _doors)
+                if (door.IsOpen) OpenDoors++;
+
+            float outside = settings.OutsideTemperatureC;
+            float t = InteriorTemperatureC;
+            float heating = HeaterOn ? heaterPowerCPerHour * Mathf.Clamp01((heaterTargetC - t) / 2f) : 0f;
+            float loss = (wallLossPerHour + openDoorLossPerHour * OpenDoors) * (t - outside);
+            InteriorTemperatureC = t + (heating - loss) * hours;
+        }
+
+        /// <summary>¿Este punto del mundo está dentro del espacio interior del tren?</summary>
+        public bool Contains(Vector3 worldPoint)
+        {
+            Vector3 local = transform.InverseTransformPoint(worldPoint) - interiorCenter;
+            Vector3 half = interiorSize * 0.5f;
+            return Mathf.Abs(local.x) <= half.x && Mathf.Abs(local.y) <= half.y && Mathf.Abs(local.z) <= half.z;
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            Gizmos.matrix = transform.localToWorldMatrix;
+            Gizmos.color = new Color(1f, 0.6f, 0.3f, 0.4f);
+            Gizmos.DrawWireCube(interiorCenter, interiorSize);
+        }
+    }
+}

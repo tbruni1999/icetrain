@@ -211,7 +211,7 @@ namespace SurvivalEnTren.EditorTools
             SetReference(overlay, "toggleOverlay", FindActionReference("Debug/ToggleOverlay"));
 
             // Supervivencia (M4): solo en la escena de conducción, para no afectar las pruebas del spike.
-            if (kind == Kind.Driving) BuildSurvival(motor, overlay);
+            if (kind == Kind.Driving) BuildSurvival(motor, train, overlay);
 
             string path = kind == Kind.Spike ? SpikeScenePath : DrivingScenePath;
             EditorSceneManager.SaveScene(scene, path);
@@ -221,7 +221,7 @@ namespace SurvivalEnTren.EditorTools
 
         // ---------------------------------------------------------------- Supervivencia (M4)
 
-        private static void BuildSurvival(PlayerMotor motor, SpikeOverlay overlay)
+        private static void BuildSurvival(PlayerMotor motor, GameObject train, SpikeOverlay overlay)
         {
             SurvivalSettings settings = LoadOrCreateAsset<SurvivalSettings>(SurvivalSettingsPath);
 
@@ -229,16 +229,37 @@ namespace SurvivalEnTren.EditorTools
             var clock = clockObject.AddComponent<GameClock>();
             SetReference(clock, "settings", settings);
 
+            // Clima interior del tren: del tabique de la sala de máquinas al frente, de pared a pared.
+            var climate = train.AddComponent<TrainInteriorClimate>();
+            SetReference(climate, "settings", settings);
+            SetReference(climate, "clock", clock);
+            var climateSo = new SerializedObject(climate);
+            climateSo.FindProperty("interiorCenter").vector3Value =
+                new Vector3(0f, (FloorTop + RoofBottom) * 0.5f, (EngineRoomFrontZ + BodyHalfLength) * 0.5f);
+            climateSo.FindProperty("interiorSize").vector3Value =
+                new Vector3(InnerHalfWidth * 2f, RoofBottom - FloorTop, BodyHalfLength - EngineRoomFrontZ);
+            climateSo.ApplyModifiedPropertiesWithoutUndo();
+
             var vitals = motor.gameObject.AddComponent<PlayerVitals>();
             SetReference(vitals, "settings", settings);
             SetReference(vitals, "clock", clock);
             SetReference(vitals, "motor", motor);
+
+            var sensor = motor.gameObject.AddComponent<ThermalSensor>();
+            SetReference(sensor, "vitals", vitals);
+            SetReference(sensor, "probe", motor.transform);
+            var climates = new SerializedObject(sensor);
+            var list = climates.FindProperty("climates");
+            list.arraySize = 1;
+            list.GetArrayElementAtIndex(0).objectReferenceValue = climate;
+            climates.ApplyModifiedPropertiesWithoutUndo();
 
             var hud = motor.gameObject.AddComponent<SurvivalHud>();
             SetReference(hud, "vitals", vitals);
 
             SetReference(overlay, "vitals", vitals);
             SetReference(overlay, "clock", clock);
+            SetReference(overlay, "climate", climate);
             SetReference(overlay, "timeFast", FindActionReference("Debug/TimeFast"));
         }
 

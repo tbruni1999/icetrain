@@ -29,6 +29,7 @@ namespace SurvivalEnTren.Spike
         [Tooltip("Opcional: supervivencia (M4).")]
         [SerializeField] private PlayerVitals vitals;
         [SerializeField] private GameClock clock;
+        [SerializeField] private TrainInteriorClimate climate;
         [SerializeField] private InputActionReference timeFast;
         [Tooltip("Cuánto se acelera el reloj con F2, para probar.")]
         [SerializeField] private float timeFastMultiplier = 30f;
@@ -112,7 +113,7 @@ namespace SurvivalEnTren.Spike
                 trainKeys + "\n" +
                 "Jugador:  WASD caminar   Shift correr   mouse mirar   Espacio saltar   E usar\n" +
                 "Prueba:  G soltar caja   T reiniciar medición de cajas   F1 ocultar este panel   (Esc libera el mouse)";
-            GUI.Box(new Rect(12, 12, 860, vitals != null ? 256 : 236), text, _style);
+            GUI.Box(new Rect(12, 12, 860, vitals != null ? 276 : 236), text, _style);
         }
 
         private string SurvivalLine()
@@ -120,7 +121,8 @@ namespace SurvivalEnTren.Spike
             if (vitals == null || clock == null) return "";
             int hour = Mathf.FloorToInt(clock.HourOfDay);
             int minute = Mathf.FloorToInt((clock.HourOfDay - hour) * 60f);
-            return $"Reloj {hour:00}:{minute:00} (x{clock.SpeedMultiplier:0}, F2 acelera)   aire {vitals.AmbientTemperatureC:0} °C   " +
+            string interior = climate != null ? $"   interior del tren {climate.InteriorTemperatureC:0} °C (puertas abiertas {climate.OpenDoors})" : "";
+            return $"Reloj {hour:00}:{minute:00} (x{clock.SpeedMultiplier:0}, F2 acelera)   aire alrededor {vitals.AmbientTemperatureC:0} °C{interior}\n" +
                    $"vida {vitals.Health:0}  comida {vitals.Satiety:0}  energía {vitals.Energy:0}  calor {vitals.Warmth:0}\n";
         }
 
