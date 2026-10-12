@@ -62,3 +62,26 @@ Se corre todo el mundo X metros en el eje X (el tren va siempre a 60 km/h; la di
 **Lectura**: la estrategia A sola se degrada con la distancia (precisión de números con coma de 32 bits). A 5 km ya hay deriva medible del jugador (~1 cm por minuto); a 20 km es claramente visible (las cajas tiemblan ~1 cm, el jugador se corre 7 cm por minuto); a 100 km es inusable. Conclusión provisional: si la red ferroviaria va a superar unos pocos kilómetros, hace falta la estrategia C (A + re-centrar el mundo cada ~2 km). Repetir la medición de 10 km.
 
 **Límites de esta medición**: B (mundo que se mueve) y C (re-centrado) todavía no están construidas.
+
+## Análisis: qué tamaño de mundo pide el documento (PROPUESTA, para validar con Tomi)
+
+El documento no fija distancias. Estimación a partir de lo que sí dice:
+- Sección 14.3: "mucho espacio vacío entre señales; la soledad pierde fuerza si cada treinta segundos aparece otro edificio". A 60 km/h, 30 s son 500 m, así que los POIs deberían quedar a 1–3 km o más entre sí. Sección 2: "no colocar un POI cada pocos metros; el vacío y la espera son parte del tono".
+- Sección 20: del despertar (00:00) a la estación de mantenimiento (10:00) hay un viaje; a 40–60 km/h, unos minutos de viaje ya son 2–5 km.
+- Sección 21.2 (V1): estación + 2–4 POIs + bifurcación, con distancias de silencio entre ellos: del orden de **10–20 km de vía** solo para la slice.
+- Sección 22.4 y Anexo D: el juego completo son regiones/chunks a lo largo de una red con bifurcaciones: **decenas o cientos de km**.
+
+Conclusión: la V1 ya pasa el límite de ~5 km donde la estrategia A sola empieza a degradarse.
+
+## Análisis: las tres estrategias según optimización (expectativa razonada, falta medir B y C)
+
+| | A: tren se mueve | B: mundo se mueve | C: A + re-centrado |
+|---|---|---|---|
+| Costo por cuadro | Mínimo (se mueve 1 tren) | Alto: mover todo lo cargado (terreno, POIs, colisiones) cada cuadro | Mínimo entre re-centrados |
+| Costo puntual | — | — | Un pico al re-centrar (cada ~2 km): mover las raíces de las regiones cargadas y reubicar físicas |
+| Física | Normal | Los colisionadores "estáticos" pasan a ser móviles: más costo y más riesgo | Normal |
+| Optimizaciones de Unity que asumen objetos quietos (batching estático, luz horneada, occlusion culling horneado, sondas de luz) | Compatibles | Se rompen o no sirven | Riesgo a verificar: hay que confirmar cuáles toleran que se muevan las regiones al re-centrar |
+| Lejos del origen | Falla desde ~5 km (medido) | Sin problema | Sin problema |
+| POIs, guardado, sonda (Anexo C.1) | Simple | Complicado | Simple si las posiciones se guardan como "tramo + distancia" (ya es así) |
+
+Expectativa: C es la mejor para optimización y escala; B es la peor (paga el costo todos los cuadros y anula optimizaciones de objetos estáticos); A sola no alcanza para el tamaño del mundo. Esto es razonamiento, no medición: el Anexo C pide medir antes de elegir.
