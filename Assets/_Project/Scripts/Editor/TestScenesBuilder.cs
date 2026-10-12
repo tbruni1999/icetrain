@@ -83,7 +83,7 @@ namespace SurvivalEnTren.EditorTools
 
         private class Palette
         {
-            public Material Snow, Ballast, Track, Body, Floor, Furniture, Controls, Fuel, Post, PostMarker, Box;
+            public Material Snow, Ballast, Track, Body, Floor, Furniture, Controls, Fuel, Post, PostMarker, Box, Food;
         }
 
         [MenuItem("Survival en tren/M1/Construir escena Spike (tren estable)")]
@@ -211,7 +211,7 @@ namespace SurvivalEnTren.EditorTools
             SetReference(overlay, "toggleOverlay", FindActionReference("Debug/ToggleOverlay"));
 
             // Supervivencia (M4): solo en la escena de conducción, para no afectar las pruebas del spike.
-            if (kind == Kind.Driving) BuildSurvival(motor, train, overlay);
+            if (kind == Kind.Driving) BuildSurvival(motor, train, overlay, palette);
 
             string path = kind == Kind.Spike ? SpikeScenePath : DrivingScenePath;
             EditorSceneManager.SaveScene(scene, path);
@@ -221,7 +221,7 @@ namespace SurvivalEnTren.EditorTools
 
         // ---------------------------------------------------------------- Supervivencia (M4)
 
-        private static void BuildSurvival(PlayerMotor motor, GameObject train, SpikeOverlay overlay)
+        private static void BuildSurvival(PlayerMotor motor, GameObject train, SpikeOverlay overlay, Palette p)
         {
             SurvivalSettings settings = LoadOrCreateAsset<SurvivalSettings>(SurvivalSettingsPath);
 
@@ -256,6 +256,35 @@ namespace SurvivalEnTren.EditorTools
 
             var hud = motor.gameObject.AddComponent<SurvivalHud>();
             SetReference(hud, "vitals", vitals);
+
+            // Despertar después de desmayarse (DECISIÓN de Tomi): en la cama del tren.
+            var fader = motor.gameObject.AddComponent<ScreenFader>();
+            var respawn = motor.gameObject.AddComponent<SurvivalRespawn>();
+            SetReference(respawn, "vitals", vitals);
+            SetReference(respawn, "motor", motor);
+            SetReference(respawn, "carrier", motor.GetComponent<PlayerCarrier>());
+            SetReference(respawn, "fader", fader);
+            SetReference(respawn, "bed", train.GetComponentInChildren<Bed>());
+
+            // Tres raciones básicas en el estante del taller (sección 4: "pocas raciones básicas").
+            var food = new GameObject("Comida_Tren").transform;
+            void Ration(string name, Vector3 local)
+            {
+                var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                go.name = name;
+                go.transform.SetParent(food, false);
+                go.transform.localScale = new Vector3(0.18f, 0.1f, 0.12f);
+                go.transform.SetPositionAndRotation(train.transform.TransformPoint(local), train.transform.rotation);
+                go.GetComponent<MeshRenderer>().sharedMaterial = p.Food;
+                var body = go.AddComponent<Rigidbody>();
+                body.mass = 0.4f;
+                body.interpolation = RigidbodyInterpolation.Interpolate;
+                go.AddComponent<FoodItem>();
+            }
+            float topShelf = FloorTop + 1.33f + 0.03f + 0.06f;
+            Ration("Racion_1", new Vector3(InnerHalfWidth - 0.2f, topShelf, -2.2f));
+            Ration("Racion_2", new Vector3(InnerHalfWidth - 0.2f, topShelf, -1.75f));
+            Ration("Racion_3", new Vector3(InnerHalfWidth - 0.2f, topShelf, -1.45f));
 
             SetReference(overlay, "vitals", vitals);
             SetReference(overlay, "clock", clock);
@@ -423,7 +452,7 @@ namespace SurvivalEnTren.EditorTools
             BoxMinMax("Cabina_ConsolaSonda", cab, new Vector3(-InnerHalfWidth, FloorTop, 6.8f), new Vector3(-(InnerHalfWidth - 0.6f), FloorTop + 1.2f, 7.6f), p.Controls);
 
             var rest = Group("Zona_Descanso", interior);
-            BoxMinMax("Descanso_Cama", rest, new Vector3(InnerHalfWidth - 0.9f, FloorTop, 3.5f), new Vector3(InnerHalfWidth, FloorTop + 0.45f, 5.5f), p.Furniture);
+            BoxMinMax("Descanso_Cama", rest, new Vector3(InnerHalfWidth - 0.9f, FloorTop, 3.5f), new Vector3(InnerHalfWidth, FloorTop + 0.45f, 5.5f), p.Furniture).AddComponent<Bed>(); // hoy: "lugar miserable" (M4); se mejora en M8
             BoxMinMax("Descanso_Calefaccion", rest, new Vector3(-InnerHalfWidth, FloorTop, 3.8f), new Vector3(-(InnerHalfWidth - 0.6f), FloorTop + 0.9f, 4.4f), p.Controls);
 
             var workshop = Group("Zona_Taller", interior);
@@ -810,6 +839,7 @@ namespace SurvivalEnTren.EditorTools
                 Post = Mat("Poste", new Color(0.25f, 0.25f, 0.27f)),
                 PostMarker = Mat("Poste_Marca", new Color(0.85f, 0.35f, 0.15f)),
                 Box = Mat("Caja", new Color(0.62f, 0.45f, 0.26f)),
+                Food = Mat("Comida", new Color(0.55f, 0.68f, 0.38f)),
             };
         }
 

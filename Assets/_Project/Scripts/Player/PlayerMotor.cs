@@ -184,6 +184,23 @@ namespace SurvivalEnTren.Player
             }
         }
 
+        /// <summary>
+        /// Pone al jugador en un punto, viajando con esa plataforma (o en el mundo fijo si es null).
+        /// Para despertar en la cama del tren, pruebas, etc.
+        /// </summary>
+        public void TeleportTo(Vector3 worldPosition, Rigidbody platform)
+        {
+            _body.enabled = false;
+            transform.position = worldPosition;
+            _body.enabled = true;
+            Physics.SyncTransforms();
+            _platform = platform;
+            _inheritedVelocity = Vector3.zero;
+            _verticalSpeed = 0f;
+            _tickStartPosition = worldPosition;
+            _currentLocal = _previousLocal = ToReferenceLocal(worldPosition);
+        }
+
         // Busca piso a menos de un escalón debajo del cuerpo y, si lo hay, baja hasta él.
         private bool SnapDownToGround()
         {
