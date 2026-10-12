@@ -11,6 +11,7 @@ namespace SurvivalEnTren.Player
     /// Cómo acompaña al tren (estrategia A del spike, Anexo C):
     /// - Todo se calcula en FixedUpdate, el mismo "tic" de física en el que se mueve el tren,
     ///   y antes que el tren (orden de ejecución -100), así ve la pose del tren ya aplicada.
+    /// - Plataforma es cualquier cuerpo físico que pise: el tren o una caja encima del tren.
     /// - Mientras pisa una plataforma, se guarda la posición del jugador relativa a ella;
     ///   en cada tic primero se lo lleva con la plataforma y después se aplica su caminata.
     ///   No se usa parenting (el documento pide no confiar en eso sin pruebas).
@@ -168,9 +169,10 @@ namespace SurvivalEnTren.Player
             if (hit.normal.y < GroundNormalMinY) return;
             _groundHit = true;
 
-            // Cualquier cuerpo cinemático (movido por código, como el tren) cuenta como plataforma.
+            // Cualquier cuerpo físico cuenta como plataforma: el tren, o una caja apoyada en el tren
+            // (si la caja viaja con el tren, el jugador parado encima viaja con la caja).
             Rigidbody body = hit.collider.attachedRigidbody;
-            if (body != null && body.isKinematic) _groundBody = body;
+            if (body != null) _groundBody = body;
         }
 
         private void SetReference(Rigidbody platform)

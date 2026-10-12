@@ -1,4 +1,6 @@
 // Prueba automática del paso 5 del M1 (bajar/subir del tren). No es parte del juego.
+// IMPORTANTE: la ventana de Unity tiene que estar al frente (con foco); si no, el teclado virtual
+// no llega al juego y el jugador no se mueve (las "bajadas" fallan y las "subidas" dan OK sin moverse).
 // Cómo correrla: con la escena Spike_TrenEstable en Play, permitir teclado virtual y luego
 //   unity command eval_file --file "Tools/SpikeTests/bajar_subir.cs"
 // (antes: Application.runInBackground = true y, en InputSystem.settings, backgroundBehavior = IgnoreFocus y
