@@ -54,6 +54,10 @@ namespace SurvivalEnTren.Survival
         [SerializeField, Range(0f, 100f)] private float regenMinSatiety = 40f;
         [SerializeField, Range(0f, 100f)] private float regenMinWarmth = 50f;
         [SerializeField, Range(0f, 100f)] private float regenMinEnergy = 30f;
+        [Tooltip("Velocidad de caída que no hace daño, en m/s (8 ≈ caer de unos 2 m).")]
+        [SerializeField, Range(1f, 30f)] private float fallSafeSpeedMetersPerSecond = 8f;
+        [Tooltip("Daño por cada m/s de caída por encima de la velocidad segura (12: caer de 5 m quita ~50).")]
+        [SerializeField, Range(0f, 50f)] private float fallDamagePerMetersPerSecond = 12f;
 
         [Header("Al morir (DECISIÓN de Tomi: castigo de recursos, no de progreso)")]
         [Tooltip("Horas de juego que pasan hasta despertar en la cama del tren.")]
@@ -80,6 +84,8 @@ namespace SurvivalEnTren.Survival
         public float RegenMinSatiety => regenMinSatiety;
         public float RegenMinWarmth => regenMinWarmth;
         public float RegenMinEnergy => regenMinEnergy;
+        public float FallSafeSpeedMetersPerSecond => fallSafeSpeedMetersPerSecond;
+        public float FallDamagePerMetersPerSecond => fallDamagePerMetersPerSecond;
         public float KnockoutHours => knockoutHours;
         public Vector4 WakeUpVitals => wakeUpVitals;
     }

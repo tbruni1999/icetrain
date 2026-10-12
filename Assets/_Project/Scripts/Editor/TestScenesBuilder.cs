@@ -12,6 +12,8 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 namespace SurvivalEnTren.EditorTools
 {
@@ -39,6 +41,7 @@ namespace SurvivalEnTren.EditorTools
         private const string InteractionSettingsPath = "Assets/_Project/Data/Interaction/InteractionSettings.asset";
         private const string CarrySettingsPath = "Assets/_Project/Data/Interaction/CarrySettings.asset";
         private const string SurvivalSettingsPath = "Assets/_Project/Data/Survival/SurvivalSettings.asset";
+        private const string BodyFeedbackProfilePath = "Assets/_Project/Data/Survival/BodyFeedbackProfile.asset";
         private const string InputPath = "Assets/_Project/Data/Input/IceTrainInput.inputactions";
 
         // Vía de prueba: un óvalo de dos rectas y dos curvas (~2,46 km por vuelta).
@@ -257,6 +260,33 @@ namespace SurvivalEnTren.EditorTools
             var hud = motor.gameObject.AddComponent<SurvivalHud>();
             SetReference(hud, "vitals", vitals);
 
+            // Feedback del cuerpo (frío, cansancio, vida baja) con el postproceso de URP: un Volume global
+            // con viñeta y ajustes de color, y la cámara del jugador con postproceso activado.
+            var profile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(BodyFeedbackProfilePath);
+            if (profile == null)
+            {
+                profile = ScriptableObject.CreateInstance<VolumeProfile>();
+                AssetDatabase.CreateAsset(profile, BodyFeedbackProfilePath);
+                foreach (VolumeComponent component in new VolumeComponent[]
+                         { profile.Add<Vignette>(true), profile.Add<ColorAdjustments>(true), profile.Add<WhiteBalance>(true) })
+                {
+                    component.name = component.GetType().Name;
+                    AssetDatabase.AddObjectToAsset(component, profile);
+                }
+                AssetDatabase.SaveAssets();
+            }
+            var volumeObject = new GameObject("Postproceso_Cuerpo");
+            var volume = volumeObject.AddComponent<Volume>();
+            volume.isGlobal = true;
+            volume.sharedProfile = profile;
+            motor.transform.Find("Cabeza").GetComponent<Camera>().GetUniversalAdditionalCameraData().renderPostProcessing = true;
+
+            var feedback = motor.gameObject.AddComponent<BodyFeedback>();
+            SetReference(feedback, "vitals", vitals);
+            SetReference(feedback, "head", motor.transform.Find("Cabeza"));
+            SetReference(feedback, "volume", volume);
+            SetReference(feedback, "breathMaterial", BreathMaterial());
+
             // Despertar después de desmayarse (DECISIÓN de Tomi): en la cama del tren.
             var fader = motor.gameObject.AddComponent<ScreenFader>();
             var respawn = motor.gameObject.AddComponent<SurvivalRespawn>();
@@ -290,6 +320,29 @@ namespace SurvivalEnTren.EditorTools
             SetReference(overlay, "clock", clock);
             SetReference(overlay, "climate", climate);
             SetReference(overlay, "timeFast", FindActionReference("Debug/TimeFast"));
+        }
+
+        // Material transparente para el vaho (partículas sin iluminación de URP).
+        private static Material BreathMaterial()
+        {
+            string path = $"{MaterialsFolder}/Vaho.mat";
+            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (material == null)
+            {
+                material = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
+                AssetDatabase.CreateAsset(material, path);
+            }
+            material.SetFloat("_Surface", 1f); // transparente
+            material.SetFloat("_Blend", 0f);   // alpha
+            material.SetOverrideTag("RenderType", "Transparent");
+            material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            material.SetInt("_ZWrite", 0);
+            material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            material.SetColor("_BaseColor", new Color(1f, 1f, 1f, 0.6f));
+            EditorUtility.SetDirty(material);
+            return material;
         }
 
         // ---------------------------------------------------------------- Cajas de prueba

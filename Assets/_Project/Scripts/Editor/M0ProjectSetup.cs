@@ -33,6 +33,8 @@ namespace SurvivalEnTren.EditorTools
                 Debug.Log("[M0] Assets de URP creados en " + RenderingFolder);
             }
 
+            EnsurePostProcessData();
+
             GraphicsSettings.defaultRenderPipeline = pipeline;
             for (int i = 0; i < QualitySettings.names.Length; i++)
             {
@@ -80,6 +82,22 @@ namespace SurvivalEnTren.EditorTools
             so.ApplyModifiedProperties();
             Debug.Log("[M0] Active Input Handling = Input System Package (New).");
             return true;
+        }
+
+        // El renderer creado por código no trae los datos de postproceso de URP, y sin ellos no se dibuja
+        // ningún efecto de pantalla (viñeta, color...). Se le asignan los datos por defecto del paquete.
+        private static void EnsurePostProcessData()
+        {
+            const string defaultDataPath = "Packages/com.unity.render-pipelines.universal/Runtime/Data/PostProcessData.asset";
+            var renderer = AssetDatabase.LoadAssetAtPath<UniversalRendererData>(RendererPath);
+            if (renderer == null) return;
+            var so = new SerializedObject(renderer);
+            SerializedProperty data = so.FindProperty("postProcessData");
+            if (data == null || data.objectReferenceValue != null) return;
+            data.objectReferenceValue = AssetDatabase.LoadAssetAtPath<PostProcessData>(defaultDataPath);
+            so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(renderer);
+            Debug.Log("[M0] Postproceso de URP activado en el renderer (datos por defecto del paquete).");
         }
 
         private static void EnsureFolder(string parent, string name)

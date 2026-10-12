@@ -53,11 +53,20 @@ namespace SurvivalEnTren.Survival
         private void OnEnable()
         {
             clock.Skipped += OnClockSkipped;
+            motor.Landed += OnLanded;
         }
 
         private void OnDisable()
         {
             clock.Skipped -= OnClockSkipped;
+            motor.Landed -= OnLanded;
+        }
+
+        // Caídas (sección 7: la vida representa lesiones, incluidas las caídas).
+        private void OnLanded(float fallSpeed)
+        {
+            float excess = fallSpeed - settings.FallSafeSpeedMetersPerSecond;
+            if (excess > 0f) ApplyDamage(excess * settings.FallDamagePerMetersPerSecond);
         }
 
         private void Update()

@@ -74,6 +74,9 @@ namespace SurvivalEnTren.Player
         public bool CanRun { get; set; } = true;
         /// <summary>True mientras corre de verdad (Shift + moviéndose + apoyado).</summary>
         public bool IsRunning { get; private set; }
+
+        /// <summary>Se dispara al tocar el piso después de estar en el aire, con la velocidad de caída (m/s, positiva).</summary>
+        public event System.Action<float> Landed;
         public PlayerMotorSettings Settings => settings;
 
         private void Awake()
@@ -152,7 +155,9 @@ namespace SurvivalEnTren.Player
             _groundHit = false;
             _groundBody = null;
             bool wasGrounded = _body.isGrounded;
+            float fallSpeed = -_verticalSpeed;
             _body.Move(velocity * dt);
+            if (!wasGrounded && _body.isGrounded && fallSpeed > 0f) Landed?.Invoke(fallSpeed);
 
             // Salió caminando de un borde (sin saltar). Si el piso está a menos de un escalón (bajar de
             // una caja, de un escalón), baja pegado a él como en una escalera. Si es una caída real,
