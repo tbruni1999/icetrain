@@ -1,3 +1,4 @@
+using SurvivalEnTren.Equipment;
 using SurvivalEnTren.Player;
 using SurvivalEnTren.Survival;
 using SurvivalEnTren.Train;
@@ -32,6 +33,8 @@ namespace SurvivalEnTren.Spike
         [SerializeField] private TrainInteriorClimate climate;
         [Tooltip("Opcional: combustible del tren (M6).")]
         [SerializeField] private FuelTank fuel;
+        [Tooltip("Opcional: equipo del jugador (M6).")]
+        [SerializeField] private PlayerGear gear;
         [SerializeField] private InputActionReference timeFast;
         [Tooltip("Cuánto se acelera el reloj con F2, para probar.")]
         [SerializeField] private float timeFastMultiplier = 30f;
@@ -133,7 +136,9 @@ namespace SurvivalEnTren.Spike
         {
             if (fuel == null) return "";
             string heater = climate == null ? "" : climate.FuelStarved ? "   calefacción SIN combustible" : "   calefacción encendida";
-            return $"combustible {fuel.Liters:0.0} / {fuel.Capacity:0} L{(fuel.IsEmpty ? " (VACÍO)" : fuel.IsLow ? " (reserva)" : "")}{heater}\n";
+            string equipment = gear == null ? "" :
+                $"   equipo: barreta {(gear.Has(GearId.Crowbar) ? "sí" : "no")}, bomba {(gear.Has(GearId.HandPump) ? "sí" : "no")}, traje {(gear.SuitWorn ? "puesto" : "no")}";
+            return $"combustible {fuel.Liters:0.0} / {fuel.Capacity:0} L{(fuel.IsEmpty ? " (VACÍO)" : fuel.IsLow ? " (reserva)" : "")}{heater}{equipment}\n";
         }
 
         private static string ReverserName(ReverserPosition position)

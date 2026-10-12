@@ -38,6 +38,8 @@ namespace SurvivalEnTren.Survival
         /// <summary>Recuperación de energía por hora mientras duerme (la pone la cama).</summary>
         public float SleepRecoveryPerHour { get; set; }
         public bool IsSleeping { get; set; }
+        /// <summary>Multiplica la pérdida de calor del cuerpo (1 = normal; el traje la baja). Lo pone PlayerGear.</summary>
+        public float CoolingMultiplier { get; set; } = 1f;
         public bool IsHungry => Satiety < settings.HungryThreshold;
         public SurvivalSettings Settings => settings;
         public GameClock Clock => clock;
@@ -94,7 +96,7 @@ namespace SurvivalEnTren.Survival
             float comfort = settings.ComfortTemperatureC;
             float warmthChange = AmbientTemperatureC >= comfort
                 ? settings.WarmingPerHour
-                : -settings.CoolingPerHourPerDegree * (comfort - AmbientTemperatureC);
+                : -settings.CoolingPerHourPerDegree * CoolingMultiplier * (comfort - AmbientTemperatureC);
             Warmth = Mathf.Clamp(Warmth + warmthChange * hours, 0f, MaxValue);
 
             // Energía.

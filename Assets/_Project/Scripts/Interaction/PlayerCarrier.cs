@@ -85,6 +85,7 @@ namespace SurvivalEnTren.Interaction
             if (_held == null) return;
             Rigidbody body = _held.Body;
             float dt = Time.fixedDeltaTime;
+            motor.SpeedMultiplier = settings.WalkSpeedFactor(body.mass); // el peso puede cambiar (un bidón que se llena)
 
             Vector3 eye = motor.transform.position + Vector3.up * motor.Settings.EyeHeightMeters;
             Vector3 target = eye + LookDirection() * settings.HoldDistanceMeters;

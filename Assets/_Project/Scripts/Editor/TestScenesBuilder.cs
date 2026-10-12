@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using SurvivalEnTren.Equipment;
 using SurvivalEnTren.Interaction;
 using SurvivalEnTren.Player;
 using SurvivalEnTren.Probe;
@@ -336,7 +337,108 @@ namespace SurvivalEnTren.EditorTools
             SetReference(overlay, "clock", clock);
             SetReference(overlay, "climate", climate);
             SetReference(overlay, "fuel", train.GetComponent<FuelTank>());
+            BuildEquipment(motor, train, vitals, overlay, p);
             SetReference(overlay, "timeFast", FindActionReference("Debug/TimeFast"));
+        }
+
+        // ---------------------------------------------------------------- Equipo y combustible (M6)
+
+        // Rincón de equipo del tren (junto a la puerta de atrás, pared izquierda): perchero con el traje y
+        // la barreta, y dos bidones en el piso. Más un vehículo abandonado cerca de la vía para sifonar.
+        // El equipo del jugador (PlayerGear) y los objetos que se usan con E.
+        private static void BuildEquipment(PlayerMotor motor, GameObject train, PlayerVitals vitals, SpikeOverlay overlay, Palette p)
+        {
+            FuelSettings fuel = LoadOrCreateAsset<FuelSettings>(FuelSettingsPath);
+
+            var gear = motor.gameObject.AddComponent<PlayerGear>();
+            SetReference(gear, "vitals", vitals);
+            SetReference(overlay, "gear", gear);
+
+            var corner = Group("Equipo_Tren", train.transform);
+            float wall = -InnerHalfWidth;
+
+            // Perchero: tabla en la pared con el traje colgado (se ve mientras no lo llevás puesto).
+            Material suitMat = Mat("Traje", new Color(0.88f, 0.48f, 0.12f));
+            var board = BoxMinMax("Perchero", corner, new Vector3(wall, FloorTop + 0.95f, -7.35f), new Vector3(wall + 0.05f, FloorTop + 2.0f, -6.6f), p.Furniture);
+            var hanging = Group("Traje_Colgado", corner); // hermano del perchero (el perchero está escalado: no puede ser su padre)
+            BoxMinMax("Traje_Torso", hanging, new Vector3(wall + 0.05f, FloorTop + 1.15f, -7.28f), new Vector3(wall + 0.17f, FloorTop + 1.85f, -6.97f), suitMat, false);
+            BoxMinMax("Traje_Capucha", hanging, new Vector3(wall + 0.05f, FloorTop + 1.85f, -7.2f), new Vector3(wall + 0.15f, FloorTop + 1.97f, -7.05f), suitMat, false);
+            BoxMinMax("Traje_Piernas", hanging, new Vector3(wall + 0.05f, FloorTop + 1.0f, -7.26f), new Vector3(wall + 0.14f, FloorTop + 1.15f, -6.99f), suitMat, false);
+            var rack = board.AddComponent<SuitRack>();
+            SetReference(rack, "hangingSuit", hanging.gameObject);
+
+            // Barreta colgada de dos ganchos (la herramienta del inicio, sección 4). Una zona transparente
+            // más grande la hace fácil de apuntar.
+            var crowbar = Group("Barreta", corner);
+            BoxMinMax("Hierro", crowbar, new Vector3(wall + 0.05f, FloorTop + 1.0f, -6.82f), new Vector3(wall + 0.11f, FloorTop + 1.8f, -6.76f), p.Track, false);
+            BoxMinMax("Punta", crowbar, new Vector3(wall + 0.05f, FloorTop + 1.78f, -6.82f), new Vector3(wall + 0.17f, FloorTop + 1.84f, -6.76f), p.Track, false);
+            BoxMinMax("Gancho_A", crowbar, new Vector3(wall + 0.05f, FloorTop + 1.55f, -6.85f), new Vector3(wall + 0.09f, FloorTop + 1.6f, -6.73f), p.Furniture, false);
+            BoxMinMax("Gancho_B", crowbar, new Vector3(wall + 0.05f, FloorTop + 1.2f, -6.85f), new Vector3(wall + 0.09f, FloorTop + 1.25f, -6.73f), p.Furniture, false);
+            var crowbarZone = BoxMinMax("Zona_Uso", crowbar, new Vector3(wall + 0.0f, FloorTop + 0.95f, -6.95f), new Vector3(wall + 0.4f, FloorTop + 1.9f, -6.65f), p.Track);
+            crowbarZone.GetComponent<Collider>().isTrigger = true;
+            Object.DestroyImmediate(crowbarZone.GetComponent<MeshRenderer>());
+            var pickup = crowbar.gameObject.AddComponent<GearPickup>();
+            var pickupSo = new SerializedObject(pickup);
+            pickupSo.FindProperty("gear").enumValueIndex = (int)GearId.Crowbar;
+            pickupSo.FindProperty("displayName").stringValue = "barreta";
+            pickupSo.ApplyModifiedPropertiesWithoutUndo();
+
+            // Dos bidones vacíos en el piso (sección 4: "un recipiente/bidón"; acá hay dos para que sobre).
+            Material canMat = Mat("Bidon", new Color(0.7f, 0.16f, 0.1f));
+            var cans = new GameObject("Bidones_Tren").transform;
+            foreach (var (name, x) in new[] { ("Bidon_1", wall + 0.2f), ("Bidon_2", wall + 0.62f) })
+                BuildJerrycan(name, cans, train.transform.TransformPoint(new Vector3(x, FloorTop, -7.2f)), train.transform.rotation, canMat, p, fuel);
+
+            // Vehículo abandonado junto a la vía, a la vista desde la cabina: se saca combustible con sifón.
+            BuildAbandonedVehicle(train.transform, p, fuel);
+        }
+
+        private static void BuildJerrycan(string name, Transform parent, Vector3 position, Quaternion rotation, Material material, Palette p, FuelSettings fuel)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.SetPositionAndRotation(position, rotation);
+            var box = go.AddComponent<BoxCollider>();
+            box.center = new Vector3(0f, 0.23f, 0f);
+            box.size = new Vector3(0.3f, 0.46f, 0.16f);
+            BoxMinMax("Cuerpo", go.transform, new Vector3(-0.15f, 0f, -0.08f), new Vector3(0.15f, 0.4f, 0.08f), material, false);
+            BoxMinMax("Asa", go.transform, new Vector3(-0.08f, 0.4f, -0.03f), new Vector3(0.04f, 0.46f, 0.03f), material, false);
+            BoxMinMax("Pico", go.transform, new Vector3(0.06f, 0.4f, -0.025f), new Vector3(0.13f, 0.45f, 0.025f), p.Fuel, false);
+            var body = go.AddComponent<Rigidbody>();
+            body.interpolation = RigidbodyInterpolation.Interpolate;
+            go.AddComponent<Carryable>();
+            SetReference(go.AddComponent<FuelCan>(), "settings", fuel);
+        }
+
+        // Camioneta enterrada a medias en la nieve, 38 m adelante del tren y 14 m a la derecha. Su tanque
+        // (zona amarilla en el costado) es la fuente: FuelSource con sifón.
+        private static void BuildAbandonedVehicle(Transform train, Palette p, FuelSettings fuel)
+        {
+            Material paint = Mat("Vehiculo", new Color(0.27f, 0.34f, 0.3f));
+            Vector3 spot = train.position + train.forward * 38f + train.right * 14f;
+            var root = Group("Vehiculo_Abandonado", null);
+            root.position = new Vector3(spot.x, 0f, spot.z);
+            root.rotation = Quaternion.Euler(0f, train.eulerAngles.y + 28f, 3f);
+            BoxMinMax("Caja", root, new Vector3(-1.1f, 0.15f, -3.2f), new Vector3(1.1f, 1.45f, 0.4f), paint);
+            BoxMinMax("Cabina", root, new Vector3(-1.05f, 0.15f, 0.4f), new Vector3(1.05f, 1.75f, 2.0f), paint);
+            BoxMinMax("Capot", root, new Vector3(-1.05f, 0.15f, 2.0f), new Vector3(1.05f, 1.15f, 3.1f), paint);
+            BoxMinMax("Parabrisas", root, new Vector3(-0.95f, 1.0f, 1.95f), new Vector3(0.95f, 1.6f, 2.05f), p.Track, false);
+
+            // Tapa y zona del tanque, en el costado derecho (+x del vehículo), detrás de la cabina.
+            var tank = Group("Tanque", root);
+            tank.localPosition = new Vector3(1.1f, 0.8f, -0.4f);
+            BoxMinMax("Tapa", tank, new Vector3(0f, -0.1f, -0.1f), new Vector3(0.06f, 0.1f, 0.1f), p.Fuel, false);
+            var zone = BoxMinMax("Zona_Uso", tank, new Vector3(0f, -0.5f, -0.6f), new Vector3(0.8f, 0.5f, 0.6f), p.Fuel);
+            zone.GetComponent<Collider>().isTrigger = true;
+            Object.DestroyImmediate(zone.GetComponent<MeshRenderer>());
+            var source = tank.gameObject.AddComponent<FuelSource>();
+            SetReference(source, "settings", fuel);
+            var so = new SerializedObject(source);
+            so.FindProperty("stableId").stringValue = "fuel_prueba_vehiculo_001";
+            so.FindProperty("method").enumValueIndex = (int)FuelSource.Method.Siphon;
+            so.FindProperty("displayName").stringValue = "vehículo";
+            so.FindProperty("liters").floatValue = fuel.AbandonedVehicleLiters;
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
 
         // Material transparente para el vaho (partículas sin iluminación de URP).
@@ -578,7 +680,6 @@ namespace SurvivalEnTren.EditorTools
             BuildDoor("Puerta_Derecha", exterior, 1f, p);
             BuildDoor("Puerta_Izquierda", exterior, -1f, p);
 
-            BoxMinMax("Exterior_BocaCombustible", exterior, new Vector3(BodyHalfWidth, FloorTop + 0.3f, -8.7f), new Vector3(BodyHalfWidth + 0.1f, FloorTop + 0.6f, -8.3f), p.Fuel);
 
             // Interior dividido en zonas reservadas para los sistemas de la V1.
             // Son bloques de lugar (placeholders): no tienen funcionamiento todavía.
@@ -603,8 +704,6 @@ namespace SurvivalEnTren.EditorTools
                 BoxMinMax($"Repisa_{h:0.0}", shelf, new Vector3(InnerHalfWidth - 0.4f, FloorTop + h, -2.5f), new Vector3(InnerHalfWidth, FloorTop + h + 0.03f, -0.53f), p.Furniture);
 
             var cargo = Group("Zona_EntradaCarga", interior);
-            BoxMinMax("Carga_Bidon_1", cargo, new Vector3(-InnerHalfWidth, FloorTop, -7.4f), new Vector3(-(InnerHalfWidth - 0.35f), FloorTop + 0.55f, -7.05f), p.Fuel);
-            BoxMinMax("Carga_Bidon_2", cargo, new Vector3(-(InnerHalfWidth - 0.4f), FloorTop, -7.4f), new Vector3(-(InnerHalfWidth - 0.75f), FloorTop + 0.55f, -7.05f), p.Fuel);
 
             var engine = Group("Zona_SalaMaquinas", interior);
             BoxMinMax("SalaMaquinas_Tabique", engine, new Vector3(-BodyHalfWidth + WallThickness, FloorTop, EngineRoomFrontZ - 0.1f), new Vector3(BodyHalfWidth - WallThickness, RoofBottom, EngineRoomFrontZ), p.Body);
@@ -726,6 +825,18 @@ namespace SurvivalEnTren.EditorTools
             var tank = trainRoot.AddComponent<FuelTank>();
             SetReference(tank, "settings", LoadOrCreateAsset<FuelSettings>(FuelSettingsPath));
             SetReference(trainRoot.GetComponent<TrainDynamics>(), "fuel", tank);
+
+            // Boca de carga exterior (zona reservada de la V1), en el costado derecho del chasis, a la altura
+            // de la cintura de quien está parado en la nieve. La zona transparente de adelante la hace fácil
+            // de apuntar: con un bidón en la mano, mantener E carga el tanque.
+            var port = Group("Exterior_BocaCombustible", trainRoot.transform.Find("Exterior"));
+            port.localPosition = new Vector3(BodyHalfWidth - 0.3f, 0.55f, -8.6f);
+            BoxMinMax("Tapa", port, new Vector3(0f, -0.17f, -0.3f), new Vector3(0.1f, 0.17f, 0.3f), p.Fuel);
+            BoxMinMax("Tapa_Asa", port, new Vector3(0.1f, -0.03f, -0.1f), new Vector3(0.14f, 0.03f, 0.1f), p.Track, false);
+            var portZone = BoxMinMax("Zona_Uso", port, new Vector3(0f, -0.35f, -0.5f), new Vector3(0.7f, 0.35f, 0.5f), p.Fuel);
+            portZone.GetComponent<Collider>().isTrigger = true;
+            Object.DestroyImmediate(portZone.GetComponent<MeshRenderer>());
+            SetReference(port.gameObject.AddComponent<FuelPort>(), "tank", tank);
 
             Transform desk = cab.Find("Cabina_Pupitre");
             float top = FloorTop + 1.0f;

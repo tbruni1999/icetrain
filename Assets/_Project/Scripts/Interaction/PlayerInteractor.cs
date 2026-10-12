@@ -27,14 +27,24 @@ namespace SurvivalEnTren.Interaction
         private IInteractable _target;
         private IInteractable _engaged;
         private IInteractable _holding;
+        private IChanneledInteractable _channeling;
+        private PlayerCarrier _carrier;
+        private bool _usableWhileEngaged;
         private float _holdTime;
         private GUIStyle _promptStyle;
 
         public PlayerMotor Motor => motor;
         public Transform Head => head;
+        /// <summary>El jugador está ocupado con algo (manejando o con un objeto en la mano).</summary>
+        public bool IsEngaged => _engaged != null;
         public bool HasTarget => _target != null && !string.IsNullOrEmpty(_target.GetPrompt(this));
         /// <summary>Progreso del "mantener E" actual, de 0 a 1 (0 si no se está manteniendo nada).</summary>
         public float HoldProgress { get; private set; }
+
+        private void Awake()
+        {
+            _carrier = GetComponent<PlayerCarrier>();
+        }
 
         private void OnEnable()
         {
@@ -45,17 +55,43 @@ namespace SurvivalEnTren.Interaction
         {
             _target = FindTarget();
             InputAction action = interact.action;
+            IInteractable usable = _target != null && !string.IsNullOrEmpty(_target.GetPrompt(this)) ? _target : null;
 
-            // Ocupado (manejando): E suelta, sin importar a dónde mira.
-            if (_engaged != null)
+            // Ocupado (manejando, o con algo en la mano): E suelta, sin importar a dónde mira, salvo que
+            // se mire algo que se usa con las manos ocupadas (cargar combustible con el bidón).
+            _usableWhileEngaged = _engaged != null && usable is IUsableWhileCarrying;
+            if (_engaged != null && !_usableWhileEngaged)
             {
                 ResetHold();
+                _channeling = null;
                 if (action.WasPressedThisFrame()) _engaged.Interact(this);
                 return;
             }
 
-            IInteractable usable = _target != null && !string.IsNullOrEmpty(_target.GetPrompt(this)) ? _target : null;
-            if (usable == null || !action.IsPressed())
+            if (usable == null)
+            {
+                ResetHold();
+                _channeling = null;
+                return;
+            }
+
+            // Acción continua (sifonar, cargar): mientras E sigue apretado se avanza un poco cada cuadro.
+            if (usable is IChanneledInteractable channel)
+            {
+                ResetHold();
+                if (_channeling != channel) _channeling = null;
+                if (!action.IsPressed()) return;
+                if (_channeling == null)
+                {
+                    if (!action.WasPressedThisFrame()) return; // hay que apretar de nuevo para reintentar
+                    _channeling = channel;
+                }
+                if (!channel.Channel(this, Time.deltaTime)) _channeling = null;
+                return;
+            }
+            _channeling = null;
+
+            if (!action.IsPressed())
             {
                 ResetHold();
                 return;
@@ -106,10 +142,12 @@ namespace SurvivalEnTren.Interaction
         {
             int count = Physics.RaycastNonAlloc(head.position, head.forward, Hits, settings.ReachMeters, ~0, QueryTriggerInteraction.Collide);
             System.Array.Sort(Hits, 0, count, HitDistanceComparer.Instance);
+            Carryable held = _carrier != null ? _carrier.Holding : null;
             for (int i = 0; i < count; i++)
             {
                 Collider c = Hits[i].collider;
                 if (c.transform.IsChildOf(transform)) continue; // el propio cuerpo
+                if (held != null && c.transform.IsChildOf(held.transform)) continue; // lo que se lleva en la mano no tapa la vista
                 if (c.isTrigger)
                 {
                     // Una zona de interacción (ej. el hueco de una puerta) cuenta; otros triggers se ignoran.
@@ -134,12 +172,12 @@ namespace SurvivalEnTren.Interaction
             }
 
             var center = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
-            IInteractable shown = _engaged ?? _target;
+            IInteractable shown = _engaged != null && !_usableWhileEngaged ? _engaged : _target;
             string prompt = shown?.GetPrompt(this);
             bool usable = !string.IsNullOrEmpty(prompt);
 
             // Punto central: más grande sobre algo usable.
-            float size = usable && _engaged == null ? 8f : 4f;
+            float size = usable && (_engaged == null || _usableWhileEngaged) ? 8f : 4f;
             GUI.color = Color.white;
             GUI.DrawTexture(new Rect(center.x - size * 0.5f, center.y - size * 0.5f, size, size), Texture2D.whiteTexture);
 

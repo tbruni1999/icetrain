@@ -59,6 +59,10 @@ namespace SurvivalEnTren.Survival
         [Tooltip("Daño por cada m/s de caída por encima de la velocidad segura (12: caer de 5 m quita ~50).")]
         [SerializeField, Range(0f, 50f)] private float fallDamagePerMetersPerSecond = 12f;
 
+        [Header("Traje (sección 7: el traje modifica la pérdida térmica)")]
+        [Tooltip("Con el traje puesto, el cuerpo pierde esta fracción del calor que perdería sin él (0,5 = la mitad).")]
+        [SerializeField, Range(0.05f, 1f)] private float suitCoolingFactor = 0.5f;
+
         [Header("Al morir (DECISIÓN de Tomi: castigo de recursos, no de progreso)")]
         [Tooltip("Horas de juego que pasan hasta despertar en la cama del tren.")]
         [SerializeField, Range(0f, 48f)] private float knockoutHours = 6f;
@@ -86,6 +90,7 @@ namespace SurvivalEnTren.Survival
         public float RegenMinEnergy => regenMinEnergy;
         public float FallSafeSpeedMetersPerSecond => fallSafeSpeedMetersPerSecond;
         public float FallDamagePerMetersPerSecond => fallDamagePerMetersPerSecond;
+        public float SuitCoolingFactor => suitCoolingFactor;
         public float KnockoutHours => knockoutHours;
         public Vector4 WakeUpVitals => wakeUpVitals;
     }
