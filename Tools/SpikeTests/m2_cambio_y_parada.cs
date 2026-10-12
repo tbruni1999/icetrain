@@ -34,10 +34,12 @@ System.Collections.IEnumerator Run()
     bool triedBlocked = false, blockedOk = false;
     string lastSeg = Seg(), path = Seg();
     float t = 0f;
-    while (!hitEnd && t < 120f)
+    bool touched = false;
+    while (!(touched && train.SpeedMetersPerSecond <= 0f) && t < 120f)
     {
         yield return wait; t += UnityEngine.Time.fixedDeltaTime;
         maxJitter = UnityEngine.Mathf.Max(maxJitter, ride.JitterMillimeters);
+        if (train.GapToTrackEnd(1) < 0f) touched = true; // la punta entró en el resorte del tope
         if (Seg() != lastSeg) { lastSeg = Seg(); path += " > " + lastSeg; }
         if (!triedBlocked && (train.transform.position - railSwitch.Point).magnitude < 8f)
         {
@@ -48,11 +50,11 @@ System.Collections.IEnumerator Run()
     }
     var spur = train.RailPosition.Segment;
     float frontToEnd = spur.Length - (train.RailPosition.Distance + 9.5f);
-    log.Append($" Recorrido: {path}. Palanca con el tren encima: {(blockedOk ? "trabada (bien)" : "SE MOVIÓ (mal)")}. Tope: {(hitEnd ? "se detuvo" : "NO llegó")}, punta a {frontToEnd:0.0} m del final, v={Kmh():0.0} km/h. Temblor máx. del jugador pasando el cambio: {maxJitter:0.00} mm. Jugador en el tren: {motor.Platform != null}.");
+    log.Append($" Recorrido: {path}. Palanca con el tren encima: {(blockedOk ? "trabada (bien)" : "SE MOVIÓ (mal)")}. Tope: {(touched ? "lo tocó y el resorte lo frenó" : "NO llegó")}{(hitEnd ? " (usó el freno de seguridad)" : "")}, v al soltar el resorte={Kmh():0.0} km/h. Temblor máx. del jugador pasando el cambio: {maxJitter:0.00} mm. Jugador en el tren: {motor.Platform != null}.");
 
     // 3) Marcha atrás por el cambio hasta la recta 1a.
     Brake(4);
-    for (int i = 0; i < 25; i++) yield return wait;
+    while (UnityEngine.Mathf.Abs(train.SpeedMetersPerSecond) > 0.01f) yield return wait; // esperar que termine el rebote
     controls.TryMoveReverser(-1); controls.TryMoveReverser(-1);
     Power(2);
     lastSeg = Seg(); path = Seg(); t = 0f;
