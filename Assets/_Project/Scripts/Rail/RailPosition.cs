@@ -1,0 +1,59 @@
+using UnityEngine;
+
+namespace SurvivalEnTren.Rail
+{
+    /// <summary>
+    /// Dónde está algo sobre la vía: en qué tramo y a cuántos metros de su inicio.
+    /// Es la forma en que el tren conoce su posición (Anexo C.3); sirve después
+    /// para guardar la partida, la sonda y las rutas.
+    /// </summary>
+    [System.Serializable]
+    public struct RailPosition
+    {
+        public RailSegment Segment;
+        public float Distance;
+
+        public RailPosition(RailSegment segment, float distance)
+        {
+            Segment = segment;
+            Distance = distance;
+        }
+
+        public bool IsValid => Segment != null;
+
+        public Vector3 WorldPosition => Segment.GetPosition(Distance);
+        public Vector3 WorldDirection => Segment.GetDirection(Distance);
+
+        /// <summary>
+        /// Devuelve la posición movida "meters" metros (negativo = hacia atrás),
+        /// pasando a los tramos conectados cuando se termina el actual.
+        /// Si no hay tramo conectado, se queda en el extremo.
+        /// </summary>
+        public RailPosition Advanced(float meters)
+        {
+            RailSegment segment = Segment;
+            float distance = Distance + meters;
+
+            // Límite de vueltas por seguridad, por si alguna vez hay tramos de largo cero en bucle.
+            for (int guard = 0; guard < 64; guard++)
+            {
+                if (distance > segment.Length && segment.Next != null)
+                {
+                    distance -= segment.Length;
+                    segment = segment.Next;
+                }
+                else if (distance < 0f && segment.Previous != null)
+                {
+                    segment = segment.Previous;
+                    distance += segment.Length;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return new RailPosition(segment, Mathf.Clamp(distance, 0f, segment.Length));
+        }
+    }
+}

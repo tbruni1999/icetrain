@@ -1,0 +1,75 @@
+{
+    "version": 1,
+    "name": "IceTrainInput",
+    "maps": [
+        {
+            "name": "Debug",
+            "id": "3f0d6a52-8b1e-4c2a-9d47-1a6e5c0b9f01",
+            "actions": [
+                {
+                    "name": "TrainFaster",
+                    "type": "Button",
+                    "id": "8a2c4e61-0f3b-4d95-a1e7-2b9c6d0e4f11",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "TrainSlower",
+                    "type": "Button",
+                    "id": "c71e9b03-5d2a-4f68-b3c0-7e1a9d2f5b22",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "TrainBrake",
+                    "type": "Button",
+                    "id": "e94b2d17-3a6c-4b80-9f51-0c8d7e3a6c33",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "1b6f8c24-9e0d-4a37-8c52-3d7f0a1b8e44",
+                    "path": "<Keyboard>/upArrow",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "TrainFaster",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "5d0a3e86-2c4f-4b19-a7d6-8e2b1c9f0a55",
+                    "path": "<Keyboard>/downArrow",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "TrainSlower",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "9c2e7f48-6b1a-4d03-b8e9-4f6a2d0c1b66",
+                    "path": "<Keyboard>/b",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "TrainBrake",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        }
+    ],
+    "controlSchemes": []
+}

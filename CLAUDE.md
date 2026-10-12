@@ -19,7 +19,17 @@ Survival en primera persona en un mundo cubierto de nieve, donde el jugador vive
 Tomi es director de arte en 3D y diseño de producto digital, sin experiencia en programación. Explicar cada resultado en palabras simples, evitar jerga sin definirla, y para cada entrega decir paso a paso qué mirar o probar dentro de Unity.
 
 ## Milestone actual
-M0 — Bootstrap. Ver `PRIMER_PEDIDO.md`.
+M1 — Tren estable (spike del Anexo C). Plan aprobado por Tomi el 2026-10-12:
+1. Vía en óvalo + locomotora greybox moviéndose — HECHO.
+2. Jugador en primera persona (caminar, mirar, saltar) en el suelo.
+3. Jugador dentro del tren en movimiento (estrategia A: el tren se mueve por el mundo; sin parenting).
+4. Props (cajas) estables en mesa/estante/piso + tecla de prueba para soltar cajas.
+5. Bajar y subir del tren (detenido y a baja velocidad).
+6. Estrategias B (mundo se mueve) y C (floating origin), medir las tres y que Tomi elija.
+- Fuera de M1: controles reales del tren y cambios de vía (M2), sistema de interacción (M3), supervivencia, combustible, HUD, guardado, arte final.
+- Decisiones: velocidad de prueba máx. 60 km/h (probar a 20/40/60). Locomotora 3 m x 19 m con zonas reservadas para la V1 (cabina, descanso, taller, entrada/carga, sala de máquinas, boca de combustible exterior), porque en la V1 es el único espacio habitable.
+- Escena: `Scenes/Spike/Spike_TrenEstable.unity`, generada por el menú "Survival en tren > M1 > Construir escena Spike". Se regenera entera: cambiar el script `M1SpikeSceneBuilder.cs`, no la escena a mano.
+- Commit + push a GitHub al final de cada paso (pedido de Tomi).
 
 ### Estado del M0: TERMINADO (2026-10-12)
 - Editor fijado: 6000.6.5f1 (Unity 6.6). Paquetes: URP 17.6.0, Input System 1.20.0, y com.unity.pipeline 0.8.0-exp.1 (experimental; solo sirve para que Claude Code se conecte al Editor, se puede quitar sin afectar el juego).
