@@ -5,6 +5,8 @@ using SurvivalEnTren.Player;
 using SurvivalEnTren.Rail;
 using SurvivalEnTren.Spike;
 using SurvivalEnTren.Train;
+using SurvivalEnTren.Survival;
+using SurvivalEnTren.UI;
 using SurvivalEnTren.World;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -36,6 +38,7 @@ namespace SurvivalEnTren.EditorTools
         private const string FloatingOriginSettingsPath = "Assets/_Project/Data/World/FloatingOriginSettings.asset";
         private const string InteractionSettingsPath = "Assets/_Project/Data/Interaction/InteractionSettings.asset";
         private const string CarrySettingsPath = "Assets/_Project/Data/Interaction/CarrySettings.asset";
+        private const string SurvivalSettingsPath = "Assets/_Project/Data/Survival/SurvivalSettings.asset";
         private const string InputPath = "Assets/_Project/Data/Input/IceTrainInput.inputactions";
 
         // Vía de prueba: un óvalo de dos rectas y dos curvas (~2,46 km por vuelta).
@@ -111,6 +114,7 @@ namespace SurvivalEnTren.EditorTools
             EnsureFolder("Assets/_Project/Data", "Player");
             EnsureFolder("Assets/_Project/Data", "World");
             EnsureFolder("Assets/_Project/Data", "Interaction");
+            EnsureFolder("Assets/_Project/Data", "Survival");
 
             // La escena nueva va primero: crearla descarga de memoria los assets recién
             // creados y las referencias a ellos quedarían vacías.
@@ -206,10 +210,36 @@ namespace SurvivalEnTren.EditorTools
             SetReference(overlay, "resetMeasure", FindActionReference("Debug/ResetMeasure"));
             SetReference(overlay, "toggleOverlay", FindActionReference("Debug/ToggleOverlay"));
 
+            // Supervivencia (M4): solo en la escena de conducción, para no afectar las pruebas del spike.
+            if (kind == Kind.Driving) BuildSurvival(motor, overlay);
+
             string path = kind == Kind.Spike ? SpikeScenePath : DrivingScenePath;
             EditorSceneManager.SaveScene(scene, path);
             AssetDatabase.SaveAssets();
             Debug.Log("[Escenas] Escena construida en " + path);
+        }
+
+        // ---------------------------------------------------------------- Supervivencia (M4)
+
+        private static void BuildSurvival(PlayerMotor motor, SpikeOverlay overlay)
+        {
+            SurvivalSettings settings = LoadOrCreateAsset<SurvivalSettings>(SurvivalSettingsPath);
+
+            var clockObject = new GameObject("Mundo_Reloj");
+            var clock = clockObject.AddComponent<GameClock>();
+            SetReference(clock, "settings", settings);
+
+            var vitals = motor.gameObject.AddComponent<PlayerVitals>();
+            SetReference(vitals, "settings", settings);
+            SetReference(vitals, "clock", clock);
+            SetReference(vitals, "motor", motor);
+
+            var hud = motor.gameObject.AddComponent<SurvivalHud>();
+            SetReference(hud, "vitals", vitals);
+
+            SetReference(overlay, "vitals", vitals);
+            SetReference(overlay, "clock", clock);
+            SetReference(overlay, "timeFast", FindActionReference("Debug/TimeFast"));
         }
 
         // ---------------------------------------------------------------- Cajas de prueba

@@ -1,4 +1,5 @@
 using SurvivalEnTren.Player;
+using SurvivalEnTren.Survival;
 using SurvivalEnTren.Train;
 using SurvivalEnTren.World;
 using UnityEngine;
@@ -25,6 +26,12 @@ namespace SurvivalEnTren.Spike
         [SerializeField] private InputActionReference resetMeasure;
         [SerializeField] private InputActionReference toggleOverlay;
         [SerializeField] private FloatingOrigin floatingOrigin;
+        [Tooltip("Opcional: supervivencia (M4).")]
+        [SerializeField] private PlayerVitals vitals;
+        [SerializeField] private GameClock clock;
+        [SerializeField] private InputActionReference timeFast;
+        [Tooltip("Cuánto se acelera el reloj con F2, para probar.")]
+        [SerializeField] private float timeFastMultiplier = 30f;
 
         private float _smoothedFrameMs;
         private GUIStyle _style;
@@ -36,12 +43,23 @@ namespace SurvivalEnTren.Spike
             resetMeasure.action.Enable();
             toggleOverlay.action.performed += OnToggle;
             toggleOverlay.action.Enable();
+            if (timeFast != null)
+            {
+                timeFast.action.performed += OnTimeFast;
+                timeFast.action.Enable();
+            }
         }
 
         private void OnDisable()
         {
             resetMeasure.action.performed -= OnResetMeasure;
             toggleOverlay.action.performed -= OnToggle;
+            if (timeFast != null) timeFast.action.performed -= OnTimeFast;
+        }
+
+        private void OnTimeFast(InputAction.CallbackContext _)
+        {
+            if (clock != null) clock.SpeedMultiplier = clock.SpeedMultiplier > 1f ? 1f : timeFastMultiplier;
         }
 
         private void OnResetMeasure(InputAction.CallbackContext _) => propMetrics.ResetAnchors();
@@ -90,10 +108,20 @@ namespace SurvivalEnTren.Spike
                 stability + "\n" +
                 $"Cajas: {propMetrics.SettledCount}/{propMetrics.Count} asentadas   corrimiento máx. {propMetrics.MaxDisplacementCentimeters:0.00} cm   " +
                 $"temblor {propMetrics.JitterMillimeters:0.0} mm   fuera del tren {propMetrics.OutsideCount}\n" +
+                SurvivalLine() +
                 trainKeys + "\n" +
                 "Jugador:  WASD caminar   Shift correr   mouse mirar   Espacio saltar   E usar\n" +
                 "Prueba:  G soltar caja   T reiniciar medición de cajas   F1 ocultar este panel   (Esc libera el mouse)";
-            GUI.Box(new Rect(12, 12, 860, 236), text, _style);
+            GUI.Box(new Rect(12, 12, 860, vitals != null ? 256 : 236), text, _style);
+        }
+
+        private string SurvivalLine()
+        {
+            if (vitals == null || clock == null) return "";
+            int hour = Mathf.FloorToInt(clock.HourOfDay);
+            int minute = Mathf.FloorToInt((clock.HourOfDay - hour) * 60f);
+            return $"Reloj {hour:00}:{minute:00} (x{clock.SpeedMultiplier:0}, F2 acelera)   aire {vitals.AmbientTemperatureC:0} °C   " +
+                   $"vida {vitals.Health:0}  comida {vitals.Satiety:0}  energía {vitals.Energy:0}  calor {vitals.Warmth:0}\n";
         }
 
         private static string ReverserName(ReverserPosition position)

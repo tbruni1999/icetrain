@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3e7782e8c83dda489ff2002ea1e867e, type: 3}
+  m_Name: SurvivalSettings
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalEnTren.Survival.SurvivalSettings
+  gameMinutesPerRealSecond: 1
+  hungerHoursFullToEmpty: 36
+  hungerSleepFactor: 0.6
+  hungryThreshold: 25
+  energyHoursAwakeFullToEmpty: 20
+  energyColdFactor: 1.5
+  energyHungryFactor: 1.5
+  energyRunningFactor: 2
+  exhaustedWalkFactor: 0.7
+  comfortTemperatureC: 12
+  coolingPerHourPerDegree: 0.25
+  warmingPerHour: 40
+  outsideTemperatureC: -25
+  hypothermiaDamagePerHour: 10
+  starvationDamagePerHour: 4
+  healthRegenPerHour: 3
+  regenMinSatiety: 40
+  regenMinWarmth: 50
+  regenMinEnergy: 30
+  knockoutHours: 6
+  wakeUpVitals: {x: 30, y: 30, z: 20, w: 70}

@@ -319,6 +319,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "TimeFast",
+                    "type": "Button",
+                    "id": "d37a9c15-6f2e-4b81-a8c3-5e9b1f2d7a42",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -385,6 +394,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "ToggleOverlay",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "f59c1e37-8a4b-4d92-b6e5-7a0d3c4f9b43",
+                    "path": "<Keyboard>/f2",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "TimeFast",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

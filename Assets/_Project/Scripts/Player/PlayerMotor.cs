@@ -68,6 +68,12 @@ namespace SurvivalEnTren.Player
         public bool MovementLocked { get; set; }
         /// <summary>Multiplica la velocidad de caminar y correr (por ejemplo, al llevar algo pesado). 1 = normal.</summary>
         public float SpeedMultiplier { get; set; } = 1f;
+        /// <summary>Multiplica la velocidad por cansancio (lo pone PlayerVitals). 1 = normal.</summary>
+        public float FatigueMultiplier { get; set; } = 1f;
+        /// <summary>Si es false, Shift no corre (sin energía).</summary>
+        public bool CanRun { get; set; } = true;
+        /// <summary>True mientras corre de verdad (Shift + moviéndose + apoyado).</summary>
+        public bool IsRunning { get; private set; }
         public PlayerMotorSettings Settings => settings;
 
         private void Awake()
@@ -125,7 +131,9 @@ namespace SurvivalEnTren.Player
             Vector2 input = MovementLocked ? Vector2.zero : move.action.ReadValue<Vector2>();
             if (MovementLocked) _jumpRequested = false;
             HasMoveInput = input.sqrMagnitude > 0.01f;
-            float speed = (run.action.IsPressed() ? settings.RunSpeedMetersPerSecond : settings.WalkSpeedMetersPerSecond) * SpeedMultiplier;
+            bool running = CanRun && run.action.IsPressed() && HasMoveInput;
+            IsRunning = running && _body.isGrounded;
+            float speed = (running ? settings.RunSpeedMetersPerSecond : settings.WalkSpeedMetersPerSecond) * SpeedMultiplier * FatigueMultiplier;
             Vector3 walk = Vector3.ClampMagnitude(transform.right * input.x + transform.forward * input.y, 1f) * speed;
 
             if (_body.isGrounded)
