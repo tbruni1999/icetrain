@@ -36,7 +36,7 @@ La prueba de parada demuestra que la física permite parar con precisión; la pr
 
 ## Pendientes y riesgos
 
-- Contra el tope el tren frena en seco. Qué pasa en un choque fuerte (daños, sacudón al jugador) queda para más adelante.
+- Choque fuerte contra el tope: el tren lo comprime y rebota (ver abajo). Daños y sacudón al jugador (hoy viaja pegado al tren) quedan para más adelante.
 - Cambio "a resorte": se puede endurecer (por ejemplo, descarrilar o trabarse) cuando se diseñe el rail gating (M10).
 - Sonidos de palancas, motor y frenos: M13.
 - Mientras se maneja el jugador queda parado donde apretó E (no se sienta). Revisar en M3 con el sistema de interacción completo.
