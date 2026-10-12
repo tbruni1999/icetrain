@@ -21,7 +21,7 @@ Tomi es director de arte en 3D y diseño de producto digital, sin experiencia en
 ## Milestone actual
 M1 — Tren estable (spike del Anexo C). Plan aprobado por Tomi el 2026-10-12:
 1. Vía en óvalo + locomotora greybox moviéndose — HECHO.
-2. Jugador en primera persona (caminar, mirar, saltar) en el suelo.
+2. Jugador en primera persona (caminar, mirar, saltar) en el suelo — HECHO.
 3. Jugador dentro del tren en movimiento (estrategia A: el tren se mueve por el mundo; sin parenting).
 4. Props (cajas) estables en mesa/estante/piso + tecla de prueba para soltar cajas.
 5. Bajar y subir del tren (detenido y a baja velocidad).

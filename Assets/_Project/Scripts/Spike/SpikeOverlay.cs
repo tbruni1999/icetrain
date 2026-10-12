@@ -37,8 +37,10 @@ namespace SurvivalEnTren.Spike
             string text =
                 $"Velocidad: {driver.CurrentSpeedKmh:0} km/h   (objetivo {driver.TargetSpeedKmh:0})\n" +
                 $"Cuadro: {_smoothedFrameMs:0.0} ms  (~{1000f / Mathf.Max(0.01f, _smoothedFrameMs):0} FPS)\n" +
-                "Teclas:  ↑ más rápido   ↓ más lento   B frenar";
-            GUI.Box(new Rect(12, 12, 380, 72), text, _style);
+                "Tren:  ↑ más rápido   ↓ más lento   B frenar\n" +
+                "Jugador:  WASD caminar   mouse mirar   Espacio saltar\n" +
+                "Esc libera el mouse; clic en Game para volver";
+            GUI.Box(new Rect(12, 12, 420, 110), text, _style);
         }
     }
 }

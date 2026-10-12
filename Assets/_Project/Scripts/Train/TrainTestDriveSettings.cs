@@ -13,7 +13,7 @@ namespace SurvivalEnTren.Train
         [SerializeField, Range(0f, 120f)] private float maxSpeedKmh = 60f;
 
         [Tooltip("Velocidad objetivo al darle Play, en km/h.")]
-        [SerializeField, Range(0f, 120f)] private float startSpeedKmh = 20f;
+        [SerializeField, Range(0f, 120f)] private float startSpeedKmh = 0f;
 
         [Tooltip("Cuánto sube o baja la velocidad objetivo con cada toque de tecla, en km/h.")]
         [SerializeField, Range(1f, 60f)] private float speedStepKmh = 20f;

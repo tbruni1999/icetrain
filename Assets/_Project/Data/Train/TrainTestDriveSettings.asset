@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: TrainTestDriveSettings
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalEnTren.Train.TrainTestDriveSettings
   maxSpeedKmh: 60
-  startSpeedKmh: 20
+  startSpeedKmh: 0
   speedStepKmh: 20
   accelerationMetersPerSecondSquared: 0.5
   brakingMetersPerSecondSquared: 1

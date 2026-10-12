@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using SurvivalEnTren.Player;
 using SurvivalEnTren.Rail;
 using SurvivalEnTren.Spike;
 using SurvivalEnTren.Train;
@@ -23,6 +24,7 @@ namespace SurvivalEnTren.EditorTools
         private const string PrefabPath = "Assets/_Project/Prefabs/Train/Locomotora_Greybox.prefab";
         private const string MaterialsFolder = "Assets/_Project/Materials/Greybox";
         private const string DriveSettingsPath = "Assets/_Project/Data/Train/TrainTestDriveSettings.asset";
+        private const string PlayerSettingsPath = "Assets/_Project/Data/Player/PlayerMotorSettings.asset";
         private const string InputPath = "Assets/_Project/Data/Input/IceTrainInput.inputactions";
 
         // Vía de prueba: un óvalo de dos rectas y dos curvas (~2,46 km por vuelta).
@@ -80,13 +82,14 @@ namespace SurvivalEnTren.EditorTools
             EnsureFolder("Assets/_Project/Materials", "Greybox");
             EnsureFolder("Assets/_Project", "Data");
             EnsureFolder("Assets/_Project/Data", "Train");
+            EnsureFolder("Assets/_Project/Data", "Player");
 
             // La escena nueva va primero: crearla descarga de memoria los assets recién
             // creados y las referencias a ellos quedarían vacías.
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
             Palette palette = CreatePalette();
-            TrainTestDriveSettings driveSettings = LoadOrCreateDriveSettings();
+            TrainTestDriveSettings driveSettings = LoadOrCreateAsset<TrainTestDriveSettings>(DriveSettingsPath);
             GameObject locomotivePrefab = BuildLocomotivePrefab(palette);
 
             BuildEnvironment(palette);
@@ -108,18 +111,44 @@ namespace SurvivalEnTren.EditorTools
             var overlay = controls.AddComponent<SpikeOverlay>();
             SetReference(overlay, "driver", driver);
 
-            var cameraObject = new GameObject("Camara_Observacion");
-            var camera = cameraObject.AddComponent<Camera>();
-            camera.nearClipPlane = 0.1f;
-            camera.farClipPlane = 2500f;
-            cameraObject.AddComponent<AudioListener>();
-            var follow = cameraObject.AddComponent<SpikeFollowCamera>();
-            SetReference(follow, "target", train.transform);
-            cameraObject.tag = "MainCamera";
+            // El jugador arranca en la nieve, frente a la puerta derecha del tren.
+            Vector3 door = train.transform.TransformPoint(new Vector3(BodyHalfWidth, 0f, DoorCenterZ));
+            BuildPlayer(new Vector3(door.x + 6f, 0.05f, door.z), Quaternion.LookRotation(-train.transform.right, Vector3.up));
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             AssetDatabase.SaveAssets();
             Debug.Log("[M1] Escena del spike construida en " + ScenePath);
+        }
+
+        // ---------------------------------------------------------------- Jugador
+
+        private static void BuildPlayer(Vector3 position, Quaternion rotation)
+        {
+            PlayerMotorSettings settings = LoadOrCreateAsset<PlayerMotorSettings>(PlayerSettingsPath);
+
+            var player = new GameObject("Jugador");
+            player.transform.SetPositionAndRotation(position, rotation);
+            player.AddComponent<CharacterController>();
+
+            var head = new GameObject("Cabeza");
+            head.transform.SetParent(player.transform, false);
+            head.transform.localPosition = Vector3.up * settings.EyeHeightMeters;
+            var camera = head.AddComponent<Camera>();
+            camera.nearClipPlane = 0.05f;
+            camera.farClipPlane = 2500f;
+            camera.fieldOfView = 70f;
+            head.AddComponent<AudioListener>();
+            head.tag = "MainCamera";
+
+            var motor = player.AddComponent<PlayerMotor>();
+            SetReference(motor, "settings", settings);
+            SetReference(motor, "move", FindActionReference("Player/Move"));
+            SetReference(motor, "jump", FindActionReference("Player/Jump"));
+
+            var look = player.AddComponent<PlayerLook>();
+            SetReference(look, "settings", settings);
+            SetReference(look, "head", head.transform);
+            SetReference(look, "look", FindActionReference("Player/Look"));
         }
 
         // ---------------------------------------------------------------- Locomotora
@@ -365,13 +394,13 @@ namespace SurvivalEnTren.EditorTools
             return material;
         }
 
-        private static TrainTestDriveSettings LoadOrCreateDriveSettings()
+        private static T LoadOrCreateAsset<T>(string path) where T : ScriptableObject
         {
-            var settings = AssetDatabase.LoadAssetAtPath<TrainTestDriveSettings>(DriveSettingsPath);
-            if (settings != null) return settings;
-            settings = ScriptableObject.CreateInstance<TrainTestDriveSettings>();
-            AssetDatabase.CreateAsset(settings, DriveSettingsPath);
-            return settings;
+            var asset = AssetDatabase.LoadAssetAtPath<T>(path);
+            if (asset != null) return asset;
+            asset = ScriptableObject.CreateInstance<T>();
+            AssetDatabase.CreateAsset(asset, path);
+            return asset;
         }
 
         private static InputActionReference FindActionReference(string mapAndAction)
