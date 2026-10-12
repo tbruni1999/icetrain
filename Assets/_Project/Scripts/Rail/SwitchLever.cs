@@ -6,7 +6,7 @@ namespace SurvivalEnTren.Rail
 {
     /// <summary>
     /// Palanca manual de un cambio de vía, al costado de la vía (sección 6.2: "frenar, bajar,
-    /// accionar una palanca y volver al tren"). Se usa mirándola y apretando E.
+    /// accionar una palanca y volver al tren"). Se usa mirándola y manteniendo E un momento.
     /// - La palanca se inclina hacia un lado u otro según la posición del cambio.
     /// - El indicador (un cartel que gira) muestra hacia dónde va el tren: cara clara = vía directa,
     ///   cara ámbar = desvío (sección 18.4: ámbar = atención).
@@ -21,6 +21,8 @@ namespace SurvivalEnTren.Rail
         [SerializeField] private float leverDegrees = 40f;
         [Tooltip("Qué tan rápido se mueven la palanca y el indicador (más alto = más brusco).")]
         [SerializeField] private float speed = 8f;
+        [Tooltip("Cuánto hay que mantener E para mover el cambio, en segundos (mover un cambio a mano cuesta esfuerzo).")]
+        [SerializeField, Range(0f, 5f)] private float holdSeconds = 1f;
         [Tooltip("Sacudida cuando el cambio está trabado por un tren encima: grados y segundos.")]
         [SerializeField] private float blockedShakeDegrees = 6f;
         [SerializeField] private float blockedShakeSeconds = 0.35f;
@@ -36,6 +38,10 @@ namespace SurvivalEnTren.Rail
             _lever = LeverTarget;
             _indicator = IndicatorTarget;
         }
+
+        public string GetPrompt(PlayerInteractor interactor) => "mover el cambio";
+
+        public float GetHoldSeconds(PlayerInteractor interactor) => holdSeconds;
 
         public void Interact(PlayerInteractor interactor)
         {

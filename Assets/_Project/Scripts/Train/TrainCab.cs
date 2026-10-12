@@ -22,6 +22,11 @@ namespace SurvivalEnTren.Train
 
         public bool IsDriving => _driver != null;
 
+        public string GetPrompt(PlayerInteractor interactor) =>
+            _driver == null ? "tomar los controles" : interactor == _driver ? "soltar los controles" : null;
+
+        public float GetHoldSeconds(PlayerInteractor interactor) => 0f;
+
         public void Interact(PlayerInteractor interactor)
         {
             if (_driver == null) TakeControls(interactor);
