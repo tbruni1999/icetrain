@@ -7,37 +7,45 @@ using UnityEngine.InputSystem;
 namespace SurvivalEnTren.Spike
 {
     /// <summary>
-    /// Panel de lectura del spike M1 (esquina superior izquierda): velocidad del tren,
-    /// tiempo por cuadro, mediciones de estabilidad y teclas de prueba. Es una herramienta
-    /// de medición, no el HUD del juego; vive en la carpeta Spike para poder borrarla entera.
+    /// Panel de lectura para pruebas (esquina superior izquierda): velocidad del tren, controles,
+    /// tiempo por cuadro, mediciones de estabilidad y teclas. Es una herramienta de medición, no el
+    /// HUD del juego (en el juego la velocidad se lee en el velocímetro de la cabina). F1 lo oculta.
+    /// Vive en la carpeta Spike para poder borrarla entera.
     /// </summary>
     public class SpikeOverlay : MonoBehaviour
     {
+        [SerializeField] private TrainMover train;
+        [Tooltip("Opcional: conducción de prueba del M1 (teclas de flecha).")]
         [SerializeField] private TrainTestDriver driver;
+        [Tooltip("Opcional: controles reales de la cabina (M2).")]
+        [SerializeField] private TrainControls controls;
         [SerializeField] private PlayerMotor motor;
         [SerializeField] private SpikeRideMetrics metrics;
         [SerializeField] private SpikePropMetrics propMetrics;
         [SerializeField] private InputActionReference resetMeasure;
+        [SerializeField] private InputActionReference toggleOverlay;
         [SerializeField] private FloatingOrigin floatingOrigin;
 
         private float _smoothedFrameMs;
         private GUIStyle _style;
+        private bool _visible = true;
 
         private void OnEnable()
         {
             resetMeasure.action.performed += OnResetMeasure;
             resetMeasure.action.Enable();
+            toggleOverlay.action.performed += OnToggle;
+            toggleOverlay.action.Enable();
         }
 
         private void OnDisable()
         {
             resetMeasure.action.performed -= OnResetMeasure;
+            toggleOverlay.action.performed -= OnToggle;
         }
 
-        private void OnResetMeasure(InputAction.CallbackContext _)
-        {
-            propMetrics.ResetAnchors();
-        }
+        private void OnResetMeasure(InputAction.CallbackContext _) => propMetrics.ResetAnchors();
+        private void OnToggle(InputAction.CallbackContext _) => _visible = !_visible;
 
         private void Update()
         {
@@ -47,6 +55,7 @@ namespace SurvivalEnTren.Spike
 
         private void OnGUI()
         {
+            if (!_visible) return;
             if (_style == null)
             {
                 _style = new GUIStyle(GUI.skin.box)
@@ -63,20 +72,38 @@ namespace SurvivalEnTren.Spike
                 ? $"Temblor: {metrics.JitterMillimeters:0.0} mm (máx. 2 s)   Deriva quieto: {metrics.DriftCentimeters:0.0} cm en {metrics.StillSeconds:0} s"
                 : "Temblor / deriva: se miden estando en el tren";
 
+            string speed = $"Velocidad: {train.SpeedMetersPerSecond * 3.6f:0} km/h";
+            if (driver != null) speed += $"   (objetivo {driver.TargetSpeedKmh:0})";
+            if (controls != null) speed += $"   reversor {ReverserName(controls.Reverser)}   potencia {controls.PowerNotch}   freno {controls.BrakeNotch}";
+
+            string trainKeys = driver != null
+                ? "Tren:  ↑ más rápido   ↓ más lento   B frenar"
+                : "Tren:  mirar el pupitre de la cabina + E para tomar los controles;  W / S potencia-freno,  R / F reversor,  E soltar";
+
             string text =
                 "Estrategia C: el tren se mueve por el mundo y el mundo se re-centra\n" +
                 $"Re-centrados: {floatingOrigin.ShiftCount} (último {floatingOrigin.LastShiftMilliseconds:0.00} ms)   " +
                 $"origen absoluto: {floatingOrigin.AbsoluteOriginX / 1000.0:0.000} km, {floatingOrigin.AbsoluteOriginZ / 1000.0:0.000} km\n" +
-                $"Velocidad: {driver.CurrentSpeedKmh:0} km/h   (objetivo {driver.TargetSpeedKmh:0})\n" +
+                speed + "\n" +
                 $"Cuadro: {_smoothedFrameMs:0.0} ms  (~{1000f / Mathf.Max(0.01f, _smoothedFrameMs):0} FPS)\n" +
                 $"Jugador: {reference}\n" +
                 stability + "\n" +
                 $"Cajas: {propMetrics.SettledCount}/{propMetrics.Count} asentadas   corrimiento máx. {propMetrics.MaxDisplacementCentimeters:0.00} cm   " +
                 $"temblor {propMetrics.JitterMillimeters:0.0} mm   fuera del tren {propMetrics.OutsideCount}\n" +
-                "Tren:  ↑ más rápido   ↓ más lento   B frenar\n" +
-                "Jugador:  WASD caminar   Shift correr   mouse mirar   Espacio saltar\n" +
-                "Prueba:  G soltar caja   R reiniciar medición de cajas   (Esc libera el mouse)";
-            GUI.Box(new Rect(12, 12, 720, 236), text, _style);
+                trainKeys + "\n" +
+                "Jugador:  WASD caminar   Shift correr   mouse mirar   Espacio saltar   E usar\n" +
+                "Prueba:  G soltar caja   T reiniciar medición de cajas   F1 ocultar este panel   (Esc libera el mouse)";
+            GUI.Box(new Rect(12, 12, 860, 236), text, _style);
+        }
+
+        private static string ReverserName(ReverserPosition position)
+        {
+            switch (position)
+            {
+                case ReverserPosition.Forward: return "adelante";
+                case ReverserPosition.Back: return "atrás";
+                default: return "neutro";
+            }
         }
     }
 }

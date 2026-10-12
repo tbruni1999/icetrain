@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using SurvivalEnTren.Interaction;
 using SurvivalEnTren.Player;
 using SurvivalEnTren.Rail;
 using SurvivalEnTren.Spike;
@@ -13,15 +14,20 @@ using UnityEngine.InputSystem;
 namespace SurvivalEnTren.EditorTools
 {
     /// <summary>
-    /// Construye la escena del spike M1 (tren estable): suelo nevado, vía en óvalo,
-    /// postes de referencia y la locomotora greybox con sus zonas reservadas para la V1.
-    /// Se ejecuta desde "Survival en tren > M1 > Construir escena Spike".
-    /// La escena y el prefab se regeneran enteros cada vez: no editarlos a mano
-    /// mientras dure el spike, cambiar este script.
+    /// Construye las escenas de prueba: suelo nevado, vía en óvalo, postes de referencia, la
+    /// locomotora greybox (con cabina y zonas reservadas para la V1), el jugador, cajas y medición.
+    /// - "Survival en tren > M1 > Construir escena Spike": la del spike M1, con la conducción de
+    ///   prueba por flechas (sus pruebas automáticas dependen de ella).
+    /// - "Survival en tren > M2 > Construir escena de conducción": con los controles reales de la cabina.
+    /// Las escenas y el prefab se regeneran enteros cada vez: no editarlos a mano, cambiar este script.
     /// </summary>
-    public static class M1SpikeSceneBuilder
+    public static class TestScenesBuilder
     {
-        private const string ScenePath = "Assets/_Project/Scenes/Spike/Spike_TrenEstable.unity";
+        private enum Kind { Spike, Driving }
+
+        private const string SpikeScenePath = "Assets/_Project/Scenes/Spike/Spike_TrenEstable.unity";
+        private const string DrivingScenePath = "Assets/_Project/Scenes/Pruebas/M2_Conduccion.unity";
+        private const string TrainDriveSettingsPath = "Assets/_Project/Data/Train/TrainDriveSettings.asset";
         private const string PrefabPath = "Assets/_Project/Prefabs/Train/Locomotora_Greybox.prefab";
         private const string MaterialsFolder = "Assets/_Project/Materials/Greybox";
         private const string DriveSettingsPath = "Assets/_Project/Data/Train/TrainTestDriveSettings.asset";
@@ -68,17 +74,23 @@ namespace SurvivalEnTren.EditorTools
         }
 
         [MenuItem("Survival en tren/M1/Construir escena Spike (tren estable)")]
-        public static void Build()
+        public static void BuildSpike() => Build(Kind.Spike);
+
+        [MenuItem("Survival en tren/M2/Construir escena de conducción")]
+        public static void BuildDriving() => Build(Kind.Driving);
+
+        private static void Build(Kind kind)
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode)
             {
-                Debug.LogWarning("[M1] Salir del modo Play antes de construir la escena.");
+                Debug.LogWarning("[Escenas] Salir del modo Play antes de construir la escena.");
                 return;
             }
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
 
             EnsureFolder("Assets/_Project", "Scenes");
             EnsureFolder("Assets/_Project/Scenes", "Spike");
+            EnsureFolder("Assets/_Project/Scenes", "Pruebas");
             EnsureFolder("Assets/_Project", "Prefabs");
             EnsureFolder("Assets/_Project/Prefabs", "Train");
             EnsureFolder("Assets/_Project/Prefabs", "Spike");
@@ -94,7 +106,6 @@ namespace SurvivalEnTren.EditorTools
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
             Palette palette = CreatePalette();
-            TrainTestDriveSettings driveSettings = LoadOrCreateAsset<TrainTestDriveSettings>(DriveSettingsPath);
             GameObject locomotivePrefab = BuildLocomotivePrefab(palette);
 
             BuildEnvironment(palette);
@@ -106,16 +117,31 @@ namespace SurvivalEnTren.EditorTools
             SetReference(mover, "startSegment", firstSegment);
             mover.SnapToRail();
 
-            var controls = new GameObject("Spike_Controles");
-            var driver = controls.AddComponent<TrainTestDriver>();
-            SetReference(driver, "train", mover);
-            SetReference(driver, "settings", driveSettings);
-            SetReference(driver, "faster", FindActionReference("Debug/TrainFaster"));
-            SetReference(driver, "slower", FindActionReference("Debug/TrainSlower"));
-            SetReference(driver, "brake", FindActionReference("Debug/TrainBrake"));
-            // El jugador arranca en la nieve, frente a la puerta derecha del tren.
-            Vector3 door = train.transform.TransformPoint(new Vector3(BodyHalfWidth, 0f, DoorCenterZ));
-            PlayerMotor motor = BuildPlayer(new Vector3(door.x + 6f, 0.05f, door.z), Quaternion.LookRotation(-train.transform.right, Vector3.up));
+            var controls = new GameObject(kind == Kind.Spike ? "Spike_Controles" : "Pruebas_Controles");
+            TrainTestDriver driver = null;
+            PlayerMotor motor;
+            if (kind == Kind.Spike)
+            {
+                // El spike conserva la conducción de prueba por flechas: se le quitan a esta copia del
+                // tren la física de conducción y el pupitre, para que no haya dos que manejen el tren.
+                Object.DestroyImmediate(train.GetComponent<TrainDynamics>());
+                Object.DestroyImmediate(train.GetComponentInChildren<TrainCab>());
+                driver = controls.AddComponent<TrainTestDriver>();
+                SetReference(driver, "train", mover);
+                SetReference(driver, "settings", LoadOrCreateAsset<TrainTestDriveSettings>(DriveSettingsPath));
+                SetReference(driver, "faster", FindActionReference("Debug/TrainFaster"));
+                SetReference(driver, "slower", FindActionReference("Debug/TrainSlower"));
+                SetReference(driver, "brake", FindActionReference("Debug/TrainBrake"));
+
+                // El jugador arranca en la nieve, frente a la puerta derecha del tren.
+                Vector3 door = train.transform.TransformPoint(new Vector3(BodyHalfWidth, 0f, DoorCenterZ));
+                motor = BuildPlayer(new Vector3(door.x + 6f, 0.05f, door.z), Quaternion.LookRotation(-train.transform.right, Vector3.up));
+            }
+            else
+            {
+                // El jugador arranca en la cabina, frente al pupitre.
+                motor = BuildPlayer(train.transform.TransformPoint(new Vector3(-0.2f, FloorTop + 0.05f, 7.75f)), train.transform.rotation);
+            }
 
             var metrics = controls.AddComponent<SpikeRideMetrics>();
             SetReference(metrics, "motor", motor);
@@ -147,15 +173,19 @@ namespace SurvivalEnTren.EditorTools
 
             var overlay = controls.AddComponent<SpikeOverlay>();
             SetReference(overlay, "floatingOrigin", floatingOrigin);
+            SetReference(overlay, "train", mover);
             SetReference(overlay, "driver", driver);
+            SetReference(overlay, "controls", kind == Kind.Driving ? train.GetComponent<TrainControls>() : null);
             SetReference(overlay, "motor", motor);
             SetReference(overlay, "metrics", metrics);
             SetReference(overlay, "propMetrics", propMetrics);
             SetReference(overlay, "resetMeasure", FindActionReference("Debug/ResetMeasure"));
+            SetReference(overlay, "toggleOverlay", FindActionReference("Debug/ToggleOverlay"));
 
-            EditorSceneManager.SaveScene(scene, ScenePath);
+            string path = kind == Kind.Spike ? SpikeScenePath : DrivingScenePath;
+            EditorSceneManager.SaveScene(scene, path);
             AssetDatabase.SaveAssets();
-            Debug.Log("[M1] Escena del spike construida en " + ScenePath);
+            Debug.Log("[Escenas] Escena construida en " + path);
         }
 
         // ---------------------------------------------------------------- Cajas de prueba
@@ -236,6 +266,11 @@ namespace SurvivalEnTren.EditorTools
             SetReference(look, "motor", motor);
             SetReference(look, "head", head.transform);
             SetReference(look, "look", FindActionReference("Player/Look"));
+
+            var interactor = player.AddComponent<PlayerInteractor>();
+            SetReference(interactor, "motor", motor);
+            SetReference(interactor, "head", head.transform);
+            SetReference(interactor, "interact", FindActionReference("Player/Interact"));
             return motor;
         }
 
@@ -296,8 +331,8 @@ namespace SurvivalEnTren.EditorTools
             var interior = Group("Interior", root.transform);
 
             var cab = Group("Zona_Cabina", interior);
-            BoxMinMax("Cabina_PupitreControles", cab, new Vector3(-1.0f, FloorTop, 8.6f), new Vector3(1.0f, FloorTop + 1.0f, 9.3f), p.Controls);
-            BoxMinMax("Cabina_Asiento", cab, new Vector3(-0.25f, FloorTop, 7.6f), new Vector3(0.25f, FloorTop + 0.5f, 8.1f), p.Furniture);
+            BuildCabControls(root, cab, p);
+            BoxMinMax("Cabina_Asiento", cab, new Vector3(0.6f, FloorTop, 7.6f), new Vector3(1.1f, FloorTop + 0.5f, 8.1f), p.Furniture);
             BoxMinMax("Cabina_ConsolaSonda", cab, new Vector3(-1.4f, FloorTop, 6.8f), new Vector3(-0.8f, FloorTop + 1.2f, 7.6f), p.Controls);
 
             var rest = Group("Zona_Descanso", interior);
@@ -326,6 +361,99 @@ namespace SurvivalEnTren.EditorTools
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
             Object.DestroyImmediate(root);
             return prefab;
+        }
+
+        // Pupitre de conducción (M2): mueble, tres palancas (reversor, potencia, freno), velocímetro
+        // de aguja y etiquetas. Agrega a la raíz del tren los controles, la física de conducción y los
+        // instrumentos, y al pupitre el componente que permite tomar los controles con E.
+        private static void BuildCabControls(GameObject trainRoot, Transform cab, Palette p)
+        {
+            var desk = Group("Cabina_Pupitre", cab);
+            float top = FloorTop + 1.0f;
+            BoxMinMax("Mueble", desk, new Vector3(-1.0f, FloorTop, 8.6f), new Vector3(1.0f, top, 9.3f), p.Controls);
+
+            Transform Lever(string name, float x, Material knob)
+            {
+                BoxMinMax(name + "_Base", desk, new Vector3(x - 0.06f, top, 8.75f), new Vector3(x + 0.06f, top + 0.05f, 8.95f), p.Track, false);
+                var pivot = Group(name + "_Eje", desk);
+                pivot.localPosition = new Vector3(x, top + 0.04f, 8.85f);
+                BoxMinMax("Varilla", pivot, new Vector3(-0.018f, 0f, -0.018f), new Vector3(0.018f, 0.32f, 0.018f), p.Track, false);
+                BoxMinMax("Mango", pivot, new Vector3(-0.04f, 0.3f, -0.04f), new Vector3(0.04f, 0.38f, 0.04f), knob, false);
+                Label(name.ToUpperInvariant(), desk, new Vector3(x, top + 0.005f, 8.66f));
+                return pivot;
+            }
+
+            Transform reverser = Lever("Reversor", -0.75f, p.Furniture);
+            Transform power = Lever("Potencia", -0.45f, p.Fuel);
+            Transform brake = Lever("Freno", -0.15f, p.PostMarker);
+
+            // Velocímetro: dial vertical mirando al maquinista, con marcas cada 10 km/h y aguja.
+            var gauge = Group("Velocimetro", desk);
+            gauge.localPosition = new Vector3(0.3f, top + 0.27f, 8.95f);
+            BoxMinMax("Soporte", gauge, new Vector3(-0.03f, -0.27f, 0.02f), new Vector3(0.03f, 0f, 0.08f), p.Track, false);
+            var face = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            face.name = "Dial";
+            Object.DestroyImmediate(face.GetComponent<Collider>());
+            face.transform.SetParent(gauge, false);
+            face.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            face.transform.localScale = new Vector3(0.3f, 0.01f, 0.3f);
+            face.GetComponent<MeshRenderer>().sharedMaterial = p.Furniture;
+            const float gaugeMaxKmh = 60f, sweep = 120f;
+            for (int kmh = 0; kmh <= gaugeMaxKmh; kmh += 10)
+            {
+                float angle = Mathf.Lerp(sweep, -sweep, kmh / gaugeMaxKmh);
+                var tick = Group($"Marca_{kmh}", gauge);
+                tick.localPosition = new Vector3(0f, 0f, -0.012f);
+                tick.localRotation = Quaternion.Euler(0f, 0f, angle);
+                BoxMinMax("Raya", tick, new Vector3(-0.004f, 0.105f, -0.002f), new Vector3(0.004f, 0.14f, 0.002f),
+                    kmh == 40 ? p.PostMarker : p.Track, false);
+            }
+            Label("km/h", gauge, new Vector3(0f, -0.06f, -0.013f), facingDriver: true);
+            var needle = Group("Aguja_Eje", gauge);
+            needle.localPosition = new Vector3(0f, 0f, -0.016f);
+            BoxMinMax("Aguja", needle, new Vector3(-0.005f, -0.02f, -0.002f), new Vector3(0.005f, 0.125f, 0.002f), p.PostMarker, false);
+
+            // Controles, física e instrumentos en la raíz del tren; tomar los controles, en el pupitre.
+            TrainDriveSettings settings = LoadOrCreateAsset<TrainDriveSettings>(TrainDriveSettingsPath);
+            var mover = trainRoot.GetComponent<TrainMover>();
+            var controls = trainRoot.AddComponent<TrainControls>();
+            SetReference(controls, "settings", settings);
+            SetReference(controls, "train", mover);
+            var dynamics = trainRoot.AddComponent<TrainDynamics>();
+            SetReference(dynamics, "controls", controls);
+            var instruments = trainRoot.AddComponent<CabInstruments>();
+            SetReference(instruments, "controls", controls);
+            SetReference(instruments, "train", mover);
+            SetReference(instruments, "reverserPivot", reverser);
+            SetReference(instruments, "powerPivot", power);
+            SetReference(instruments, "brakePivot", brake);
+            SetReference(instruments, "needlePivot", needle);
+            var cabin = desk.gameObject.AddComponent<TrainCab>();
+            SetReference(cabin, "controls", controls);
+            SetReference(cabin, "powerUp", FindActionReference("Train/PowerUp"));
+            SetReference(cabin, "powerDown", FindActionReference("Train/PowerDown"));
+            SetReference(cabin, "reverserForward", FindActionReference("Train/ReverserForward"));
+            SetReference(cabin, "reverserBack", FindActionReference("Train/ReverserBack"));
+        }
+
+        // Texto 3D chico (etiquetas del pupitre). Por defecto apoyado sobre una superficie horizontal,
+        // legible desde el lado del maquinista; con facingDriver, parado y mirando al maquinista.
+        private static void Label(string text, Transform parent, Vector3 localPosition, bool facingDriver = false)
+        {
+            var go = new GameObject("Etiqueta_" + text);
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPosition;
+            go.transform.localRotation = facingDriver ? Quaternion.identity : Quaternion.Euler(90f, 0f, 0f);
+            var mesh = go.AddComponent<TextMesh>();
+            mesh.text = text;
+            mesh.fontSize = 48;
+            mesh.characterSize = 0.006f;
+            mesh.anchor = TextAnchor.MiddleCenter;
+            mesh.alignment = TextAlignment.Center;
+            mesh.color = new Color(0.95f, 0.92f, 0.85f);
+            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            mesh.font = font;
+            go.GetComponent<MeshRenderer>().sharedMaterial = font.material;
         }
 
         private static void AddInteriorLight(Transform parent, Vector3 localPosition)

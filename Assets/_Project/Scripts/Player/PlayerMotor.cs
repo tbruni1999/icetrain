@@ -64,6 +64,8 @@ namespace SurvivalEnTren.Player
         public bool HasMoveInput { get; private set; }
         /// <summary>Velocidad real del jugador en el mundo en el último tic (incluye viajar con el tren), en m/s.</summary>
         public Vector3 Velocity { get; private set; }
+        /// <summary>Si es true, el jugador no camina ni salta (por ejemplo, mientras maneja el tren). Sigue viajando con lo que pisa.</summary>
+        public bool MovementLocked { get; set; }
         public PlayerMotorSettings Settings => settings;
 
         private void Awake()
@@ -118,7 +120,8 @@ namespace SurvivalEnTren.Player
             transform.rotation = ReferenceRotation(usePhysicsPose: true) * Quaternion.Euler(0f, _yaw, 0f);
 
             // 2) Caminar, correr, saltar y caer.
-            Vector2 input = move.action.ReadValue<Vector2>();
+            Vector2 input = MovementLocked ? Vector2.zero : move.action.ReadValue<Vector2>();
+            if (MovementLocked) _jumpRequested = false;
             HasMoveInput = input.sqrMagnitude > 0.01f;
             float speed = run.action.IsPressed() ? settings.RunSpeedMetersPerSecond : settings.WalkSpeedMetersPerSecond;
             Vector3 walk = Vector3.ClampMagnitude(transform.right * input.x + transform.forward * input.y, 1f) * speed;

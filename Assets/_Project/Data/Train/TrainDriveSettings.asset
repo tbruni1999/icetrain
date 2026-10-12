@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5327d3de46d7a894989b4ab73f8f97e1, type: 3}
+  m_Name: TrainDriveSettings
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalEnTren.Train.TrainDriveSettings
+  powerNotchTopSpeedsKmh:
+  - 10
+  - 20
+  - 30
+  - 40
+  tractionAccelerationMetersPerSecondSquared: 0.35
+  brakeNotchDecelerationsMetersPerSecondSquared:
+  - 0.25
+  - 0.5
+  - 0.8
+  - 1.2
+  rollingResistanceMetersPerSecondSquared: 0.03
+  reverserMaxSpeedKmh: 0.5

@@ -41,6 +41,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
+                },
+                {
+                    "name": "Interact",
+                    "type": "Button",
+                    "id": "4d7e1a92-6b3c-4f58-8e0d-2a9c5b7f1e14",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -131,6 +140,105 @@
                     "action": "Run",
                     "isComposite": false,
                     "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "8f2b6d04-3c9a-4e71-b5d8-0e4a7c2f9b15",
+                    "path": "<Keyboard>/e",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Interact",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        },
+        {
+            "name": "Train",
+            "id": "2c8e5f17-9a4b-4d63-a0e7-5f1b3d8c6a20",
+            "actions": [
+                {
+                    "name": "PowerUp",
+                    "type": "Button",
+                    "id": "6e0a3c29-1f5d-4b84-9c27-7a3e5b1d8f21",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "PowerDown",
+                    "type": "Button",
+                    "id": "a14c7e3b-5d9f-4a06-8b31-9c5d7f2e0a22",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "ReverserForward",
+                    "type": "Button",
+                    "id": "c36e9a5d-7f1b-4c28-ad53-1e7f9b4c2b23",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "ReverserBack",
+                    "type": "Button",
+                    "id": "e58a1c7f-9b3d-4e4a-8f75-3a9b1d6e4c24",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "07c3e9b1-4a6f-4d92-b1e8-5c2a8d0f6e25",
+                    "path": "<Keyboard>/w",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "PowerUp",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "29e5a1d3-6c8b-4fa4-93a0-7e4c0f2b8a26",
+                    "path": "<Keyboard>/s",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "PowerDown",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "4b07c3f5-8e0d-41c6-a5c2-9a6e2b4d0c27",
+                    "path": "<Keyboard>/r",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ReverserForward",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "6d29e5a7-0f2b-43e8-b7e4-1c8a4d6f2e28",
+                    "path": "<Keyboard>/f",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ReverserBack",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         },
@@ -178,6 +286,15 @@
                     "name": "ResetMeasure",
                     "type": "Button",
                     "id": "7a4c0e63-1d8f-4b59-c3ea-4f9a1d6b8c35",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "ToggleOverlay",
+                    "type": "Button",
+                    "id": "0a6c2e84-7b1d-4f39-c6e2-2d8f0b4a6c38",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
@@ -232,11 +349,22 @@
                 {
                     "name": "",
                     "id": "be8a4c07-5b3d-4f9e-a72e-8d3e5a0f2b37",
-                    "path": "<Keyboard>/r",
+                    "path": "<Keyboard>/t",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
                     "action": "ResetMeasure",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "2c8e4a96-9d3f-4b5a-e7f4-4fa1d2c8e039",
+                    "path": "<Keyboard>/f1",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ToggleOverlay",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
