@@ -20,3 +20,13 @@ Tomi es director de arte en 3D y diseño de producto digital, sin experiencia en
 
 ## Milestone actual
 M0 — Bootstrap. Ver `PRIMER_PEDIDO.md`.
+
+### Estado del M0 (para retomar)
+- El proyecto se armó sin Unity (desde una sesión en la nube). Editor fijado: 6000.6.5f1 (Unity 6.6). Paquetes: URP 17.6.0, Input System 1.20.0 (la 1.14.2 no compila en 6.6).
+- Ya comprobado en la PC de Tomi: el proyecto abre y compila; aparece el menú "Survival en tren".
+- Pendiente:
+  1. Instalar/configurar el plugin oficial de Unity para Claude Code (verificar el método actual en la documentación de Unity).
+  2. Correr "Survival en tren > M0 > Configurar proyecto" (crea y activa URP, pone Active Input Handling = Input System).
+  3. Abrir `Assets/_Project/Scenes/Bootstrap/Bootstrap_Test.unity`, Play: deben salir líneas `[Bootstrap]` en la Console y otra al apretar Espacio.
+  4. Subir a Git los archivos que Unity generó (ProjectSettings completos, packages-lock.json, assets de URP, .meta), revisando que no entre Library/Temp/Logs.
+- Recién después de eso, proponer el plan del M1 y esperar aprobación de Tomi.
