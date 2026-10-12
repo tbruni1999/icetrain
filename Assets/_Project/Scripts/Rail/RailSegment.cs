@@ -16,12 +16,14 @@ namespace SurvivalEnTren.Rail
 
         [SerializeField] private RailSegment next;
         [SerializeField] private RailSegment previous;
+        [Tooltip("Si el tramo termina en un cambio de vía, el siguiente tramo lo decide el cambio.")]
+        [SerializeField] private RailSwitch exitSwitch;
 
         // Distancia acumulada (en metros) desde el inicio del tramo hasta cada punto.
         private float[] _cumulative;
         private float _length;
 
-        public RailSegment Next => next;
+        public RailSegment Next => exitSwitch != null ? exitSwitch.ActiveExit : next;
         public RailSegment Previous => previous;
         public IReadOnlyList<Vector3> LocalPoints => localPoints;
 
@@ -46,6 +48,10 @@ namespace SurvivalEnTren.Rail
             next = nextSegment;
             if (nextSegment != null) nextSegment.previous = this;
         }
+
+        public void SetPrevious(RailSegment previousSegment) => previous = previousSegment;
+
+        public void SetExitSwitch(RailSwitch railSwitch) => exitSwitch = railSwitch;
 
         /// <summary>Posición en el mundo a cierta distancia (en metros) desde el inicio del tramo.</summary>
         public Vector3 GetPosition(float distance)

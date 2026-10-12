@@ -18,6 +18,10 @@ namespace SurvivalEnTren.Train
         [SerializeField] private float startDistanceMeters = 20f;
         [Tooltip("Distancia entre el bogie de adelante y el de atrás, en metros (geometría del modelo).")]
         [SerializeField] private float bogieSpacingMeters = 13f;
+        [Tooltip("Medio largo del tren, del centro a cada punta, en metros (geometría del modelo).")]
+        [SerializeField] private float halfLengthMeters = 9.5f;
+        [Tooltip("Distancia que el tren deja libre antes de un final de vía (el tope), en metros.")]
+        [SerializeField] private float endOfTrackMarginMeters = 1.5f;
 
         private Rigidbody _body;
         private RailPosition _railPosition;
@@ -42,11 +46,34 @@ namespace SurvivalEnTren.Train
         {
             if (!_railPosition.IsValid) return;
 
-            _railPosition = _railPosition.Advanced(SpeedMetersPerSecond * Time.fixedDeltaTime);
+            float step = SpeedMetersPerSecond * Time.fixedDeltaTime;
+            if (step != 0f && WouldPassEndOfTrack(step))
+            {
+                // Llegó a un final de vía (un tope): se detiene en seco. Qué pasa en un choque
+                // fuerte (daños, sacudón) se define más adelante.
+                SpeedMetersPerSecond = 0f;
+                ReachedEndOfTrack?.Invoke();
+                return;
+            }
+
+            _railPosition = _railPosition.Advanced(step);
             ComputePose(_railPosition, out Vector3 position, out Quaternion rotation);
             _body.MovePosition(position);
             _body.MoveRotation(rotation);
         }
+
+        // ¿El extremo del tren (el de adelante si avanza, el de atrás si retrocede) pasaría un final de vía?
+        private bool WouldPassEndOfTrack(float step)
+        {
+            float sign = Mathf.Sign(step);
+            RailPosition moved = _railPosition.Advanced(step, out bool centerHitEnd);
+            if (centerHitEnd) return true;
+            moved.Advanced(sign * (halfLengthMeters + endOfTrackMarginMeters), out bool endHitEnd);
+            return endHitEnd;
+        }
+
+        /// <summary>Se dispara cuando el tren se detiene contra un final de vía.</summary>
+        public event System.Action ReachedEndOfTrack;
 
         /// <summary>Coloca el tren de golpe en su posición de vía (al iniciar, o desde el editor).</summary>
         public void SnapToRail()

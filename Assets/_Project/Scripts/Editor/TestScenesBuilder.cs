@@ -42,6 +42,13 @@ namespace SurvivalEnTren.EditorTools
         private const float CurvePointSpacing = 2f;
         private const float RailTopHeight = 0.6f; // suelo en 0; balasto + durmiente + riel
 
+        // Escena de conducción: cambio de vía en la primera recta, desvío a una vía muerta y cartel de parada.
+        private const float SwitchZ = -100f;             // la recta 1 va de z -300 a +300
+        private const float SpurCurveRadius = 300f;
+        private const float SpurAngleDegrees = 12f;
+        private const float SpurStraightLength = 220f;
+        private const float StopSignDistance = 150f;     // metros desde el inicio de la recta 1 (z -150)
+
         // Locomotora. Coordenadas locales: y = 0 es la cara superior del riel, z+ es adelante.
         private const float BodyHalfWidth = 1.5f;
         private const float BodyHalfLength = 9.5f;
@@ -109,8 +116,14 @@ namespace SurvivalEnTren.EditorTools
             GameObject locomotivePrefab = BuildLocomotivePrefab(palette);
 
             BuildEnvironment(palette);
-            RailSegment firstSegment = BuildTrack(palette);
-            BuildPosts(firstSegment, palette);
+            RailSegment firstSegment = BuildTrack(palette, kind, out RailSwitch railSwitch, out RailSegment spur);
+            BuildPosts(firstSegment, palette, kind == Kind.Driving ? -1f : 1f);
+            if (kind == Kind.Driving)
+            {
+                BuildSwitchStand(railSwitch, palette);
+                BuildBufferStop(spur, palette);
+                BuildStopSign(firstSegment, palette);
+            }
 
             var train = (GameObject)PrefabUtility.InstantiatePrefab(locomotivePrefab);
             var mover = train.GetComponent<TrainMover>();
@@ -494,28 +507,120 @@ namespace SurvivalEnTren.EditorTools
             ground.GetComponent<MeshRenderer>().sharedMaterial = p.Snow;
         }
 
-        private static RailSegment BuildTrack(Palette p)
+        // Vía de prueba: óvalo. En la escena de conducción, la primera recta se parte en un cambio de vía
+        // con un desvío a una vía muerta (railSwitch y spur quedan en null en la del spike).
+        private static RailSegment BuildTrack(Palette p, Kind kind, out RailSwitch railSwitch, out RailSegment spur)
         {
             var track = new GameObject("Via");
             float h = RailTopHeight;
             float halfL = StraightLength * 0.5f;
             float r = CurveRadius;
+            railSwitch = null;
+            spur = null;
 
-            var straightEast = new List<Vector3> { new Vector3(r, h, -halfL), new Vector3(r, h, halfL) };
             var curveNorth = Arc(new Vector3(0f, h, halfL), r, 0f, Mathf.PI);
             var straightWest = new List<Vector3> { new Vector3(-r, h, halfL), new Vector3(-r, h, -halfL) };
             var curveSouth = Arc(new Vector3(0f, h, -halfL), r, Mathf.PI, 2f * Mathf.PI);
 
-            RailSegment s1 = Segment("Tramo_1_Recta", track.transform, straightEast, p);
+            RailSegment first, lastOfStraight;
+            if (kind == Kind.Spike)
+            {
+                first = lastOfStraight = Segment("Tramo_1_Recta", track.transform,
+                    new List<Vector3> { new Vector3(r, h, -halfL), new Vector3(r, h, halfL) }, p);
+            }
+            else
+            {
+                first = Segment("Tramo_1a_Recta", track.transform,
+                    new List<Vector3> { new Vector3(r, h, -halfL), new Vector3(r, h, SwitchZ) }, p);
+                lastOfStraight = Segment("Tramo_1b_Recta", track.transform,
+                    new List<Vector3> { new Vector3(r, h, SwitchZ), new Vector3(r, h, halfL) }, p);
+
+                // Desvío hacia afuera del óvalo (+x): curva suave y después recta hasta un tope.
+                var spurPoints = new List<Vector3>();
+                var center = new Vector3(r + SpurCurveRadius, h, SwitchZ);
+                float maxAngle = SpurAngleDegrees * Mathf.Deg2Rad;
+                int steps = Mathf.CeilToInt(maxAngle * SpurCurveRadius / CurvePointSpacing);
+                for (int i = 0; i <= steps; i++)
+                {
+                    float a = maxAngle * i / steps;
+                    spurPoints.Add(center + new Vector3(-Mathf.Cos(a) * SpurCurveRadius, 0f, Mathf.Sin(a) * SpurCurveRadius));
+                }
+                var direction = new Vector3(Mathf.Sin(maxAngle), 0f, Mathf.Cos(maxAngle));
+                spurPoints.Add(spurPoints[spurPoints.Count - 1] + direction * SpurStraightLength);
+                spur = Segment("Tramo_Desvio_ViaMuerta", track.transform, spurPoints, p);
+
+                first.Connect(lastOfStraight);
+                var switchObject = new GameObject("Cambio_1");
+                switchObject.transform.SetParent(track.transform, false);
+                switchObject.transform.position = new Vector3(r, h, SwitchZ);
+                railSwitch = switchObject.AddComponent<RailSwitch>();
+                railSwitch.Configure(first, lastOfStraight, spur);
+                EditorUtility.SetDirty(railSwitch);
+                EditorUtility.SetDirty(spur);
+            }
+
             RailSegment s2 = Segment("Tramo_2_Curva", track.transform, curveNorth, p);
             RailSegment s3 = Segment("Tramo_3_Recta", track.transform, straightWest, p);
             RailSegment s4 = Segment("Tramo_4_Curva", track.transform, curveSouth, p);
-            s1.Connect(s2);
+            lastOfStraight.Connect(s2);
             s2.Connect(s3);
             s3.Connect(s4);
-            s4.Connect(s1);
-            foreach (var s in new[] { s1, s2, s3, s4 }) EditorUtility.SetDirty(s);
-            return s1;
+            s4.Connect(first);
+            foreach (var s in new[] { first, lastOfStraight, s2, s3, s4 }) EditorUtility.SetDirty(s);
+            return first;
+        }
+
+        // Palanca del cambio y su indicador, en el suelo a la izquierda de la vía, antes del cambio.
+        private static void BuildSwitchStand(RailSwitch railSwitch, Palette p)
+        {
+            Vector3 forward = Vector3.forward;               // la recta 1 va hacia +z
+            Vector3 left = -Vector3.right;
+            Vector3 basePoint = new Vector3(railSwitch.Point.x, 0f, railSwitch.Point.z) + left * 3.2f - forward * 6f;
+
+            var stand = new GameObject("Cambio_1_Palanca").transform;
+            stand.position = basePoint;
+            stand.rotation = Quaternion.LookRotation(forward, Vector3.up);
+            BoxMinMax("Base", stand, new Vector3(-0.3f, 0f, -0.25f), new Vector3(0.3f, 0.3f, 0.25f), p.Track);
+
+            var leverPivot = Group("Palanca_Eje", stand);
+            leverPivot.localPosition = new Vector3(0f, 0.3f, 0f);
+            BoxMinMax("Varilla", leverPivot, new Vector3(-0.03f, 0f, -0.03f), new Vector3(0.03f, 0.95f, 0.03f), p.Track);
+            BoxMinMax("Mango", leverPivot, new Vector3(-0.06f, 0.9f, -0.06f), new Vector3(0.06f, 1.02f, 0.06f), p.Fuel);
+
+            BoxMinMax("Poste_Indicador", stand, new Vector3(0.45f, 0f, -0.05f), new Vector3(0.55f, 1.9f, 0.05f), p.Post);
+            var indicator = Group("Indicador_Eje", stand);
+            indicator.localPosition = new Vector3(0.5f, 2.1f, 0f);
+            BoxMinMax("Cara_Directa", indicator, new Vector3(-0.3f, -0.2f, -0.015f), new Vector3(0.3f, 0.2f, 0.015f), p.Snow, false);
+            BoxMinMax("Cara_Desvio", indicator, new Vector3(-0.016f, -0.2f, -0.3f), new Vector3(0.016f, 0.2f, 0.3f), p.Fuel, false);
+            Label("CAMBIO", stand, new Vector3(0f, 0.305f, -0.15f));
+
+            var lever = stand.gameObject.AddComponent<SwitchLever>();
+            SetReference(lever, "railSwitch", railSwitch);
+            SetReference(lever, "leverPivot", leverPivot);
+            SetReference(lever, "indicatorPivot", indicator);
+        }
+
+        // Tope al final de la vía muerta.
+        private static void BuildBufferStop(RailSegment spur, Palette p)
+        {
+            Vector3 end = spur.GetPosition(spur.Length);
+            Vector3 direction = spur.GetDirection(spur.Length);
+            var stop = new GameObject("Tope_ViaMuerta").transform;
+            stop.position = new Vector3(end.x, 0f, end.z);
+            stop.rotation = Quaternion.LookRotation(new Vector3(direction.x, 0f, direction.z), Vector3.up);
+            BoxMinMax("Bloque", stop, new Vector3(-1.4f, 0f, 0.2f), new Vector3(1.4f, 1.5f, 1.0f), p.PostMarker);
+        }
+
+        // Cartel de parada para practicar detener el tren en un punto (sección 24: "detener el tren en un
+        // punto sin errores"): la punta de la cabina tiene que quedar a la altura del cartel.
+        private static void BuildStopSign(RailSegment straight, Palette p)
+        {
+            Vector3 at = straight.GetPosition(StopSignDistance);
+            var sign = new GameObject("Cartel_Parada").transform;
+            sign.position = new Vector3(at.x - 3.0f, 0f, at.z);
+            BoxMinMax("Poste", sign, new Vector3(-0.05f, 0f, -0.05f), new Vector3(0.05f, 2.2f, 0.05f), p.Post);
+            BoxMinMax("Tablero", sign, new Vector3(-0.45f, 2.0f, -0.08f), new Vector3(0.45f, 2.55f, -0.05f), p.Fuel);
+            Label("PARADA", sign, new Vector3(0f, 2.275f, -0.085f), facingDriver: true);
         }
 
         private static List<Vector3> Arc(Vector3 center, float radius, float fromAngle, float toAngle)
@@ -544,7 +649,9 @@ namespace SurvivalEnTren.EditorTools
         }
 
         // Postes al costado de la vía cada 20 m (uno más alto cada 100 m) para notar la velocidad.
-        private static void BuildPosts(RailSegment first, Palette p)
+        // side = 1: a la derecha del sentido de marcha (afuera del óvalo); -1: a la izquierda (adentro),
+        // para no cruzarse con el desvío de la escena de conducción.
+        private static void BuildPosts(RailSegment first, Palette p, float side)
         {
             var posts = new GameObject("Postes_Referencia");
             float total = 0f;
@@ -564,7 +671,7 @@ namespace SurvivalEnTren.EditorTools
                 Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
                 bool marker = index % 5 == 0;
                 float height = marker ? 4f : 2.5f;
-                Vector3 basePoint = at.WorldPosition + right * 3.5f;
+                Vector3 basePoint = at.WorldPosition + right * (3.5f * side);
                 basePoint.y = 0f;
 
                 var post = GameObject.CreatePrimitive(PrimitiveType.Cube);

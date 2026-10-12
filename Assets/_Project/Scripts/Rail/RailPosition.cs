@@ -29,7 +29,10 @@ namespace SurvivalEnTren.Rail
         /// pasando a los tramos conectados cuando se termina el actual.
         /// Si no hay tramo conectado, se queda en el extremo.
         /// </summary>
-        public RailPosition Advanced(float meters)
+        public RailPosition Advanced(float meters) => Advanced(meters, out _);
+
+        /// <summary>Igual que Advanced, y avisa si se llegó a un extremo de vía sin continuación (un tope).</summary>
+        public RailPosition Advanced(float meters, out bool reachedEnd)
         {
             RailSegment segment = Segment;
             float distance = Distance + meters;
@@ -53,6 +56,7 @@ namespace SurvivalEnTren.Rail
                 }
             }
 
+            reachedEnd = distance > segment.Length || distance < 0f;
             return new RailPosition(segment, Mathf.Clamp(distance, 0f, segment.Length));
         }
     }
