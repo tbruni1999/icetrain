@@ -111,7 +111,7 @@ namespace SurvivalEnTren.Spike
                 $"temblor {propMetrics.JitterMillimeters:0.0} mm   fuera del tren {propMetrics.OutsideCount}\n" +
                 SurvivalLine() +
                 trainKeys + "\n" +
-                "Jugador:  WASD caminar   Shift correr   mouse mirar   Espacio saltar   E usar\n" +
+                "Jugador:  WASD caminar   Shift correr   mouse mirar   Espacio saltar   E usar   Q sonda\n" +
                 "Prueba:  G soltar caja   T reiniciar medición de cajas   F1 ocultar este panel   (Esc libera el mouse)";
             GUI.Box(new Rect(12, 12, 860, vitals != null ? 276 : 236), text, _style);
         }

@@ -218,7 +218,11 @@ namespace SurvivalEnTren.EditorTools
             SetReference(overlay, "toggleOverlay", FindActionReference("Debug/ToggleOverlay"));
 
             // Supervivencia (M4): solo en la escena de conducción, para no afectar las pruebas del spike.
-            if (kind == Kind.Driving) BuildSurvival(motor, train, overlay, palette);
+            if (kind == Kind.Driving)
+            {
+                BuildSurvival(motor, train, overlay, palette);
+                BuildPortableProbe(motor, train, palette);
+            }
 
             string path = kind == Kind.Spike ? SpikeScenePath : DrivingScenePath;
             EditorSceneManager.SaveScene(scene, path);
@@ -363,7 +367,15 @@ namespace SurvivalEnTren.EditorTools
             Signal("poi_prueba_rail1a_001", ProbeSignalType.EstructuraBajoNieve, 1f, new Vector3(40f, 0f, -200f), straight1a, root,
                 marker => BoxMinMax("Bulto_Enterrado", marker, new Vector3(-3f, -0.5f, -4f), new Vector3(3f, 1.4f, 4f), p.Ballast));
             Signal("poi_prueba_rail1b_002", ProbeSignalType.MasaMetalica, 1f, new Vector3(480f, 0f, 150f), straight1b, root,
-                marker => BoxMinMax("Restos_Metalicos", marker, new Vector3(-1.5f, 0f, -3.5f), new Vector3(1.5f, 2.2f, 3.5f), p.Track));
+                marker =>
+                {
+                    BoxMinMax("Restos_Metalicos", marker, new Vector3(-1.5f, 0f, -3.5f), new Vector3(1.5f, 2.2f, 3.5f), p.Track);
+                    // El metal interfiere la sonda portátil de cerca (sección 13.2), para probar las interferencias.
+                    var zone = new SerializedObject(marker.gameObject.AddComponent<ProbeInterference>());
+                    zone.FindProperty("radiusMeters").floatValue = 40f;
+                    zone.FindProperty("strength").floatValue = 0.7f;
+                    zone.ApplyModifiedPropertiesWithoutUndo();
+                });
             Signal("poi_prueba_rail3_003", ProbeSignalType.CalorResidual, 0.25f, new Vector3(-520f, 0f, 50f), straight3, root,
                 marker =>
                 {
@@ -769,6 +781,93 @@ namespace SurvivalEnTren.EditorTools
             SetReference(display, "line1", ScreenText("Linea_1", -0.105f));
             SetReference(display, "line2", ScreenText("Linea_2", -0.135f));
             SetReference(display, "line3", ScreenText("Linea_3", -0.165f));
+        }
+
+        // Sonda portátil (M5): aparato chico en la mano derecha, hijo de la cámara. Pantalla verde con un
+        // dial (arriba = hacia donde mira el jugador), dos agujas, dos líneas de texto y la barra de señal.
+        // Sin colisionadores ni sombras: es parte de la vista, no del mundo.
+        private static void BuildPortableProbe(PlayerMotor motor, GameObject train, Palette p)
+        {
+            Transform head = motor.transform.Find("Cabeza");
+            var device = Group("Sonda_Portatil", head);
+            device.localRotation = Quaternion.Euler(28f, -8f, 0f); // inclinada hacia los ojos
+            BoxMinMax("Cuerpo", device, new Vector3(-0.08f, -0.085f, 0.002f), new Vector3(0.08f, 0.075f, 0.032f), p.Controls, false);
+            BoxMinMax("Pantalla", device, new Vector3(-0.07f, -0.075f, 0f), new Vector3(0.07f, 0.065f, 0.002f),
+                UnlitMat("Pantalla_Fondo", new Color(0.02f, 0.06f, 0.035f)), false);
+
+            Material dim = UnlitMat("Pantalla_Trazo_Tenue", new Color(0.12f, 0.32f, 0.16f));
+            Material trace = UnlitMat("Pantalla_Trazo", new Color(0.45f, 1f, 0.55f));
+            var center = new Vector3(0f, 0.02f, -0.0005f);
+            const float radius = 0.038f;
+            for (int i = 0; i < 24; i++)
+            {
+                float a = i / 24f * Mathf.PI * 2f;
+                Vector3 c = center + new Vector3(Mathf.Sin(a), Mathf.Cos(a), 0f) * radius;
+                float size = i == 0 ? 0.0028f : 0.0012f; // la marca de arriba (= adelante) más grande
+                BoxMinMax("Dial", device, c - Vector3.one * size, c + Vector3.one * size, i == 0 ? trace : dim, false);
+            }
+
+            Transform Needle(string name, Color color, float length, float z)
+            {
+                var pivot = Group(name, device);
+                pivot.localPosition = new Vector3(center.x, center.y, z);
+                BoxMinMax("Aguja", pivot, new Vector3(-0.0016f, -0.004f, -0.0004f), new Vector3(0.0016f, length, 0.0004f),
+                    UnlitMat(name, color), false);
+                return pivot;
+            }
+            Transform trainNeedle = Needle("Sonda_Aguja_Tren", new Color(0.95f, 0.95f, 0.92f), radius * 0.9f, -0.001f);
+            Transform targetNeedle = Needle("Sonda_Aguja_Objetivo", new Color(1f, 0.72f, 0.2f), radius * 0.75f, -0.002f);
+
+            TextMesh Text(string name, Vector3 position, float size)
+            {
+                var go = new GameObject(name);
+                go.transform.SetParent(device, false);
+                go.transform.localPosition = position;
+                var mesh = go.AddComponent<TextMesh>();
+                mesh.fontSize = 48;
+                mesh.characterSize = size;
+                mesh.anchor = TextAnchor.UpperLeft;
+                mesh.color = new Color(0.45f, 1f, 0.55f);
+                Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                mesh.font = font;
+                go.GetComponent<MeshRenderer>().sharedMaterial = font.material;
+                return mesh;
+            }
+            TextMesh trainText = Text("Texto_Tren", new Vector3(-0.064f, -0.022f, -0.001f), 0.0021f);
+            TextMesh targetText = Text("Texto_Objetivo", new Vector3(-0.064f, -0.036f, -0.001f), 0.0021f);
+            trainText.color = new Color(0.95f, 0.95f, 0.92f);
+            targetText.color = new Color(1f, 0.72f, 0.2f);
+            Text("Texto_Senal", new Vector3(-0.064f, -0.053f, -0.001f), 0.0017f).text = "SEÑAL";
+
+            var bars = new Renderer[5];
+            for (int i = 0; i < bars.Length; i++)
+            {
+                float x = 0.002f + i * 0.012f;
+                bars[i] = BoxMinMax($"Barra_{i}", device, new Vector3(x, -0.066f, -0.001f),
+                    new Vector3(x + 0.008f, -0.06f + i * 0.002f, -0.0002f), trace, false).GetComponent<Renderer>();
+            }
+            foreach (Renderer r in device.GetComponentsInChildren<Renderer>())
+            {
+                r.shadowCastingMode = ShadowCastingMode.Off;
+                r.receiveShadows = false;
+            }
+
+            var probe = motor.gameObject.AddComponent<PortableProbe>();
+            SetReference(probe, "settings", LoadOrCreateAsset<ProbeSettings>(ProbeSettingsPath));
+            SetReference(probe, "scanner", train.GetComponent<ProbeScanner>());
+            SetReference(probe, "head", head);
+            SetReference(probe, "carrier", motor.GetComponent<PlayerCarrier>());
+            SetReference(probe, "toggle", FindActionReference("Player/ToggleProbe"));
+            SetReference(probe, "device", device);
+            SetReference(probe, "trainNeedle", trainNeedle);
+            SetReference(probe, "targetNeedle", targetNeedle);
+            SetReference(probe, "trainText", trainText);
+            SetReference(probe, "targetText", targetText);
+            var so = new SerializedObject(probe);
+            var list = so.FindProperty("qualityBars");
+            list.arraySize = bars.Length;
+            for (int i = 0; i < bars.Length; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = bars[i];
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static Material UnlitMat(string name, Color color)
