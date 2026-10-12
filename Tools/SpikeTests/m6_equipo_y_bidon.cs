@@ -17,9 +17,11 @@ var gear = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Equipment.Playe
 var vitals = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Survival.PlayerVitals>();
 var clock = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Survival.GameClock>();
 var port = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Train.FuelPort>();
-var vehicle = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Train.FuelSource>();
+SurvivalEnTren.Train.FuelSource vehicle = null;
+foreach (var s in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Train.FuelSource>()) if (s.StableId == "fuel_prueba_vehiculo_001") vehicle = s;
 var rack = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Equipment.SuitRack>();
-var crowbar = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Equipment.GearPickup>();
+SurvivalEnTren.Equipment.GearPickup crowbar = null;
+foreach (var g in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Equipment.GearPickup>()) if (g.name == "Barreta") crowbar = g;
 var can1 = UnityEngine.GameObject.Find("Bidon_1").GetComponent<SurvivalEnTren.Train.FuelCan>();
 var canCarry = can1.GetComponent<SurvivalEnTren.Interaction.Carryable>();
 var fuelSettings = tank.Settings;

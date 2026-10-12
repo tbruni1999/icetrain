@@ -59,6 +59,11 @@ namespace SurvivalEnTren.Survival
         [Tooltip("Daño por cada m/s de caída por encima de la velocidad segura (12: caer de 5 m quita ~50).")]
         [SerializeField, Range(0f, 50f)] private float fallDamagePerMetersPerSecond = 12f;
 
+        [Header("Refugios sin calefacción (estaciones, POIs)")]
+        [Tooltip("Cuántos grados más templado que el exterior está el aire adentro de un lugar resguardado sin calefacción " +
+                 "(sin viento, pero frío). Con 15 y -25 °C afuera: -10 °C adentro.")]
+        [SerializeField, Range(0f, 40f)] private float unheatedShelterOffsetC = 15f;
+
         [Header("Traje (sección 7: el traje modifica la pérdida térmica)")]
         [Tooltip("Con el traje puesto, el cuerpo pierde esta fracción del calor que perdería sin él (0,5 = la mitad).")]
         [SerializeField, Range(0.05f, 1f)] private float suitCoolingFactor = 0.5f;
@@ -90,6 +95,7 @@ namespace SurvivalEnTren.Survival
         public float RegenMinEnergy => regenMinEnergy;
         public float FallSafeSpeedMetersPerSecond => fallSafeSpeedMetersPerSecond;
         public float FallDamagePerMetersPerSecond => fallDamagePerMetersPerSecond;
+        public float UnheatedShelterOffsetC => unheatedShelterOffsetC;
         public float SuitCoolingFactor => suitCoolingFactor;
         public float KnockoutHours => knockoutHours;
         public Vector4 WakeUpVitals => wakeUpVitals;

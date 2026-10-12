@@ -153,3 +153,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9414baefefb50d645b5fcf16f5a5c2f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalEnTren.Interaction.Carryable
+  oneHanded: 0

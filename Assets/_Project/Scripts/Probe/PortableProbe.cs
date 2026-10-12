@@ -12,7 +12,7 @@ namespace SurvivalEnTren.Probe
     ///   consola del tren. Las dos relativas a hacia dónde mira el jugador (arriba = adelante).
     /// - Distancias aproximadas y una barra de calidad de señal (baja con la distancia y la interferencia).
     /// - Interferencias (ProbeInterference): las agujas tiemblan y la calidad baja.
-    /// - Con algo en las manos (una caja) se guarda sola.
+    /// - Con algo grande en las manos (una caja) se guarda sola; con un bidón (una mano) se puede seguir usando.
     /// </summary>
     public class PortableProbe : MonoBehaviour
     {
@@ -68,7 +68,7 @@ namespace SurvivalEnTren.Probe
 
         private void LateUpdate()
         {
-            bool handsBusy = carrier != null && carrier.Holding != null;
+            bool handsBusy = carrier != null && carrier.Holding != null && !carrier.Holding.OneHanded; // un bidón deja una mano libre
             bool wantOut = _out && !handsBusy;
             _raise = Mathf.MoveTowards(_raise, wantOut ? 1f : 0f, Time.deltaTime * 4f);
             device.gameObject.SetActive(_raise > 0f);

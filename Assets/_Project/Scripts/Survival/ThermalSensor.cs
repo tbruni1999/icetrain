@@ -15,6 +15,8 @@ namespace SurvivalEnTren.Survival
         [SerializeField] private Transform probe;
         [SerializeField] private float probeHeightMeters = 1f;
         [SerializeField] private TrainInteriorClimate[] climates;
+        [Tooltip("Lugares resguardados sin calefacción (estaciones, refugios).")]
+        [SerializeField] private ThermalZone[] zones;
 
         public bool IsSheltered { get; private set; }
 
@@ -28,6 +30,18 @@ namespace SurvivalEnTren.Survival
                     IsSheltered = true;
                     vitals.AmbientTemperatureC = climate.InteriorTemperatureC;
                     return;
+                }
+            }
+            if (zones != null)
+            {
+                foreach (ThermalZone zone in zones)
+                {
+                    if (zone != null && zone.Contains(point))
+                    {
+                        IsSheltered = true;
+                        vitals.AmbientTemperatureC = vitals.Settings.OutsideTemperatureC + vitals.Settings.UnheatedShelterOffsetC;
+                        return;
+                    }
                 }
             }
             IsSheltered = false;

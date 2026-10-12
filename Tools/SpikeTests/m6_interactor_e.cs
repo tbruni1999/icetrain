@@ -13,7 +13,8 @@ var motor = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Player.PlayerM
 var look = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Player.PlayerLook>();
 var carrier = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Interaction.PlayerCarrier>();
 var clock = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Survival.GameClock>();
-var vehicle = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Train.FuelSource>();
+SurvivalEnTren.Train.FuelSource vehicle = null;
+foreach (var s in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Train.FuelSource>()) if (s.StableId == "fuel_prueba_vehiculo_001") vehicle = s;
 var can1 = UnityEngine.GameObject.Find("Bidon_1").GetComponent<SurvivalEnTren.Train.FuelCan>();
 var canCarry = can1.GetComponent<SurvivalEnTren.Interaction.Carryable>();
 var log = new System.Text.StringBuilder();

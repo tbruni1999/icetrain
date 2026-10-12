@@ -3,6 +3,7 @@ using System.Linq;
 using SurvivalEnTren.Equipment;
 using SurvivalEnTren.Interaction;
 using SurvivalEnTren.Player;
+using SurvivalEnTren.Poi;
 using SurvivalEnTren.Probe;
 using SurvivalEnTren.Rail;
 using SurvivalEnTren.Spike;
@@ -272,6 +273,10 @@ namespace SurvivalEnTren.EditorTools
             var list = climates.FindProperty("climates");
             list.arraySize = 1;
             list.GetArrayElementAtIndex(0).objectReferenceValue = climate;
+            var zoneList = climates.FindProperty("zones");
+            ThermalZone[] zones = Object.FindObjectsByType<ThermalZone>();
+            zoneList.arraySize = zones.Length;
+            for (int i = 0; i < zones.Length; i++) zoneList.GetArrayElementAtIndex(i).objectReferenceValue = zones[i];
             climates.ApplyModifiedPropertiesWithoutUndo();
 
             var hud = motor.gameObject.AddComponent<SurvivalHud>();
@@ -406,7 +411,10 @@ namespace SurvivalEnTren.EditorTools
             BoxMinMax("Pico", go.transform, new Vector3(0.06f, 0.4f, -0.025f), new Vector3(0.13f, 0.45f, 0.025f), p.Fuel, false);
             var body = go.AddComponent<Rigidbody>();
             body.interpolation = RigidbodyInterpolation.Interpolate;
-            go.AddComponent<Carryable>();
+            var carryable = go.AddComponent<Carryable>();
+            var carryableSo = new SerializedObject(carryable);
+            carryableSo.FindProperty("oneHanded").boolValue = true; // una mano libre para la sonda portátil
+            carryableSo.ApplyModifiedPropertiesWithoutUndo();
             SetReference(go.AddComponent<FuelCan>(), "settings", fuel);
         }
 
@@ -476,7 +484,7 @@ namespace SurvivalEnTren.EditorTools
             RailSegment straight3 = GameObject.Find("Tramo_3_Recta").GetComponent<RailSegment>();
 
             Signal("poi_prueba_rail1a_001", ProbeSignalType.EstructuraBajoNieve, 1f, new Vector3(40f, 0f, -200f), straight1a, root,
-                marker => BoxMinMax("Bulto_Enterrado", marker, new Vector3(-3f, -0.5f, -4f), new Vector3(3f, 1.4f, 4f), p.Ballast));
+                marker => BuildStation(marker, p));
             Signal("poi_prueba_rail1b_002", ProbeSignalType.MasaMetalica, 1f, new Vector3(480f, 0f, 150f), straight1b, root,
                 marker =>
                 {
@@ -499,6 +507,167 @@ namespace SurvivalEnTren.EditorTools
                     light.range = 6f;
                     light.intensity = 3f;
                 });
+        }
+
+        // ---------------------------------------------------------------- Estación de mantenimiento (M6)
+
+        // Primer POI (sección 20.3 a 20.7), hecho a mano: pequeña estación de la Red Blanca, medio enterrada en
+        // nieve, junto a la vía (la puerta mira a la vía, hacia +x). Una sala principal con el depósito de
+        // combustible, la bomba manual vieja y un poco de material, y una segunda sala vacía (la tentación
+        // opcional de 20.6: el blueprint llega en M9). Sin calefacción: frío, pero sin viento.
+        private static void BuildStation(Transform marker, Palette p)
+        {
+            FuelSettings fuel = LoadOrCreateAsset<FuelSettings>(FuelSettingsPath);
+            Material concrete = Mat("Estacion_Muro", new Color(0.5f, 0.52f, 0.54f));
+            Material floorMat = Mat("Estacion_Piso", new Color(0.3f, 0.3f, 0.32f));
+            Material roofMat = Mat("Estacion_Techo", new Color(0.32f, 0.33f, 0.36f));
+            Material doorMat = Mat("Estacion_Puerta", new Color(0.38f, 0.5f, 0.45f));
+            Material iceMat = Mat("Hielo", new Color(0.72f, 0.88f, 0.97f));
+            Material clothMat = Mat("Tela", new Color(0.55f, 0.62f, 0.72f));
+            Material sheetMat = Mat("Chapa", new Color(0.55f, 0.57f, 0.6f));
+
+            var station = Group("Estacion_Mantenimiento", marker);
+
+            // Cáscara: piso, cuatro paredes (puerta al este), techo y un tabique con vano entre las dos salas.
+            BoxMinMax("Piso", station, new Vector3(-4.1f, 0f, -3.1f), new Vector3(4.1f, 0.05f, 3.1f), floorMat);
+            var doorway = new List<Opening> { new Opening(-0.55f, 0.55f, 0f, 2.1f) };
+            WallAlongZ("Pared_Este", station, 4.05f, -3.1f, 3.1f, 0f, 2.8f, doorway, concrete);
+            WallAlongZ("Pared_Oeste", station, -4.05f, -3.1f, 3.1f, 0f, 2.8f, new List<Opening>(), concrete);
+            WallAlongX("Pared_Norte", station, 3.05f, -4.1f, 4.1f, 0f, 2.8f, new List<Opening>(), concrete);
+            WallAlongX("Pared_Sur", station, -3.05f, -4.1f, 4.1f, 0f, 2.8f, new List<Opening>(), concrete);
+            WallAlongZ("Tabique", station, -1.5f, -3.0f, 3.0f, 0f, 2.8f, doorway, concrete);
+            BoxMinMax("Techo", station, new Vector3(-4.3f, 2.8f, -3.3f), new Vector3(4.3f, 3.0f, 3.3f), roofMat);
+
+            // Medio enterrada: nieve acumulada contra el lado norte y el oeste y sobre la mitad del techo.
+            BoxMinMax("Nieve_Techo", station, new Vector3(-4.3f, 3.0f, -3.3f), new Vector3(0.5f, 3.4f, 3.3f), p.Snow);
+            var north = BoxMinMax("Nieve_Norte", station, new Vector3(-5f, -1.2f, -2.5f), new Vector3(5f, 1.2f, 2.5f), p.Snow);
+            north.transform.localPosition = new Vector3(0f, 0.9f, 5.3f);
+            north.transform.localRotation = Quaternion.Euler(20f, 0f, 0f);
+            var west = BoxMinMax("Nieve_Oeste", station, new Vector3(-2.5f, -1.2f, -4f), new Vector3(2.5f, 1.2f, 4f), p.Snow);
+            west.transform.localPosition = new Vector3(-6.3f, 0.9f, 0f);
+            west.transform.localRotation = Quaternion.Euler(0f, 0f, 20f);
+
+            // Puerta corrediza por afuera de la pared (como las del tren), cerrada, y el hielo que la traba.
+            var door = Group("Puerta", station);
+            door.localPosition = new Vector3(4.1f, 0f, 0f);
+            var leaf = Group("Hoja", door);
+            BoxMinMax("Panel", leaf, new Vector3(0.01f, 0f, -0.57f), new Vector3(0.07f, 2.12f, 0.57f), doorMat);
+            BoxMinMax("Manija", leaf, new Vector3(0.07f, 0.95f, 0.35f), new Vector3(0.1f, 1.05f, 0.5f), p.Track, false);
+            var doorZone = BoxMinMax("Zona_Uso", door, new Vector3(-0.15f, 0.05f, -0.5f), new Vector3(0.15f, 2.05f, 0.5f), doorMat);
+            doorZone.GetComponent<Collider>().isTrigger = true;
+            Object.DestroyImmediate(doorZone.GetComponent<MeshRenderer>());
+            var sliding = door.gameObject.AddComponent<SlidingDoor>();
+            SetReference(sliding, "leaf", leaf);
+            var slidingSo = new SerializedObject(sliding);
+            slidingSo.FindProperty("openOffset").vector3Value = new Vector3(0f, 0f, -1.15f);
+            slidingSo.FindProperty("doorwayCenter").vector3Value = new Vector3(0f, 1.05f, 0f);
+            slidingSo.FindProperty("doorwayHalfExtents").vector3Value = new Vector3(0.35f, 1.0f, 0.55f);
+            slidingSo.ApplyModifiedPropertiesWithoutUndo();
+
+            // Hielo grueso en el marco: más grueso que la zona de uso de la puerta, así se apunta primero al hielo.
+            var ice = Group("Hielo", station);
+            ice.localPosition = new Vector3(4.17f, 0f, 0f);
+            BoxMinMax("Bloque_Principal", ice, new Vector3(0f, 0f, -0.64f), new Vector3(0.3f, 2.2f, 0.64f), iceMat);
+            BoxMinMax("Bloque_Pie", ice, new Vector3(0f, 0f, -0.75f), new Vector3(0.42f, 0.9f, 0.5f), iceMat);
+            BoxMinMax("Bloque_Alto", ice, new Vector3(0f, 1.4f, -0.3f), new Vector3(0.38f, 2.3f, 0.78f), iceMat);
+            var frozen = ice.gameObject.AddComponent<FrozenDoor>();
+            var frozenSo = new SerializedObject(frozen);
+            frozenSo.FindProperty("stableId").stringValue = "door_prueba_estacion_001";
+            frozenSo.ApplyModifiedPropertiesWithoutUndo();
+
+            // Sala principal: depósito de combustible contra la pared norte (se saca con la bomba manual).
+            var tank = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            tank.name = "Deposito";
+            tank.transform.SetParent(station, false);
+            tank.transform.localPosition = new Vector3(1.8f, 0.85f, 2.1f);
+            tank.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+            tank.transform.localScale = new Vector3(1.3f, 1.7f, 1.3f);
+            tank.GetComponent<MeshRenderer>().sharedMaterial = p.Track;
+            foreach (float legX in new[] { 0.7f, 2.9f })
+                BoxMinMax("Pata_Deposito", station, new Vector3(legX - 0.1f, 0.05f, 1.7f), new Vector3(legX + 0.1f, 0.3f, 2.5f), p.Track);
+            var valve = Group("Valvula", station);
+            valve.localPosition = new Vector3(1.8f, 0.9f, 1.42f);
+            BoxMinMax("Rueda", valve, new Vector3(-0.1f, -0.1f, -0.08f), new Vector3(0.1f, 0.1f, 0.0f), p.Fuel, false);
+            var depot = tank.AddComponent<FuelSource>(); // todo el tanque se puede apuntar, no solo la válvula
+            SetReference(depot, "settings", fuel);
+            var depotSo = new SerializedObject(depot);
+            depotSo.FindProperty("stableId").stringValue = "fuel_estacion_deposito_001";
+            depotSo.FindProperty("method").enumValueIndex = (int)FuelSource.Method.HandPump;
+            depotSo.FindProperty("displayName").stringValue = "depósito";
+            depotSo.FindProperty("liters").floatValue = fuel.StationDepotLiters;
+            depotSo.ApplyModifiedPropertiesWithoutUndo();
+
+            // Mesa de trabajo contra la pared sur: la bomba manual vieja y una ración.
+            BoxMinMax("Mesa", station, new Vector3(0.4f, 0f, -2.95f), new Vector3(2.6f, 0.85f, -2.3f), p.Furniture);
+            var pump = Group("Bomba_Manual", station);
+            pump.localPosition = new Vector3(1.2f, 0.85f, -2.62f);
+            BoxMinMax("Cuerpo", pump, new Vector3(-0.08f, 0f, -0.08f), new Vector3(0.08f, 0.32f, 0.08f), p.Track, false);
+            BoxMinMax("Palanca", pump, new Vector3(-0.22f, 0.3f, -0.02f), new Vector3(0.1f, 0.34f, 0.02f), p.Fuel, false);
+            BoxMinMax("Manguera", pump, new Vector3(0.08f, 0.02f, -0.02f), new Vector3(0.3f, 0.06f, 0.02f), p.Track, false);
+            var pumpZone = BoxMinMax("Zona_Uso", pump, new Vector3(-0.3f, 0f, -0.3f), new Vector3(0.35f, 0.6f, 0.3f), p.Track);
+            pumpZone.GetComponent<Collider>().isTrigger = true;
+            Object.DestroyImmediate(pumpZone.GetComponent<MeshRenderer>());
+            var pumpPickup = new SerializedObject(pump.gameObject.AddComponent<GearPickup>());
+            pumpPickup.FindProperty("gear").enumValueIndex = (int)GearId.HandPump;
+            pumpPickup.FindProperty("displayName").stringValue = "bomba manual";
+            pumpPickup.ApplyModifiedPropertiesWithoutUndo();
+
+            var ration = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            ration.name = "Racion_Estacion";
+            ration.transform.SetParent(station, false);
+            ration.transform.localPosition = new Vector3(2.1f, 0.9f, -2.62f);
+            ration.transform.localScale = new Vector3(0.18f, 0.1f, 0.12f);
+            ration.GetComponent<MeshRenderer>().sharedMaterial = p.Food;
+            var rationBody = ration.AddComponent<Rigidbody>();
+            rationBody.mass = 0.4f;
+            rationBody.interpolation = RigidbodyInterpolation.Interpolate;
+            ration.AddComponent<FoodItem>();
+
+            // Material suelto con lógica de lugar (sección 15, regla de loot): tablones de un pallet roto contra el
+            // tabique, un rollo de tela de una manta, una chapa de un armario. Se llevan en la mano; sus usos son de M8.
+            LooseProp("Tablon_1", station, new Vector3(-0.8f, 0.09f, 1.6f), new Vector3(1.4f, 0.08f, 0.3f), p.Box, 4f);
+            LooseProp("Tablon_2", station, new Vector3(-0.8f, 0.18f, 1.6f), new Vector3(1.4f, 0.08f, 0.3f), p.Box, 4f);
+            LooseProp("Tela_Rollo", station, new Vector3(-0.9f, 0.2f, -1.9f), new Vector3(0.5f, 0.28f, 0.3f), clothMat, 2f);
+            LooseProp("Chapa_Metal", station, new Vector3(0.2f, 0.07f, -0.4f), new Vector3(0.9f, 0.03f, 0.6f), sheetMat, 7f);
+
+            // Segunda sala (oeste): vacía por ahora, con un escritorio. Reservada para la tentación opcional de 20.6.
+            var annex = Group("Sala_Opcional", station);
+            BoxMinMax("Escritorio", annex, new Vector3(-3.9f, 0f, -0.6f), new Vector3(-3.2f, 0.8f, 0.6f), p.Furniture);
+
+            // Luz de emergencia tenue (sin energía, pero hay que poder ver adentro).
+            var lamp = new GameObject("Luz_Emergencia").AddComponent<Light>();
+            lamp.transform.SetParent(station, false);
+            lamp.transform.localPosition = new Vector3(0.5f, 2.2f, 0f);
+            lamp.type = LightType.Point;
+            lamp.color = new Color(0.75f, 0.85f, 1f);
+            lamp.range = 7f;
+            lamp.intensity = 0.8f;
+            lamp.shadows = LightShadows.None;
+
+            // Frío sin viento adentro, y la sonda pierde un poco de señal (paredes gruesas y metal).
+            var thermal = Group("Zona_Termica", station);
+            var thermalSo = new SerializedObject(thermal.gameObject.AddComponent<ThermalZone>());
+            thermalSo.FindProperty("center").vector3Value = new Vector3(0f, 1.4f, 0f);
+            thermalSo.FindProperty("size").vector3Value = new Vector3(8.0f, 2.8f, 6.0f);
+            thermalSo.ApplyModifiedPropertiesWithoutUndo();
+            var interference = new SerializedObject(marker.gameObject.AddComponent<ProbeInterference>());
+            interference.FindProperty("radiusMeters").floatValue = 10f;
+            interference.FindProperty("strength").floatValue = 0.35f;
+            interference.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void LooseProp(string name, Transform parent, Vector3 center, Vector3 size, Material material, float massKg)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.name = name;
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = center;
+            go.transform.localScale = size;
+            go.GetComponent<MeshRenderer>().sharedMaterial = material;
+            var body = go.AddComponent<Rigidbody>();
+            body.mass = massKg;
+            body.interpolation = RigidbodyInterpolation.Interpolate;
+            go.AddComponent<Carryable>();
         }
 
         private static void Signal(string id, ProbeSignalType type, float strength, Vector3 position, RailSegment segment,

@@ -11,10 +11,15 @@ namespace SurvivalEnTren.Interaction
     [RequireComponent(typeof(Rigidbody))]
     public class Carryable : MonoBehaviour, IInteractable
     {
+        [Tooltip("Se lleva con una sola mano (un bidón): deja la otra libre para la sonda portátil. " +
+                 "Los objetos grandes (cajas) ocupan las dos manos.")]
+        [SerializeField] private bool oneHanded;
+
         private Rigidbody _body;
         private IItemDescription _description;
         private bool _descriptionLooked;
 
+        public bool OneHanded => oneHanded;
         public Rigidbody Body => _body != null ? _body : _body = GetComponent<Rigidbody>();
 
         public string GetPrompt(PlayerInteractor interactor)
