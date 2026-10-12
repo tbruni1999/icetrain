@@ -1,5 +1,5 @@
 // Prueba del M1: el jugador parado arriba de una caja dentro del tren en movimiento
-// tiene que viajar con la caja (y la caja con el tren), sin quedarse atrás.
+// tiene que viajar con el tren (lo que sostiene a la caja), sin quedarse atrás ni torcer la cámara.
 // Cómo correrla: escena Spike_TrenEstable recién puesta en Play,
 //   unity command eval_file --file "Tools/SpikeTests/parado_en_caja.cs"
 // Resultado en la Console, líneas [Caja].
@@ -47,7 +47,8 @@ System.Collections.IEnumerator Run()
     yield return Phase(0f, 20f);
 
     UnityEngine.Debug.Log($"[Caja] pisando al empezar: {platformName}, a 60 km/h: {platformAtSpeed}." +
-        $"  Corrimiento máx. respecto del tren: jugador {maxPlayerShift * 100f:0.00} cm, caja {maxBoxShift * 100f:0.00} cm (acelerar a 60, curva, frenar).");
+        $"  Corrimiento máx. respecto del tren: jugador {maxPlayerShift * 100f:0.00} cm, caja {maxBoxShift * 100f:0.00} cm (acelerar a 60, curva, frenar)." +
+        $"  Inclinación de la cámara: {UnityEngine.Vector3.Angle(UnityEngine.Camera.main.transform.up, UnityEngine.Vector3.ProjectOnPlane(UnityEngine.Vector3.up, UnityEngine.Camera.main.transform.forward)):0.0}° (debe ser 0).");
 }
 
 motor.StartCoroutine(Run());

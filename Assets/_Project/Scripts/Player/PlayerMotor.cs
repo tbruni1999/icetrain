@@ -11,7 +11,9 @@ namespace SurvivalEnTren.Player
     /// Cómo acompaña al tren (estrategia A del spike, Anexo C):
     /// - Todo se calcula en FixedUpdate, el mismo "tic" de física en el que se mueve el tren,
     ///   y antes que el tren (orden de ejecución -100), así ve la pose del tren ya aplicada.
-    /// - Plataforma es cualquier cuerpo físico que pise: el tren o una caja encima del tren.
+    /// - Plataforma es un cuerpo cinemático (el tren). Parado sobre un objeto suelto (una caja),
+    ///   la plataforma es lo que sostiene a ese objeto (el tren), no el objeto.
+    /// - De la plataforma solo se copia el giro horizontal: el jugador siempre queda derecho.
     /// - Mientras pisa una plataforma, se guarda la posición del jugador relativa a ella;
     ///   en cada tic primero se lo lleva con la plataforma y después se aplica su caminata.
     ///   No se usa parenting (el documento pide no confiar en eso sin pruebas).
@@ -25,6 +27,8 @@ namespace SurvivalEnTren.Player
     {
         // Qué tan "piso" tiene que ser una superficie para pararse (1 = horizontal).
         private const float GroundNormalMinY = 0.6f;
+        // Hasta qué distancia debajo de un objeto suelto se busca lo que lo sostiene, en metros.
+        private const float SupportSearchDistanceMeters = 3f;
 
         [SerializeField] private PlayerMotorSettings settings;
         [SerializeField] private InputActionReference move;
@@ -169,10 +173,46 @@ namespace SurvivalEnTren.Player
             if (hit.normal.y < GroundNormalMinY) return;
             _groundHit = true;
 
-            // Cualquier cuerpo físico cuenta como plataforma: el tren, o una caja apoyada en el tren
-            // (si la caja viaja con el tren, el jugador parado encima viaja con la caja).
             Rigidbody body = hit.collider.attachedRigidbody;
-            if (body != null) _groundBody = body;
+            if (body == null) return;
+
+            // Un cuerpo cinemático (movido por código, como el tren) es plataforma.
+            if (body.isKinematic)
+            {
+                _groundBody = body;
+                return;
+            }
+
+            // Un objeto suelto (una caja) no es plataforma: puede inclinarse o moverse cuando el
+            // jugador lo empuja. Se viaja con lo que lo sostiene (el tren); sobre la nieve, con nada.
+            Rigidbody support = FindSupportBelow(body);
+            if (support != null) _groundBody = support;
+        }
+
+        private static readonly RaycastHit[] SupportHits = new RaycastHit[8];
+
+        // Busca debajo de un objeto suelto el primer cuerpo cinemático que lo sostiene.
+        private Rigidbody FindSupportBelow(Rigidbody looseBody)
+        {
+            int count = Physics.RaycastNonAlloc(looseBody.worldCenterOfMass, Vector3.down, SupportHits,
+                SupportSearchDistanceMeters, ~0, QueryTriggerInteraction.Ignore);
+            System.Array.Sort(SupportHits, 0, count, RaycastHitDistanceComparer.Instance);
+
+            for (int i = 0; i < count; i++)
+            {
+                Rigidbody below = SupportHits[i].collider.attachedRigidbody;
+                if (below == looseBody || SupportHits[i].collider.transform == transform) continue;
+                if (below == null) return null;          // apoyado en el suelo fijo
+                if (below.isKinematic) return below;      // apoyado en el tren
+                // otro objeto suelto (cajas apiladas): seguir buscando más abajo
+            }
+            return null;
+        }
+
+        private sealed class RaycastHitDistanceComparer : System.Collections.Generic.IComparer<RaycastHit>
+        {
+            public static readonly RaycastHitDistanceComparer Instance = new RaycastHitDistanceComparer();
+            public int Compare(RaycastHit a, RaycastHit b) => a.distance.CompareTo(b.distance);
         }
 
         private void SetReference(Rigidbody platform)
@@ -197,10 +237,14 @@ namespace SurvivalEnTren.Player
             return Quaternion.Inverse(_platform.rotation) * (world - _platform.position);
         }
 
+        // Solo el giro horizontal de la plataforma: el cuerpo y la cabeza del jugador siempre quedan
+        // derechos aunque lo que pisa se incline (la posición sí sigue la pose completa).
         private Quaternion ReferenceRotation(bool usePhysicsPose)
         {
             if (_platform == null) return Quaternion.identity;
-            return usePhysicsPose ? _platform.rotation : _platform.transform.rotation;
+            Quaternion rotation = usePhysicsPose ? _platform.rotation : _platform.transform.rotation;
+            Vector3 forward = Vector3.ProjectOnPlane(rotation * Vector3.forward, Vector3.up);
+            return forward.sqrMagnitude > 1e-6f ? Quaternion.LookRotation(forward, Vector3.up) : Quaternion.identity;
         }
 
         /// <summary>
