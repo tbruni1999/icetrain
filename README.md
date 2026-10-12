@@ -5,7 +5,7 @@ Proyecto Unity 6 + URP + C#. El diseño completo está en `Docs/Documento_maestr
 ## Versión fijada
 - **Unity Editor: 6000.6.5f1** (Unity 6.6, la que Tomi instaló desde el Hub). Está escrita en `ProjectSettings/ProjectVersion.txt`.
 - No se actualiza durante la vertical slice salvo necesidad demostrada.
-- Paquetes: Universal RP 17.6.0 (deducida del número del Editor, sin verificar) y Input System 1.14.2 (ver `Packages/manifest.json`). No hay otros.
+- Paquetes: Universal RP 17.6.0 (deducida del número del Editor, sin verificar) y Input System 1.20.0 (la 1.14.2 falla en Unity 6.6; ver `Packages/manifest.json`). No hay otros.
 
 ## Primera vez que se abre
 1. En Unity Hub: Add > seleccionar esta carpeta, con el Editor 6000.6.5f1.
