@@ -23,7 +23,9 @@ namespace SurvivalEnTren.UI
         [Tooltip("Si todas las barras están por encima de este valor, el HUD se vuelve casi transparente.")]
         [SerializeField, Range(0f, 100f)] private float quietAbove = 60f;
         [Tooltip("Transparencia del HUD cuando todo está bien (0 = invisible, 1 = opaco).")]
-        [SerializeField, Range(0f, 1f)] private float quietAlpha = 0.35f;
+        [SerializeField, Range(0f, 1f)] private float quietAlpha = 0.6f;
+        [Tooltip("Opacidad de la placa oscura detrás de las barras (para leerlas sobre la nieve).")]
+        [SerializeField, Range(0f, 1f)] private float backingOpacity = 0.6f;
 
         private GUIStyle _label;
         private float _alpha = 1f;
@@ -38,7 +40,11 @@ namespace SurvivalEnTren.UI
             _alpha = Mathf.MoveTowards(_alpha, target, Time.unscaledDeltaTime * 2f);
 
             bool cooling = vitals.AmbientTemperatureC < vitals.Settings.ComfortTemperatureC;
-            float x = 18f, y = Screen.height - 18f - 4 * 18f;
+            float x = 18f, y = Screen.height - 18f - 4 * RowHeight;
+
+            // Placa oscura translúcida detrás, para que se lea sobre la nieve.
+            GUI.color = new Color(0.04f, 0.05f, 0.07f, backingOpacity * _alpha);
+            GUI.DrawTexture(new Rect(x - 8f, y - 10f, 62f + BarWidth + 16f, 4 * RowHeight + 6f), Texture2D.whiteTexture);
             Bar(ref y, x, "VIDA", vitals.Health, null);
             Bar(ref y, x, "COMIDA", vitals.Satiety, null);
             Bar(ref y, x, "ENERGÍA", vitals.Energy, null);
@@ -46,9 +52,12 @@ namespace SurvivalEnTren.UI
             GUI.color = Color.white;
         }
 
+        private const float RowHeight = 20f;
+        private const float BarWidth = 120f;
+
         private void Bar(ref float y, float x, string name, float value, Color? normalColor)
         {
-            const float width = 110f, height = 6f;
+            const float width = BarWidth, height = 8f;
             Color fill = value < dangerBelow ? Danger : value < warningBelow ? Amber : normalColor ?? Color.white;
 
             // Sombra para que se lea sobre la nieve.
@@ -56,11 +65,11 @@ namespace SurvivalEnTren.UI
             GUI.Label(new Rect(x + 1f, y - 3f, 70f, 16f), name, _label);
             GUI.color = new Color(1f, 1f, 1f, 0.9f * _alpha);
             GUI.Label(new Rect(x, y - 4f, 70f, 16f), name, _label);
-            GUI.color = new Color(0f, 0f, 0f, 0.45f * _alpha);
+            GUI.color = new Color(0f, 0f, 0f, 0.6f * _alpha);
             GUI.DrawTexture(new Rect(x + 62f, y + 1f, width, height), Texture2D.whiteTexture);
             GUI.color = new Color(fill.r, fill.g, fill.b, _alpha);
             GUI.DrawTexture(new Rect(x + 62f, y + 1f, width * Mathf.Clamp01(value / 100f), height), Texture2D.whiteTexture);
-            y += 18f;
+            y += RowHeight;
         }
     }
 }
