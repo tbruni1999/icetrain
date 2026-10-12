@@ -44,6 +44,7 @@ namespace SurvivalEnTren.EditorTools
         private const string SurvivalSettingsPath = "Assets/_Project/Data/Survival/SurvivalSettings.asset";
         private const string BodyFeedbackProfilePath = "Assets/_Project/Data/Survival/BodyFeedbackProfile.asset";
         private const string ProbeSettingsPath = "Assets/_Project/Data/Probe/ProbeSettings.asset";
+        private const string FuelSettingsPath = "Assets/_Project/Data/Train/FuelSettings.asset";
         private const string InputPath = "Assets/_Project/Data/Input/IceTrainInput.inputactions";
 
         // Vía de prueba: un óvalo de dos rectas y dos curvas (~2,46 km por vuelta).
@@ -244,6 +245,13 @@ namespace SurvivalEnTren.EditorTools
             var climate = train.AddComponent<TrainInteriorClimate>();
             SetReference(climate, "settings", settings);
             SetReference(climate, "clock", clock);
+            SetReference(climate, "fuel", train.GetComponent<FuelTank>());
+
+            // El motor gasta combustible con el reloj del juego (la calefacción gasta en el clima).
+            var burner = train.AddComponent<TrainFuelBurner>();
+            SetReference(burner, "tank", train.GetComponent<FuelTank>());
+            SetReference(burner, "controls", train.GetComponent<TrainControls>());
+            SetReference(burner, "clock", clock);
             var climateSo = new SerializedObject(climate);
             climateSo.FindProperty("interiorCenter").vector3Value =
                 new Vector3(0f, (FloorTop + RoofBottom) * 0.5f, (EngineRoomFrontZ + BodyHalfLength) * 0.5f);
@@ -327,6 +335,7 @@ namespace SurvivalEnTren.EditorTools
             SetReference(overlay, "vitals", vitals);
             SetReference(overlay, "clock", clock);
             SetReference(overlay, "climate", climate);
+            SetReference(overlay, "fuel", train.GetComponent<FuelTank>());
             SetReference(overlay, "timeFast", FindActionReference("Debug/TimeFast"));
         }
 
@@ -577,6 +586,7 @@ namespace SurvivalEnTren.EditorTools
 
             var cab = Group("Zona_Cabina", interior);
             BuildCabControls(root, cab, p);
+            BuildFuelSystem(root, cab, p);
             BoxMinMax("Cabina_Asiento", cab, new Vector3(0.6f, FloorTop, 7.6f), new Vector3(1.1f, FloorTop + 0.5f, 8.1f), p.Furniture);
             BuildProbeConsole(root, cab, p);
 
@@ -706,6 +716,54 @@ namespace SurvivalEnTren.EditorTools
             SetReference(cabin, "powerDown", FindActionReference("Train/PowerDown"));
             SetReference(cabin, "reverserForward", FindActionReference("Train/ReverserForward"));
             SetReference(cabin, "reverserBack", FindActionReference("Train/ReverserBack"));
+        }
+
+        // Combustible del tren (M6): el tanque en la raíz del tren y el medidor en el pupitre, a la derecha
+        // del velocímetro: aguja (vacío a la izquierda, lleno a la derecha) y luz de reserva.
+        // El motor deja de dar potencia con el tanque vacío; el gasto lo agrega BuildSurvival (necesita el reloj).
+        private static void BuildFuelSystem(GameObject trainRoot, Transform cab, Palette p)
+        {
+            var tank = trainRoot.AddComponent<FuelTank>();
+            SetReference(tank, "settings", LoadOrCreateAsset<FuelSettings>(FuelSettingsPath));
+            SetReference(trainRoot.GetComponent<TrainDynamics>(), "fuel", tank);
+
+            Transform desk = cab.Find("Cabina_Pupitre");
+            float top = FloorTop + 1.0f;
+            const float sweep = 60f;
+            var gauge = Group("Medidor_Combustible", desk);
+            gauge.localPosition = new Vector3(0.72f, top + 0.22f, 8.95f);
+            BoxMinMax("Soporte", gauge, new Vector3(-0.03f, -0.22f, 0.02f), new Vector3(0.03f, 0f, 0.08f), p.Track, false);
+            var face = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            face.name = "Dial";
+            Object.DestroyImmediate(face.GetComponent<Collider>());
+            face.transform.SetParent(gauge, false);
+            face.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            face.transform.localScale = new Vector3(0.22f, 0.01f, 0.22f);
+            face.GetComponent<MeshRenderer>().sharedMaterial = p.Furniture;
+            for (int i = 0; i <= 4; i++) // vacío (rojo), 1/4, 1/2, 3/4, lleno
+            {
+                var tick = Group($"Marca_{i}", gauge);
+                tick.localPosition = new Vector3(0f, 0f, -0.012f);
+                tick.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(sweep, -sweep, i / 4f));
+                BoxMinMax("Raya", tick, new Vector3(-0.004f, 0.075f, -0.002f), new Vector3(0.004f, 0.105f, 0.002f),
+                    i == 0 ? p.PostMarker : p.Track, false);
+            }
+            Label("E", gauge, new Vector3(-0.072f, 0.032f, -0.013f), facingDriver: true);
+            Label("F", gauge, new Vector3(0.072f, 0.032f, -0.013f), facingDriver: true);
+            Label("COMB.", gauge, new Vector3(0f, -0.075f, -0.013f), facingDriver: true);
+            var needle = Group("Aguja_Eje", gauge);
+            needle.localPosition = new Vector3(0f, 0f, -0.016f);
+            BoxMinMax("Aguja", needle, new Vector3(-0.004f, -0.015f, -0.002f), new Vector3(0.004f, 0.095f, 0.002f), p.PostMarker, false);
+            var lamp = BoxMinMax("Luz_Reserva", gauge, new Vector3(-0.012f, -0.05f, -0.016f), new Vector3(0.012f, -0.03f, -0.012f),
+                UnlitMat("Luz_Reserva", new Color(0.22f, 0.04f, 0.04f)), false);
+
+            var display = gauge.gameObject.AddComponent<FuelGauge>();
+            SetReference(display, "tank", tank);
+            SetReference(display, "needlePivot", needle);
+            SetReference(display, "lamp", lamp.GetComponent<Renderer>());
+            var displaySo = new SerializedObject(display);
+            displaySo.FindProperty("sweepDegrees").floatValue = sweep;
+            displaySo.ApplyModifiedPropertiesWithoutUndo();
         }
 
         // Consola de la sonda principal (M5): mueble con una pantalla tipo CRT verde que mira al pasillo.

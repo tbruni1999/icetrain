@@ -21,6 +21,8 @@ namespace SurvivalEnTren.Train
         private static readonly int[] BufferDirections = { 1, -1 };
 
         [SerializeField] private TrainControls controls;
+        [Tooltip("Tanque de combustible (M6). Vacío, el motor no da potencia. Sin tanque asignado, siempre hay.")]
+        [SerializeField] private FuelTank fuel;
 
         private TrainMover _train;
 
@@ -37,7 +39,8 @@ namespace SurvivalEnTren.Train
 
             // Tracción en el sentido del reversor.
             int direction = (int)controls.Reverser;
-            if (direction != 0 && controls.PowerNotch > 0)
+            bool hasFuel = fuel == null || !fuel.IsEmpty; // sin combustible no hay tracción: el tren sigue por inercia
+            if (direction != 0 && controls.PowerNotch > 0 && hasFuel)
             {
                 float top = settings.TopSpeedKmh(controls.PowerNotch) / 3.6f;
                 float alongDirection = speed * direction;

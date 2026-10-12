@@ -1,4 +1,5 @@
 using SurvivalEnTren.Interaction;
+using SurvivalEnTren.Train;
 using UnityEngine;
 
 namespace SurvivalEnTren.Survival
@@ -9,7 +10,9 @@ namespace SurvivalEnTren.Survival
     /// puerta abierta. Así, al cerrar la puerta, vuelve el calor.
     /// - El volumen interior es una caja en coordenadas del tren (se mueve con el tren).
     /// - Avanza con el reloj del juego, también en las horas que se saltan (dormir).
-    /// - En M6 la calefacción va a depender del combustible (sección 8.1): por ahora siempre funciona.
+    /// - La calefacción gasta combustible del tanque (sección 8.1, M6) mientras está encendida, también con
+    ///   el tren parado y mientras se duerme. Sin combustible no calienta: el interior se enfría hasta
+    ///   la temperatura de afuera. Sin tanque asignado (escenas viejas), siempre funciona.
     /// </summary>
     public class TrainInteriorClimate : MonoBehaviour
     {
@@ -17,6 +20,8 @@ namespace SurvivalEnTren.Survival
 
         [SerializeField] private SurvivalSettings settings;
         [SerializeField] private GameClock clock;
+        [Tooltip("Tanque del que gasta la calefacción (M6). Vacío = sin calefacción.")]
+        [SerializeField] private FuelTank fuel;
         [Tooltip("Centro y tamaño del espacio interior, en coordenadas del tren (metros).")]
         [SerializeField] private Vector3 interiorCenter;
         [SerializeField] private Vector3 interiorSize = Vector3.one;
@@ -34,8 +39,10 @@ namespace SurvivalEnTren.Survival
         private SlidingDoor[] _doors;
 
         public float InteriorTemperatureC { get; private set; }
-        /// <summary>La calefacción está encendida (en M6 dependerá del combustible).</summary>
+        /// <summary>La calefacción está encendida (interruptor). Con el tanque vacío no calienta aunque esté encendida.</summary>
         public bool HeaterOn { get; set; } = true;
+        /// <summary>La calefacción está encendida pero sin combustible (no calienta).</summary>
+        public bool FuelStarved { get; private set; }
         public int OpenDoors { get; private set; }
 
         private void Awake()
@@ -65,6 +72,19 @@ namespace SurvivalEnTren.Survival
             float outside = settings.OutsideTemperatureC;
             float t = InteriorTemperatureC;
             float heating = HeaterOn ? heaterPowerCPerHour * Mathf.Clamp01((heaterTargetC - t) / 2f) : 0f;
+
+            // La calefacción encendida gasta combustible; si el tanque no alcanza, calienta solo la parte que pudo.
+            FuelStarved = false;
+            if (HeaterOn && fuel != null)
+            {
+                float needed = fuel.Settings.HeaterLitersPerHour * hours;
+                if (needed > 0f)
+                {
+                    float drawn = fuel.Draw(needed);
+                    FuelStarved = drawn < needed * 0.999f;
+                    heating *= drawn / needed;
+                }
+            }
             float loss = (wallLossPerHour + openDoorLossPerHour * OpenDoors) * (t - outside);
             InteriorTemperatureC = t + (heating - loss) * hours;
         }
