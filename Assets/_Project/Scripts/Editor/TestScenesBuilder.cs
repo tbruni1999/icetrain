@@ -51,11 +51,12 @@ namespace SurvivalEnTren.EditorTools
         private const float StopSignDistance = 150f;     // metros desde el inicio de la recta 1 (z -150)
 
         // Locomotora. Coordenadas locales: y = 0 es la cara superior del riel, z+ es adelante.
-        private const float BodyHalfWidth = 1.5f;
+        private const float BodyHalfWidth = 1.7f;   // 3,4 m de ancho exterior (Tomi: con 3 m se sentía angosto)
         private const float BodyHalfLength = 9.5f;
         private const float FloorTop = 1.0f;
         private const float RoofBottom = 3.4f;
         private const float WallThickness = 0.1f;
+        private const float InnerHalfWidth = BodyHalfWidth - WallThickness; // cara interior de las paredes
         private const float BogieOffsetZ = 6.5f;
         private const float DoorCenterZ = -6f;
         private const float DoorHalfWidth = 0.5f;
@@ -239,12 +240,12 @@ namespace SurvivalEnTren.EditorTools
             }
 
             float bench = FloorTop + 0.9f;
-            Box("Caja_Workbench_Chica", new Vector3(-1.0f, bench, 0.5f), Vector3.one * 0.3f, 3f);
-            Box("Caja_Workbench_Herramientas", new Vector3(-1.0f, bench, -0.4f), new Vector3(0.25f, 0.2f, 0.5f), 5f);
-            Box("Caja_Estante_Baja", new Vector3(1.2f, FloorTop + 0.13f, -1.5f), Vector3.one * 0.25f, 2f);
-            Box("Caja_Estante_Media", new Vector3(1.2f, FloorTop + 0.73f, -2.0f), Vector3.one * 0.25f, 2f);
-            Box("Caja_Estante_Alta", new Vector3(1.2f, FloorTop + 1.33f, -1.0f), Vector3.one * 0.25f, 2f);
-            Box("Caja_Cama", new Vector3(0.95f, FloorTop + 0.45f, 4.5f), Vector3.one * 0.2f, 1f);
+            Box("Caja_Workbench_Chica", new Vector3(-(InnerHalfWidth - 0.4f), bench, 0.5f), Vector3.one * 0.3f, 3f);
+            Box("Caja_Workbench_Herramientas", new Vector3(-(InnerHalfWidth - 0.4f), bench, -0.4f), new Vector3(0.25f, 0.2f, 0.5f), 5f);
+            Box("Caja_Estante_Baja", new Vector3(InnerHalfWidth - 0.2f, FloorTop + 0.13f, -1.5f), Vector3.one * 0.25f, 2f);
+            Box("Caja_Estante_Media", new Vector3(InnerHalfWidth - 0.2f, FloorTop + 0.73f, -2.0f), Vector3.one * 0.25f, 2f);
+            Box("Caja_Estante_Alta", new Vector3(InnerHalfWidth - 0.2f, FloorTop + 1.33f, -1.0f), Vector3.one * 0.25f, 2f);
+            Box("Caja_Cama", new Vector3(InnerHalfWidth - 0.45f, FloorTop + 0.45f, 4.5f), Vector3.one * 0.2f, 1f);
             Box("Caja_Piso_Grande", new Vector3(0.3f, FloorTop, -4.5f), Vector3.one * 0.5f, 10f);
             Box("Caja_Piso_Grande_2", new Vector3(-0.7f, FloorTop, -5.0f), Vector3.one * 0.5f, 10f);
             Box("Caja_Cabina", new Vector3(0.6f, FloorTop, 7.2f), Vector3.one * 0.3f, 3f);
@@ -302,7 +303,7 @@ namespace SurvivalEnTren.EditorTools
 
             // Exterior: chasis, bogies, piso, techo, paredes con puertas y ventanas.
             var exterior = Group("Exterior", root.transform);
-            BoxMinMax("Chasis", exterior, new Vector3(-1.2f, 0.25f, -9.3f), new Vector3(1.2f, FloorTop - 0.2f, 9.3f), p.Body);
+            BoxMinMax("Chasis", exterior, new Vector3(-(BodyHalfWidth - 0.3f), 0.25f, -9.3f), new Vector3(BodyHalfWidth - 0.3f, FloorTop - 0.2f, 9.3f), p.Body);
             BoxMinMax("Bogie_Delantero", exterior, new Vector3(-1.0f, 0.05f, BogieOffsetZ - 1.2f), new Vector3(1.0f, 0.6f, BogieOffsetZ + 1.2f), p.Track, false);
             BoxMinMax("Bogie_Trasero", exterior, new Vector3(-1.0f, 0.05f, -BogieOffsetZ - 1.2f), new Vector3(1.0f, 0.6f, -BogieOffsetZ + 1.2f), p.Track, false);
             BoxMinMax("Piso", exterior, new Vector3(-BodyHalfWidth, FloorTop - 0.2f, -BodyHalfLength), new Vector3(BodyHalfWidth, FloorTop, BodyHalfLength), p.Floor);
@@ -321,7 +322,7 @@ namespace SurvivalEnTren.EditorTools
             WallAlongZ("Pared_Izquierda", exterior, -wallX, -BodyHalfLength, BodyHalfLength, FloorTop, RoofBottom, sideOpenings, p.Body);
 
             float endZ = BodyHalfLength - WallThickness * 0.5f;
-            var frontOpenings = new List<Opening> { new Opening(-1.2f, 1.2f, WindowBottom, WindowTop + 0.1f) };
+            var frontOpenings = new List<Opening> { new Opening(-(InnerHalfWidth - 0.2f), InnerHalfWidth - 0.2f, WindowBottom, WindowTop + 0.1f) };
             WallAlongX("Pared_Frente", exterior, endZ, -BodyHalfWidth + WallThickness, BodyHalfWidth - WallThickness, FloorTop, RoofBottom, frontOpenings, p.Body);
             WallAlongX("Pared_Fondo", exterior, -endZ, -BodyHalfWidth + WallThickness, BodyHalfWidth - WallThickness, FloorTop, RoofBottom, new List<Opening>(), p.Body);
 
@@ -349,23 +350,23 @@ namespace SurvivalEnTren.EditorTools
             var cab = Group("Zona_Cabina", interior);
             BuildCabControls(root, cab, p);
             BoxMinMax("Cabina_Asiento", cab, new Vector3(0.6f, FloorTop, 7.6f), new Vector3(1.1f, FloorTop + 0.5f, 8.1f), p.Furniture);
-            BoxMinMax("Cabina_ConsolaSonda", cab, new Vector3(-1.4f, FloorTop, 6.8f), new Vector3(-0.8f, FloorTop + 1.2f, 7.6f), p.Controls);
+            BoxMinMax("Cabina_ConsolaSonda", cab, new Vector3(-InnerHalfWidth, FloorTop, 6.8f), new Vector3(-(InnerHalfWidth - 0.6f), FloorTop + 1.2f, 7.6f), p.Controls);
 
             var rest = Group("Zona_Descanso", interior);
-            BoxMinMax("Descanso_Cama", rest, new Vector3(0.5f, FloorTop, 3.5f), new Vector3(1.4f, FloorTop + 0.45f, 5.5f), p.Furniture);
-            BoxMinMax("Descanso_Calefaccion", rest, new Vector3(-1.4f, FloorTop, 3.8f), new Vector3(-0.8f, FloorTop + 0.9f, 4.4f), p.Controls);
+            BoxMinMax("Descanso_Cama", rest, new Vector3(InnerHalfWidth - 0.9f, FloorTop, 3.5f), new Vector3(InnerHalfWidth, FloorTop + 0.45f, 5.5f), p.Furniture);
+            BoxMinMax("Descanso_Calefaccion", rest, new Vector3(-InnerHalfWidth, FloorTop, 3.8f), new Vector3(-(InnerHalfWidth - 0.6f), FloorTop + 0.9f, 4.4f), p.Controls);
 
             var workshop = Group("Zona_Taller", interior);
-            BoxMinMax("Taller_Workbench", workshop, new Vector3(-1.4f, FloorTop, -1.0f), new Vector3(-0.6f, FloorTop + 0.9f, 1.0f), p.Furniture);
+            BoxMinMax("Taller_Workbench", workshop, new Vector3(-InnerHalfWidth, FloorTop, -1.0f), new Vector3(-(InnerHalfWidth - 0.8f), FloorTop + 0.9f, 1.0f), p.Furniture);
             var shelf = Group("Taller_Estante", workshop);
-            BoxMinMax("Lateral_A", shelf, new Vector3(1.0f, FloorTop, -2.53f), new Vector3(1.4f, FloorTop + 1.8f, -2.5f), p.Furniture);
-            BoxMinMax("Lateral_B", shelf, new Vector3(1.0f, FloorTop, -0.53f), new Vector3(1.4f, FloorTop + 1.8f, -0.5f), p.Furniture);
+            BoxMinMax("Lateral_A", shelf, new Vector3(InnerHalfWidth - 0.4f, FloorTop, -2.53f), new Vector3(InnerHalfWidth, FloorTop + 1.8f, -2.5f), p.Furniture);
+            BoxMinMax("Lateral_B", shelf, new Vector3(InnerHalfWidth - 0.4f, FloorTop, -0.53f), new Vector3(InnerHalfWidth, FloorTop + 1.8f, -0.5f), p.Furniture);
             foreach (float h in new[] { 0.1f, 0.7f, 1.3f })
-                BoxMinMax($"Repisa_{h:0.0}", shelf, new Vector3(1.0f, FloorTop + h, -2.5f), new Vector3(1.4f, FloorTop + h + 0.03f, -0.53f), p.Furniture);
+                BoxMinMax($"Repisa_{h:0.0}", shelf, new Vector3(InnerHalfWidth - 0.4f, FloorTop + h, -2.5f), new Vector3(InnerHalfWidth, FloorTop + h + 0.03f, -0.53f), p.Furniture);
 
             var cargo = Group("Zona_EntradaCarga", interior);
-            BoxMinMax("Carga_Bidon_1", cargo, new Vector3(-1.4f, FloorTop, -7.4f), new Vector3(-1.05f, FloorTop + 0.55f, -7.05f), p.Fuel);
-            BoxMinMax("Carga_Bidon_2", cargo, new Vector3(-1.0f, FloorTop, -7.4f), new Vector3(-0.65f, FloorTop + 0.55f, -7.05f), p.Fuel);
+            BoxMinMax("Carga_Bidon_1", cargo, new Vector3(-InnerHalfWidth, FloorTop, -7.4f), new Vector3(-(InnerHalfWidth - 0.35f), FloorTop + 0.55f, -7.05f), p.Fuel);
+            BoxMinMax("Carga_Bidon_2", cargo, new Vector3(-(InnerHalfWidth - 0.4f), FloorTop, -7.4f), new Vector3(-(InnerHalfWidth - 0.75f), FloorTop + 0.55f, -7.05f), p.Fuel);
 
             var engine = Group("Zona_SalaMaquinas", interior);
             BoxMinMax("SalaMaquinas_Tabique", engine, new Vector3(-BodyHalfWidth + WallThickness, FloorTop, EngineRoomFrontZ - 0.1f), new Vector3(BodyHalfWidth - WallThickness, RoofBottom, EngineRoomFrontZ), p.Body);
@@ -578,7 +579,7 @@ namespace SurvivalEnTren.EditorTools
         {
             Vector3 forward = Vector3.forward;               // la recta 1 va hacia +z
             Vector3 left = -Vector3.right;
-            Vector3 basePoint = new Vector3(railSwitch.Point.x, 0f, railSwitch.Point.z) + left * 3.2f - forward * 6f;
+            Vector3 basePoint = new Vector3(railSwitch.Point.x, 0f, railSwitch.Point.z) + left * 3.6f - forward * 6f;
 
             var stand = new GameObject("Cambio_1_Palanca").transform;
             stand.position = basePoint;
@@ -629,7 +630,7 @@ namespace SurvivalEnTren.EditorTools
         {
             Vector3 at = straight.GetPosition(StopSignDistance);
             var sign = new GameObject("Cartel_Parada").transform;
-            sign.position = new Vector3(at.x - 3.0f, 0f, at.z);
+            sign.position = new Vector3(at.x - 3.5f, 0f, at.z);
             BoxMinMax("Poste", sign, new Vector3(-0.05f, 0f, -0.05f), new Vector3(0.05f, 2.2f, 0.05f), p.Post);
             BoxMinMax("Tablero", sign, new Vector3(-0.45f, 2.0f, -0.08f), new Vector3(0.45f, 2.55f, -0.05f), p.Fuel);
             Label("PARADA", sign, new Vector3(0f, 2.275f, -0.085f), facingDriver: true);

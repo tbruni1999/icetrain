@@ -123,7 +123,7 @@ namespace SurvivalEnTren.Spike
         // Caja dentro del volumen del tren (coordenadas locales del tren, en metros).
         private static bool IsInsideTrain(Vector3 local)
         {
-            return Mathf.Abs(local.x) < 1.6f && Mathf.Abs(local.z) < 9.6f && local.y > 0.7f && local.y < 3.6f;
+            return Mathf.Abs(local.x) < 1.8f && Mathf.Abs(local.z) < 9.6f && local.y > 0.7f && local.y < 3.6f;
         }
     }
 }
