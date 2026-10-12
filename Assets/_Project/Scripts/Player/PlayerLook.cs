@@ -22,6 +22,9 @@ namespace SurvivalEnTren.Player
 
         private float _pitch;
         private float _stepSmoothing;
+
+        /// <summary>Cuánto mira hacia abajo (positivo) o arriba (negativo), en grados.</summary>
+        public float Pitch => _pitch;
         private float _lastFeetHeight;
         private bool _hasLastFeet;
         private bool _wasGrounded;

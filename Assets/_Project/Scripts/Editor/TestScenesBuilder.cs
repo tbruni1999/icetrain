@@ -35,6 +35,7 @@ namespace SurvivalEnTren.EditorTools
         private const string BoxPrefabPath = "Assets/_Project/Prefabs/Spike/Caja_Prueba.prefab";
         private const string FloatingOriginSettingsPath = "Assets/_Project/Data/World/FloatingOriginSettings.asset";
         private const string InteractionSettingsPath = "Assets/_Project/Data/Interaction/InteractionSettings.asset";
+        private const string CarrySettingsPath = "Assets/_Project/Data/Interaction/CarrySettings.asset";
         private const string InputPath = "Assets/_Project/Data/Input/IceTrainInput.inputactions";
 
         // Vía de prueba: un óvalo de dos rectas y dos curvas (~2,46 km por vuelta).
@@ -222,6 +223,7 @@ namespace SurvivalEnTren.EditorTools
             var body = box.AddComponent<Rigidbody>();
             body.mass = 4f;
             body.interpolation = RigidbodyInterpolation.Interpolate;
+            box.AddComponent<Carryable>();
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(box, BoxPrefabPath);
             Object.DestroyImmediate(box);
             return prefab;
@@ -295,6 +297,13 @@ namespace SurvivalEnTren.EditorTools
             SetReference(interactor, "head", head.transform);
             SetReference(interactor, "interact", FindActionReference("Player/Interact"));
             SetReference(interactor, "settings", LoadOrCreateAsset<InteractionSettings>(InteractionSettingsPath));
+
+            var carrier = player.AddComponent<PlayerCarrier>();
+            SetReference(carrier, "motor", motor);
+            SetReference(carrier, "look", look);
+            SetReference(carrier, "interactor", interactor);
+            SetReference(carrier, "settings", LoadOrCreateAsset<CarrySettings>(CarrySettingsPath));
+            SetReference(carrier, "throwAction", FindActionReference("Player/Throw"));
             return motor;
         }
 

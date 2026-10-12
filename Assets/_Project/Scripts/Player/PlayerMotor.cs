@@ -66,6 +66,8 @@ namespace SurvivalEnTren.Player
         public Vector3 Velocity { get; private set; }
         /// <summary>Si es true, el jugador no camina ni salta (por ejemplo, mientras maneja el tren). Sigue viajando con lo que pisa.</summary>
         public bool MovementLocked { get; set; }
+        /// <summary>Multiplica la velocidad de caminar y correr (por ejemplo, al llevar algo pesado). 1 = normal.</summary>
+        public float SpeedMultiplier { get; set; } = 1f;
         public PlayerMotorSettings Settings => settings;
 
         private void Awake()
@@ -123,7 +125,7 @@ namespace SurvivalEnTren.Player
             Vector2 input = MovementLocked ? Vector2.zero : move.action.ReadValue<Vector2>();
             if (MovementLocked) _jumpRequested = false;
             HasMoveInput = input.sqrMagnitude > 0.01f;
-            float speed = run.action.IsPressed() ? settings.RunSpeedMetersPerSecond : settings.WalkSpeedMetersPerSecond;
+            float speed = (run.action.IsPressed() ? settings.RunSpeedMetersPerSecond : settings.WalkSpeedMetersPerSecond) * SpeedMultiplier;
             Vector3 walk = Vector3.ClampMagnitude(transform.right * input.x + transform.forward * input.y, 1f) * speed;
 
             if (_body.isGrounded)
