@@ -61,6 +61,15 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "ToggleBackpack",
+                    "type": "Button",
+                    "id": "7b1e5c93-2d4a-4f68-a3e0-9c6d1f2b8a61",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "ToggleProbe",
                     "type": "Button",
                     "id": "c7a2e4f9-5b1d-4e83-9f60-3d8b2a6c1e51",
@@ -191,7 +200,34 @@
                     "action": "ToggleProbe",
                     "isComposite": false,
                     "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "a4d92e1b-6c07-4e53-8b9f-2e5a7c1d3f72",
+                    "path": "<Keyboard>/tab",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ToggleBackpack",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
+            ]
+        },
+        {
+            "name": "Backpack",
+            "id": "e63f1a85-4b2d-4c97-a8e0-5d9b3c7f1a80",
+            "actions": [
+                { "name": "Up", "type": "Button", "id": "11c4e7a2-93d5-4b06-8f1e-6a2d9c3b5e01", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Down", "type": "Button", "id": "22d5f8b3-a4e6-4c17-9a2f-7b3e0d4c6f12", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "DropOne", "type": "Button", "id": "33e6a9c4-b5f7-4d28-ab30-8c4f1e5d7a23", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "DropAll", "type": "Button", "id": "44f7bad5-c608-4e39-bc41-9d502f6e8b34", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false }
+            ],
+            "bindings": [
+                { "name": "", "id": "6619dcf7-e82a-4a5b-9e63-bf724b8a0d56", "path": "<Keyboard>/upArrow", "interactions": "", "processors": "", "groups": "", "action": "Up", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "772aed08-f93b-4b6c-af74-c0835c9b1e67", "path": "<Keyboard>/downArrow", "interactions": "", "processors": "", "groups": "", "action": "Down", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "883bfe19-0a4c-4c7d-b085-d1946dac2f78", "path": "<Keyboard>/enter", "interactions": "", "processors": "", "groups": "", "action": "DropOne", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "994c0f2a-1b5d-4d8e-c196-e2a57ebd3089", "path": "<Keyboard>/delete", "interactions": "", "processors": "", "groups": "", "action": "DropAll", "isComposite": false, "isPartOfComposite": false }
             ]
         },
         {

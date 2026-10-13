@@ -364,10 +364,31 @@ namespace SurvivalEnTren.EditorTools
             SetReference(overlay, "gear", gear);
 
             // Mochila (M7): materiales con peso y un límite; el peso se suma al de la mano para frenar el caminar.
+            var backpackSettings = LoadOrCreateAsset<BackpackSettings>(BackpackSettingsPath);
+            var backpackSettingsSo = new SerializedObject(backpackSettings);
+            if (backpackSettingsSo.FindProperty("bundleMaterial").objectReferenceValue == null)
+            {
+                backpackSettingsSo.FindProperty("bundleMaterial").objectReferenceValue = Mat("Bulto", Color.white);
+                backpackSettingsSo.ApplyModifiedPropertiesWithoutUndo();
+            }
             var backpack = motor.gameObject.AddComponent<Backpack>();
-            SetReference(backpack, "settings", LoadOrCreateAsset<BackpackSettings>(BackpackSettingsPath));
+            SetReference(backpack, "settings", backpackSettings);
             SetReference(motor.GetComponent<PlayerCarrier>(), "backpack", backpack);
             SetReference(overlay, "backpack", backpack);
+
+            // Panel de la mochila (Tab): lista, peso y soltar; lo soltado queda como bulto con física.
+            var panel = motor.gameObject.AddComponent<BackpackPanel>();
+            SetReference(panel, "backpack", backpack);
+            SetReference(panel, "settings", backpackSettings);
+            SetReference(panel, "motor", motor);
+            SetReference(panel, "look", motor.GetComponent<PlayerLook>());
+            SetReference(panel, "interactor", motor.GetComponent<PlayerInteractor>());
+            SetReference(panel, "head", motor.transform.Find("Cabeza"));
+            SetReference(panel, "toggle", FindActionReference("Player/ToggleBackpack"));
+            SetReference(panel, "up", FindActionReference("Backpack/Up"));
+            SetReference(panel, "down", FindActionReference("Backpack/Down"));
+            SetReference(panel, "dropOne", FindActionReference("Backpack/DropOne"));
+            SetReference(panel, "dropAll", FindActionReference("Backpack/DropAll"));
             LoadMaterials(); // crea los archivos de datos de los materiales (los usan los objetos desmontables)
 
             var corner = Group("Equipo_Tren", train.transform);

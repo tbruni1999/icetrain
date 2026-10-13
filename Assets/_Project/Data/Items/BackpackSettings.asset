@@ -13,3 +13,7 @@ MonoBehaviour:
   m_Name: BackpackSettings
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalEnTren.Items.BackpackSettings
   capacityKg: 30
+  bundleMaterial: {fileID: 2100000, guid: c88bb8f691882444eb7dab67e51f6507, type: 2}
+  bundleBaseSizeMeters: 0.22
+  bundleGrowthMeters: 0.1
+  dropDistanceMeters: 0.9

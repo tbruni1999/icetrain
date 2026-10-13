@@ -21,10 +21,26 @@ namespace SurvivalEnTren.Player
         private const float MaxStepRiseMeters = 0.7f;
 
         private float _pitch;
+        private bool _cursorFree;
         private float _stepSmoothing;
 
         /// <summary>Cuánto mira hacia abajo (positivo) o arriba (negativo), en grados.</summary>
         public float Pitch => _pitch;
+
+        /// <summary>
+        /// Libera el cursor para usar un panel con el mouse (la mochila): mientras tanto no se mira con el mouse.
+        /// Al volver a false, el cursor se oculta y se fija de nuevo.
+        /// </summary>
+        public bool CursorFree
+        {
+            get => _cursorFree;
+            set
+            {
+                _cursorFree = value;
+                if (value) { Cursor.lockState = CursorLockMode.None; Cursor.visible = true; }
+                else LockCursor();
+            }
+        }
         private float _lastFeetHeight;
         private bool _hasLastFeet;
         private bool _wasGrounded;
@@ -37,7 +53,7 @@ namespace SurvivalEnTren.Player
 
         private void OnApplicationFocus(bool hasFocus)
         {
-            if (hasFocus && enabled) LockCursor();
+            if (hasFocus && enabled && !_cursorFree) LockCursor();
         }
 
         private void Update()
