@@ -54,11 +54,11 @@ namespace SurvivalEnTren.Poi
             transform.localScale = new Vector3(Mathf.Lerp(1f, thinnestScale, _progress), 1f, 1f);
             if (_progress < 1f) return true;
 
-            Break();
+            Break(interactor.GetComponent<CharacterController>());
             return false;
         }
 
-        private void Break()
+        private void Break(CharacterController breaker)
         {
             IsBroken = true;
             Material material = _iceRenderer != null ? _iceRenderer.sharedMaterial : null;
@@ -74,6 +74,8 @@ namespace SurvivalEnTren.Poi
                 var body = shard.AddComponent<Rigidbody>();
                 body.mass = 0.2f;
                 body.linearVelocity = transform.right * Random.Range(0.5f, 2f) + Vector3.up * Random.Range(0.5f, 1.5f) + transform.forward * Random.Range(-1f, 1f);
+                // Los pedazos no frenan a quien los rompió (no se traba pisando escombros en la puerta).
+                if (breaker != null) Physics.IgnoreCollision(shard.GetComponent<Collider>(), breaker);
                 Destroy(shard, 8f);
             }
             Destroy(gameObject);

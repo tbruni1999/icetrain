@@ -21,6 +21,10 @@ namespace SurvivalEnTren.Interaction
         [Tooltip("A qué distancia delante de los ojos se sostiene el objeto, en metros.")]
         [SerializeField, Range(0.5f, 2f)] private float holdDistanceMeters = 1.1f;
 
+        [Tooltip("Dónde se sostiene un objeto de una mano (un bidón), respecto de los ojos y girado con el cuerpo: " +
+                 "derecha, arriba y adelante, en metros. Va a la cadera para no tapar la vista ni ensanchar al jugador en una puerta.")]
+        [SerializeField] private Vector3 oneHandedHoldOffset = new Vector3(0.28f, -0.7f, 0.5f);
+
         [Tooltip("Si el objeto queda trabado más lejos que esto de donde debería estar, se suelta, en metros.")]
         [SerializeField, Range(0.3f, 3f)] private float dropIfSeparatedMeters = 1.2f;
 
@@ -37,6 +41,7 @@ namespace SurvivalEnTren.Interaction
 
         public float MaxCarryMassKg => maxCarryMassKg;
         public float HoldDistanceMeters => holdDistanceMeters;
+        public Vector3 OneHandedHoldOffset => oneHandedHoldOffset;
         public float DropIfSeparatedMeters => dropIfSeparatedMeters;
         public float StuckSeconds => stuckSeconds;
         public float MaxFollowSpeedMetersPerSecond => maxFollowSpeedMetersPerSecond;

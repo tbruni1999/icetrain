@@ -99,7 +99,11 @@ namespace SurvivalEnTren.Interaction
             float dt = Time.fixedDeltaTime;
 
             Vector3 eye = motor.transform.position + Vector3.up * motor.Settings.EyeHeightMeters;
-            Vector3 target = eye + LookDirection() * settings.HoldDistanceMeters;
+            // Los objetos de una mano (un bidón) van a la cadera, junto al cuerpo: así no tapan la mira ni son más anchos que el
+            // jugador al pasar por una puerta. Los grandes (cajas) van al frente, a la altura de los ojos.
+            Vector3 target = _held.OneHanded
+                ? eye + BodyYaw() * settings.OneHandedHoldOffset
+                : eye + LookDirection() * settings.HoldDistanceMeters;
             Vector3 toTarget = target - body.position;
 
             // Trabado: lejos de la mano durante un rato (al tomarlo de lejos tarda un instante en llegar).

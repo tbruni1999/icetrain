@@ -237,6 +237,7 @@ System.Collections.IEnumerator Run()
     // 8) Salir y volver al tren solo con la aguja blanca.
     yield return WalkTo(stationCenter + new UnityEngine.Vector3(4.6f, 0f, 0f), 0.15f, r);
     yield return WalkTo(doorFront, 0.4f, r);
+    yield return WalkTo(stationCenter + new UnityEngine.Vector3(8.5f, 0f, 0f), 0.4f, r); // seguir derecho unos metros antes de girar hacia el tren (el bidón queda a la cadera: si se gira pegado a la pared, se traba)
     float straightBack = Flat(trainBody.position, motor.transform.position);
     yield return WalkNeedle(() => probe.TrainNeedleDegrees, trainText, "TREN  ~10 M", r);
     log.Append($" VUELTA con el bidón lleno: {r[0]:0} s, caminó {r[1]:0} m para {straightBack:0} m en línea recta, terminó a {Flat(trainBody.position, motor.transform.position):0} m del centro del tren.");

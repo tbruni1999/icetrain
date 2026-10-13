@@ -364,13 +364,7 @@ namespace SurvivalEnTren.EditorTools
             SetReference(overlay, "gear", gear);
 
             // Mochila (M7): materiales con peso y un límite; el peso se suma al de la mano para frenar el caminar.
-            var backpackSettings = LoadOrCreateAsset<BackpackSettings>(BackpackSettingsPath);
-            var backpackSettingsSo = new SerializedObject(backpackSettings);
-            if (backpackSettingsSo.FindProperty("bundleMaterial").objectReferenceValue == null)
-            {
-                backpackSettingsSo.FindProperty("bundleMaterial").objectReferenceValue = Mat("Bulto", Color.white);
-                backpackSettingsSo.ApplyModifiedPropertiesWithoutUndo();
-            }
+            var backpackSettings = LoadBackpackSettings();
             var backpack = motor.gameObject.AddComponent<Backpack>();
             SetReference(backpack, "settings", backpackSettings);
             SetReference(motor.GetComponent<PlayerCarrier>(), "backpack", backpack);
@@ -428,6 +422,11 @@ namespace SurvivalEnTren.EditorTools
 
             // Vehículo abandonado junto a la vía, a la vista desde la cabina: se saca combustible con sifón.
             BuildAbandonedVehicle(train.transform, p, fuel);
+
+            // Un pallet tirado cerca del vehículo, para probar el desmontaje sin ir a la estación.
+            Vector3 palletSpot = train.transform.position + train.transform.forward * 31f + train.transform.right * 10f;
+            BuildPallet(null, new Vector3(palletSpot.x, 0f, palletSpot.z), train.transform.eulerAngles.y + 20f, "salv_prueba_pallet_001",
+                LoadOrCreateRecipe("Pallet", "pallet", 3f, (LoadMaterials().Wood, 4)), backpackSettings, p);
         }
 
         // Los cuatro materiales de la V1 (sección 9.1) como archivos de datos. Se crean una sola vez: si Tomi cambia
@@ -586,8 +585,6 @@ namespace SurvivalEnTren.EditorTools
             Material roofMat = Mat("Estacion_Techo", new Color(0.32f, 0.33f, 0.36f));
             Material doorMat = Mat("Estacion_Puerta", new Color(0.38f, 0.5f, 0.45f));
             Material iceMat = Mat("Hielo", new Color(0.72f, 0.88f, 0.97f));
-            Material clothMat = Mat("Tela", new Color(0.55f, 0.62f, 0.72f));
-            Material sheetMat = Mat("Chapa", new Color(0.55f, 0.57f, 0.6f));
 
             var station = Group("Estacion_Mantenimiento", marker);
 
@@ -686,12 +683,22 @@ namespace SurvivalEnTren.EditorTools
             rationBody.interpolation = RigidbodyInterpolation.Interpolate;
             ration.AddComponent<FoodItem>();
 
-            // Material suelto con lógica de lugar (sección 15, regla de loot): tablones de un pallet roto contra el
-            // tabique, un rollo de tela de una manta, una chapa de un armario. Se llevan en la mano; sus usos son de M8.
-            LooseProp("Tablon_1", station, new Vector3(-0.8f, 0.09f, 1.6f), new Vector3(1.4f, 0.08f, 0.3f), p.Box, 4f);
-            LooseProp("Tablon_2", station, new Vector3(-0.8f, 0.18f, 1.6f), new Vector3(1.4f, 0.08f, 0.3f), p.Box, 4f);
-            LooseProp("Tela_Rollo", station, new Vector3(-0.9f, 0.2f, -1.9f), new Vector3(0.5f, 0.28f, 0.3f), clothMat, 2f);
-            LooseProp("Chapa_Metal", station, new Vector3(0.2f, 0.07f, -0.4f), new Vector3(0.9f, 0.03f, 0.6f), sheetMat, 7f);
+            // Material con lógica de lugar (sección 15, regla de loot; sección 9): objetos que se desmontan con la
+            // barreta (un pallet del taller, un armario metálico, un colchón viejo, un tablero eléctrico) y unos
+            // pocos bultos ya sueltos (tablones, tela, chapas). Los usos de los materiales son de M8 y M9.
+            MaterialSet materials = LoadMaterials();
+            BackpackSettings backpackSettings = LoadBackpackSettings();
+            SalvageRecipe palletRecipe = LoadOrCreateRecipe("Pallet", "pallet", 3f, (materials.Wood, 4));
+            SalvageRecipe lockerRecipe = LoadOrCreateRecipe("ArmarioMetalico", "armario metálico", 6f, (materials.Metal, 3));
+            SalvageRecipe mattressRecipe = LoadOrCreateRecipe("Colchon", "colchón", 4f, (materials.Cloth, 3));
+            SalvageRecipe panelRecipe = LoadOrCreateRecipe("TableroElectrico", "tablero eléctrico", 5f, (materials.Parts, 2));
+            BuildPallet(station, new Vector3(-0.8f, 0f, 1.2f), 12f, "salv_estacion_pallet_001", palletRecipe, backpackSettings, p);
+            BuildLocker(station, new Vector3(3.5f, 0f, -2.6f), 0f, "salv_estacion_armario_001", lockerRecipe, backpackSettings, p);
+            BuildMattress(station, new Vector3(-0.55f, 0f, -2.3f), 0f, "salv_estacion_colchon_001", mattressRecipe, backpackSettings);
+            BuildPowerPanel(station, new Vector3(3.8f, 0f, 1.0f), 90f, "salv_estacion_tablero_001", panelRecipe, backpackSettings);
+            PlaceBundle(station, backpackSettings, materials.Wood, 2, new Vector3(-1.1f, 0.3f, -1.3f));
+            PlaceBundle(station, backpackSettings, materials.Metal, 2, new Vector3(0.5f, 0.3f, -0.3f));
+            PlaceBundle(station, backpackSettings, materials.Cloth, 2, new Vector3(2.8f, 0.3f, -1.4f));
 
             // Segunda sala (oeste): vacía por ahora, con un escritorio. Reservada para la tentación opcional de 20.6.
             var annex = Group("Sala_Opcional", station);
@@ -719,18 +726,108 @@ namespace SurvivalEnTren.EditorTools
             interference.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        private static void LooseProp(string name, Transform parent, Vector3 center, Vector3 size, Material material, float massKg)
+        // ---------------------------------------------------------------- Objetos desmontables (M7)
+
+        private static BackpackSettings LoadBackpackSettings()
         {
-            var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            go.name = name;
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = center;
-            go.transform.localScale = size;
-            go.GetComponent<MeshRenderer>().sharedMaterial = material;
-            var body = go.AddComponent<Rigidbody>();
-            body.mass = massKg;
-            body.interpolation = RigidbodyInterpolation.Interpolate;
-            go.AddComponent<Carryable>();
+            var settings = LoadOrCreateAsset<BackpackSettings>(BackpackSettingsPath);
+            var so = new SerializedObject(settings);
+            if (so.FindProperty("bundleMaterial").objectReferenceValue == null)
+            {
+                so.FindProperty("bundleMaterial").objectReferenceValue = Mat("Bulto", Color.white);
+                so.ApplyModifiedPropertiesWithoutUndo();
+            }
+            return settings;
+        }
+
+        // Receta de desmontaje como archivo de datos: se crea una sola vez (si se ajusta en el archivo, no se pisa).
+        private static SalvageRecipe LoadOrCreateRecipe(string fileName, string displayName, float seconds, params (ItemDefinition item, int count)[] yields)
+        {
+            string path = $"{ItemsFolderPath}/Desmontaje_{fileName}.asset";
+            var recipe = AssetDatabase.LoadAssetAtPath<SalvageRecipe>(path);
+            if (recipe != null) return recipe;
+            recipe = ScriptableObject.CreateInstance<SalvageRecipe>();
+            AssetDatabase.CreateAsset(recipe, path);
+            var so = new SerializedObject(recipe);
+            so.FindProperty("displayName").stringValue = displayName;
+            so.FindProperty("requiredTool").enumValueIndex = (int)GearId.Crowbar;
+            so.FindProperty("salvageSeconds").floatValue = seconds;
+            var list = so.FindProperty("yields");
+            list.arraySize = yields.Length;
+            for (int i = 0; i < yields.Length; i++)
+            {
+                list.GetArrayElementAtIndex(i).FindPropertyRelative("item").objectReferenceValue = yields[i].item;
+                list.GetArrayElementAtIndex(i).FindPropertyRelative("count").intValue = yields[i].count;
+            }
+            so.ApplyModifiedPropertiesWithoutUndo();
+            return recipe;
+        }
+
+        // Raíz de un objeto desmontable: pivote en la base, con la receta y el ID estable.
+        private static Transform NewSalvageProp(string name, Transform parent, Vector3 localPosition, float yaw, SalvageRecipe recipe, BackpackSettings settings, string id)
+        {
+            var root = Group(name, parent);
+            root.localPosition = localPosition;
+            root.localRotation = Quaternion.Euler(0f, yaw, 0f);
+            var prop = root.gameObject.AddComponent<SalvageProp>();
+            SetReference(prop, "recipe", recipe);
+            SetReference(prop, "backpackSettings", settings);
+            var so = new SerializedObject(prop);
+            so.FindProperty("stableId").stringValue = id;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            return root;
+        }
+
+        // Pallet: tres travesaños abajo y cinco tablas arriba.
+        private static Transform BuildPallet(Transform parent, Vector3 localPosition, float yaw, string id, SalvageRecipe recipe, BackpackSettings settings, Palette p)
+        {
+            var root = NewSalvageProp("Pallet", parent, localPosition, yaw, recipe, settings, id);
+            for (int i = 0; i < 3; i++)
+                BoxMinMax("Travesano", root, new Vector3(-0.6f, 0f, -0.5f + i * 0.45f), new Vector3(0.6f, 0.09f, -0.4f + i * 0.45f), p.Box);
+            for (int i = 0; i < 5; i++)
+                BoxMinMax("Tabla", root, new Vector3(-0.6f, 0.09f, -0.5f + i * 0.2f), new Vector3(0.6f, 0.14f, -0.36f + i * 0.2f), p.Box);
+            return root;
+        }
+
+        // Armario metálico con la puerta marcada.
+        private static Transform BuildLocker(Transform parent, Vector3 localPosition, float yaw, string id, SalvageRecipe recipe, BackpackSettings settings, Palette p)
+        {
+            Material paint = Mat("Armario", new Color(0.33f, 0.42f, 0.38f));
+            var root = NewSalvageProp("Armario_Metalico", parent, localPosition, yaw, recipe, settings, id);
+            BoxMinMax("Cuerpo", root, new Vector3(-0.4f, 0f, -0.25f), new Vector3(0.4f, 1.9f, 0.25f), paint);
+            BoxMinMax("Puerta_Linea", root, new Vector3(-0.01f, 0.1f, -0.27f), new Vector3(0.01f, 1.8f, -0.25f), p.Track, false);
+            BoxMinMax("Manija", root, new Vector3(0.1f, 0.9f, -0.3f), new Vector3(0.16f, 1.1f, -0.25f), p.Track, false);
+            return root;
+        }
+
+        // Colchón viejo en el piso.
+        private static Transform BuildMattress(Transform parent, Vector3 localPosition, float yaw, string id, SalvageRecipe recipe, BackpackSettings settings)
+        {
+            Material cloth = Mat("Colchon", new Color(0.55f, 0.55f, 0.5f));
+            Material stripe = Mat("Colchon_Franja", new Color(0.4f, 0.42f, 0.5f));
+            var root = NewSalvageProp("Colchon", parent, localPosition, yaw, recipe, settings, id);
+            BoxMinMax("Cuerpo", root, new Vector3(-0.9f, 0f, -0.4f), new Vector3(0.9f, 0.18f, 0.4f), cloth);
+            BoxMinMax("Franja", root, new Vector3(-0.2f, 0.18f, -0.4f), new Vector3(0.2f, 0.19f, 0.4f), stripe, false);
+            return root;
+        }
+
+        // Tablero eléctrico de pie contra la pared, con su luz apagada.
+        private static Transform BuildPowerPanel(Transform parent, Vector3 localPosition, float yaw, string id, SalvageRecipe recipe, BackpackSettings settings)
+        {
+            Material box = Mat("Tablero", new Color(0.25f, 0.3f, 0.28f));
+            Material lamp = UnlitMat("Tablero_Luz", new Color(0.1f, 0.2f, 0.12f));
+            var root = NewSalvageProp("Tablero_Electrico", parent, localPosition, yaw, recipe, settings, id);
+            BoxMinMax("Cuerpo", root, new Vector3(-0.3f, 0f, -0.15f), new Vector3(0.3f, 1.3f, 0.15f), box);
+            BoxMinMax("Luz", root, new Vector3(-0.04f, 1.05f, -0.17f), new Vector3(0.04f, 1.12f, -0.15f), lamp, false);
+            BoxMinMax("Tapa", root, new Vector3(-0.22f, 0.3f, -0.17f), new Vector3(0.22f, 0.9f, -0.15f), box, false);
+            return root;
+        }
+
+        // Un bulto de material ya suelto en un POI (se arma con la misma pieza que lo que se suelta de la mochila).
+        private static void PlaceBundle(Transform parent, BackpackSettings settings, ItemDefinition item, int count, Vector3 localPosition)
+        {
+            MaterialBundle bundle = MaterialBundle.Spawn(settings, item, count, parent.TransformPoint(localPosition), Vector3.zero);
+            bundle.transform.SetParent(parent, true);
         }
 
         private static void Signal(string id, ProbeSignalType type, float strength, Vector3 position, RailSegment segment,
