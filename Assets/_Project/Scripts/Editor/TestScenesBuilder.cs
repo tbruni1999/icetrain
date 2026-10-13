@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using SurvivalEnTren.Equipment;
 using SurvivalEnTren.Interaction;
+using SurvivalEnTren.Items;
 using SurvivalEnTren.Player;
 using SurvivalEnTren.Poi;
 using SurvivalEnTren.Probe;
@@ -47,6 +48,8 @@ namespace SurvivalEnTren.EditorTools
         private const string BodyFeedbackProfilePath = "Assets/_Project/Data/Survival/BodyFeedbackProfile.asset";
         private const string ProbeSettingsPath = "Assets/_Project/Data/Probe/ProbeSettings.asset";
         private const string FuelSettingsPath = "Assets/_Project/Data/Train/FuelSettings.asset";
+        private const string BackpackSettingsPath = "Assets/_Project/Data/Items/BackpackSettings.asset";
+        private const string ItemsFolderPath = "Assets/_Project/Data/Items";
         private const string InputPath = "Assets/_Project/Data/Input/IceTrainInput.inputactions";
 
         // Vía de prueba: un óvalo de dos rectas y dos curvas (~2,46 km por vuelta).
@@ -124,6 +127,7 @@ namespace SurvivalEnTren.EditorTools
             EnsureFolder("Assets/_Project/Data", "Interaction");
             EnsureFolder("Assets/_Project/Data", "Survival");
             EnsureFolder("Assets/_Project/Data", "Probe");
+            EnsureFolder("Assets/_Project/Data", "Items");
 
             // La escena nueva va primero: crearla descarga de memoria los assets recién
             // creados y las referencias a ellos quedarían vacías.
@@ -359,6 +363,13 @@ namespace SurvivalEnTren.EditorTools
             SetReference(gear, "vitals", vitals);
             SetReference(overlay, "gear", gear);
 
+            // Mochila (M7): materiales con peso y un límite; el peso se suma al de la mano para frenar el caminar.
+            var backpack = motor.gameObject.AddComponent<Backpack>();
+            SetReference(backpack, "settings", LoadOrCreateAsset<BackpackSettings>(BackpackSettingsPath));
+            SetReference(motor.GetComponent<PlayerCarrier>(), "backpack", backpack);
+            SetReference(overlay, "backpack", backpack);
+            LoadMaterials(); // crea los archivos de datos de los materiales (los usan los objetos desmontables)
+
             var corner = Group("Equipo_Tren", train.transform);
             float wall = -InnerHalfWidth;
 
@@ -396,6 +407,37 @@ namespace SurvivalEnTren.EditorTools
 
             // Vehículo abandonado junto a la vía, a la vista desde la cabina: se saca combustible con sifón.
             BuildAbandonedVehicle(train.transform, p, fuel);
+        }
+
+        // Los cuatro materiales de la V1 (sección 9.1) como archivos de datos. Se crean una sola vez: si Tomi cambia
+        // un peso en el archivo, reconstruir la escena no lo pisa.
+        private sealed class MaterialSet
+        {
+            public ItemDefinition Wood, Metal, Cloth, Parts;
+        }
+
+        private static MaterialSet LoadMaterials() => new MaterialSet
+        {
+            Wood = LoadOrCreateItem("Madera", "item_madera", "madera", 2f, new Color(0.62f, 0.45f, 0.26f)),
+            Metal = LoadOrCreateItem("Metal", "item_metal", "metal", 3.5f, new Color(0.55f, 0.57f, 0.6f)),
+            Cloth = LoadOrCreateItem("Tela", "item_tela", "tela", 0.8f, new Color(0.55f, 0.62f, 0.72f)),
+            Parts = LoadOrCreateItem("Componentes", "item_componentes", "componentes", 0.3f, new Color(0.3f, 0.7f, 0.45f)),
+        };
+
+        private static ItemDefinition LoadOrCreateItem(string fileName, string id, string displayName, float weightKg, Color color)
+        {
+            string path = $"{ItemsFolderPath}/{fileName}.asset";
+            var item = AssetDatabase.LoadAssetAtPath<ItemDefinition>(path);
+            if (item != null) return item;
+            item = ScriptableObject.CreateInstance<ItemDefinition>();
+            AssetDatabase.CreateAsset(item, path);
+            var so = new SerializedObject(item);
+            so.FindProperty("id").stringValue = id;
+            so.FindProperty("displayName").stringValue = displayName;
+            so.FindProperty("weightKg").floatValue = weightKg;
+            so.FindProperty("color").colorValue = color;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            return item;
         }
 
         private static void BuildJerrycan(string name, Transform parent, Vector3 position, Quaternion rotation, Material material, Palette p, FuelSettings fuel)

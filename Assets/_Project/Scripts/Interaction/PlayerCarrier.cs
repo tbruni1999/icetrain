@@ -1,3 +1,4 @@
+using SurvivalEnTren.Items;
 using SurvivalEnTren.Player;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -22,6 +23,8 @@ namespace SurvivalEnTren.Interaction
         [SerializeField] private PlayerInteractor interactor;
         [SerializeField] private CarrySettings settings;
         [SerializeField] private InputActionReference throwAction;
+        [Tooltip("Opcional: lo que se lleva en la mochila suma peso y frena el caminar junto con lo que se lleva en la mano.")]
+        [SerializeField] private Backpack backpack;
 
         private Carryable _held;
         private bool _heldUsedGravity;
@@ -57,7 +60,7 @@ namespace SurvivalEnTren.Interaction
             // Conserva cómo estaba girado respecto del jugador, para que no "salte" al tomarlo.
             _heldLocalRotation = Quaternion.Inverse(BodyYaw()) * body.rotation;
             interactor.Engage(item);
-            motor.SpeedMultiplier = settings.WalkSpeedFactor(body.mass);
+            ApplyLoad();
         }
 
         public void Drop(bool throwIt)
@@ -71,8 +74,8 @@ namespace SurvivalEnTren.Interaction
             body.angularVelocity = Vector3.zero;
             SetIgnorePlayer(false);
             interactor.Release(_held);
-            motor.SpeedMultiplier = 1f;
             _held = null;
+            ApplyLoad();
         }
 
         private void OnThrow(InputAction.CallbackContext _)
@@ -80,12 +83,20 @@ namespace SurvivalEnTren.Interaction
             if (_held != null) Drop(throwIt: true);
         }
 
+        // El peso total que se lleva (mano + mochila) frena el caminar. Se recalcula cada tic porque puede cambiar
+        // (un bidón que se llena, un material que entra en la mochila).
+        private void ApplyLoad()
+        {
+            float mass = (_held != null ? _held.Body.mass : 0f) + (backpack != null ? backpack.MassKg : 0f);
+            motor.SpeedMultiplier = settings.WalkSpeedFactor(mass);
+        }
+
         private void FixedUpdate()
         {
+            ApplyLoad();
             if (_held == null) return;
             Rigidbody body = _held.Body;
             float dt = Time.fixedDeltaTime;
-            motor.SpeedMultiplier = settings.WalkSpeedFactor(body.mass); // el peso puede cambiar (un bidón que se llena)
 
             Vector3 eye = motor.transform.position + Vector3.up * motor.Settings.EyeHeightMeters;
             Vector3 target = eye + LookDirection() * settings.HoldDistanceMeters;

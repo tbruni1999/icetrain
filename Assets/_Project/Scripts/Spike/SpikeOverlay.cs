@@ -1,4 +1,5 @@
 using SurvivalEnTren.Equipment;
+using SurvivalEnTren.Items;
 using SurvivalEnTren.Player;
 using SurvivalEnTren.Survival;
 using SurvivalEnTren.Train;
@@ -35,6 +36,8 @@ namespace SurvivalEnTren.Spike
         [SerializeField] private FuelTank fuel;
         [Tooltip("Opcional: equipo del jugador (M6).")]
         [SerializeField] private PlayerGear gear;
+        [Tooltip("Opcional: mochila del jugador (M7).")]
+        [SerializeField] private Backpack backpack;
         [SerializeField] private InputActionReference timeFast;
         [Tooltip("Cuánto se acelera el reloj con F2, para probar.")]
         [SerializeField] private float timeFastMultiplier = 30f;
@@ -118,7 +121,7 @@ namespace SurvivalEnTren.Spike
                 trainKeys + "\n" +
                 "Jugador:  WASD caminar   Shift correr   mouse mirar   Espacio saltar   E usar   Q sonda\n" +
                 "Prueba:  G soltar caja   T reiniciar medición de cajas   F1 ocultar este panel   (Esc libera el mouse)";
-            GUI.Box(new Rect(12, 12, 860, vitals != null ? (fuel != null ? 298 : 276) : 236), text, _style);
+            GUI.Box(new Rect(12, 12, 860, (vitals != null ? (fuel != null ? 298 : 276) : 236) + (backpack != null ? 22 : 0)), text, _style);
         }
 
         private string SurvivalLine()
@@ -129,7 +132,15 @@ namespace SurvivalEnTren.Spike
             string interior = climate != null ? $"   interior del tren {climate.InteriorTemperatureC:0} °C (puertas abiertas {climate.OpenDoors})" : "";
             return $"Reloj {hour:00}:{minute:00} (x{clock.SpeedMultiplier:0}, F2 acelera)   aire alrededor {vitals.AmbientTemperatureC:0} °C{interior}\n" +
                    $"vida {vitals.Health:0}  comida {vitals.Satiety:0}  energía {vitals.Energy:0}  calor {vitals.Warmth:0}\n" +
-                   FuelLine();
+                   FuelLine() + BackpackLine();
+        }
+
+        private string BackpackLine()
+        {
+            if (backpack == null) return "";
+            string contents = "";
+            foreach (ItemStack stack in backpack.Stacks) contents += $"  {stack.Item.DisplayName} ×{stack.Count}";
+            return $"mochila {backpack.MassKg:0.0} / {backpack.CapacityKg:0} kg{(contents == "" ? "  (vacía)" : ":" + contents)}\n";
         }
 
         private string FuelLine()
