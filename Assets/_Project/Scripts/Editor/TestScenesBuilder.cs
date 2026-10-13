@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using SurvivalEnTren.Building;
 using SurvivalEnTren.Equipment;
 using SurvivalEnTren.Interaction;
 using SurvivalEnTren.Items;
@@ -50,6 +51,7 @@ namespace SurvivalEnTren.EditorTools
         private const string FuelSettingsPath = "Assets/_Project/Data/Train/FuelSettings.asset";
         private const string BackpackSettingsPath = "Assets/_Project/Data/Items/BackpackSettings.asset";
         private const string ItemsFolderPath = "Assets/_Project/Data/Items";
+        private const string BuildFolderPath = "Assets/_Project/Data/Build";
         private const string InputPath = "Assets/_Project/Data/Input/IceTrainInput.inputactions";
 
         // Vía de prueba: un óvalo de dos rectas y dos curvas (~2,46 km por vuelta).
@@ -128,6 +130,7 @@ namespace SurvivalEnTren.EditorTools
             EnsureFolder("Assets/_Project/Data", "Survival");
             EnsureFolder("Assets/_Project/Data", "Probe");
             EnsureFolder("Assets/_Project/Data", "Items");
+            EnsureFolder("Assets/_Project/Data", "Build");
 
             // La escena nueva va primero: crearla descarga de memoria los assets recién
             // creados y las referencias a ellos quedarían vacías.
@@ -834,6 +837,144 @@ namespace SurvivalEnTren.EditorTools
             interference.ApplyModifiedPropertiesWithoutUndo();
         }
 
+        // ---------------------------------------------------------------- Obras por fases (M8)
+
+        // Material translúcido de las piezas que todavía faltan en una obra (URP sin iluminación, con transparencia).
+        private static Material GhostMaterial()
+        {
+            string path = $"{MaterialsFolder}/Fantasma.mat";
+            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (material == null)
+            {
+                material = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+                AssetDatabase.CreateAsset(material, path);
+            }
+            material.SetFloat("_Surface", 1f);                 // transparente
+            material.SetFloat("_Blend", 0f);                   // mezcla normal
+            material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            material.SetFloat("_ZWrite", 0f);
+            material.SetOverrideTag("RenderType", "Transparent");
+            material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            material.SetColor("_BaseColor", new Color(0.55f, 0.85f, 1f, 0.32f));
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
+        // Una obra como archivo de datos: se crea una sola vez (si se ajusta en el archivo, no se pisa).
+        private static BuildProject LoadOrCreateBuildProject(string fileName, string displayName, float[] levelValues,
+            params (string name, (ItemDefinition item, int count)[] requirements)[] phases)
+        {
+            string path = $"{BuildFolderPath}/Obra_{fileName}.asset";
+            var project = AssetDatabase.LoadAssetAtPath<BuildProject>(path);
+            if (project != null) return project;
+            project = ScriptableObject.CreateInstance<BuildProject>();
+            AssetDatabase.CreateAsset(project, path);
+            var so = new SerializedObject(project);
+            so.FindProperty("displayName").stringValue = displayName;
+            var list = so.FindProperty("phases");
+            list.arraySize = phases.Length;
+            for (int i = 0; i < phases.Length; i++)
+            {
+                SerializedProperty phase = list.GetArrayElementAtIndex(i);
+                phase.FindPropertyRelative("name").stringValue = phases[i].name;
+                SerializedProperty reqs = phase.FindPropertyRelative("requirements");
+                reqs.arraySize = phases[i].requirements.Length;
+                for (int r = 0; r < phases[i].requirements.Length; r++)
+                {
+                    reqs.GetArrayElementAtIndex(r).FindPropertyRelative("item").objectReferenceValue = phases[i].requirements[r].item;
+                    reqs.GetArrayElementAtIndex(r).FindPropertyRelative("count").intValue = phases[i].requirements[r].count;
+                }
+            }
+            var values = so.FindProperty("levelValues");
+            values.arraySize = levelValues.Length;
+            for (int i = 0; i < levelValues.Length; i++) values.GetArrayElementAtIndex(i).floatValue = levelValues[i];
+            so.ApplyModifiedPropertiesWithoutUndo();
+            return project;
+        }
+
+        // Cablea una obra: el proyecto, el ID, las piezas de cada fase, el material fantasma y el mueble de "fallback".
+        private static BuildSite NewBuildSite(Transform root, BuildProject project, string id, List<GameObject[]> piecesByPhase, MonoBehaviour fallback)
+        {
+            var site = root.gameObject.AddComponent<BuildSite>();
+            SetReference(site, "project", project);
+            SetReference(site, "ghostMaterial", GhostMaterial());
+            if (fallback != null) SetReference(site, "fallback", fallback);
+            var so = new SerializedObject(site);
+            so.FindProperty("stableId").stringValue = id;
+            var phases = so.FindProperty("phasePieces");
+            phases.arraySize = piecesByPhase.Count;
+            for (int p = 0; p < piecesByPhase.Count; p++)
+            {
+                SerializedProperty pieces = phases.GetArrayElementAtIndex(p).FindPropertyRelative("pieces");
+                pieces.arraySize = piecesByPhase[p].Length;
+                for (int i = 0; i < piecesByPhase[p].Length; i++) pieces.GetArrayElementAtIndex(i).objectReferenceValue = piecesByPhase[p][i];
+            }
+            so.ApplyModifiedPropertiesWithoutUndo();
+            return site;
+        }
+
+        // La cama (sección 7 y 20.8): el "lugar miserable" del inicio (una tela sucia en el piso, donde se duerme) y la obra
+        // "cama improvisada" en tres fases: base de madera, relleno y manta. Cada fase se ve en la cama y mejora la recuperación.
+        private static void BuildBed(Transform parent, Palette p)
+        {
+            MaterialSet materials = LoadMaterials();
+            BuildProject project = LoadOrCreateBuildProject("Cama", "cama improvisada", new[] { 6f, 7.5f, 9f, 11f },
+                ("base de madera", new[] { (materials.Wood, 4) }),
+                ("relleno", new[] { (materials.Cloth, 3) }),
+                ("manta", new[] { (materials.Cloth, 2) }));
+
+            var bed = Group("Descanso_Cama", parent);
+            bed.localPosition = new Vector3(InnerHalfWidth - 0.45f, FloorTop, 4.5f);
+
+            // Lugar miserable: una tela sucia en el piso (aquí se duerme: lleva el Bed).
+            Material dirty = Mat("Cama_Sucia", new Color(0.4f, 0.38f, 0.34f));
+            var mat = BoxMinMax("Tela_Sucia", bed, new Vector3(-0.44f, 0f, -0.98f), new Vector3(0.44f, 0.08f, 0.98f), dirty);
+            var sleeping = mat.AddComponent<Bed>();
+            var sleepingSo = new SerializedObject(sleeping);
+            sleepingSo.FindProperty("wakePointLocal").vector3Value = new Vector3(-0.85f, 0f, 0f);
+            sleepingSo.ApplyModifiedPropertiesWithoutUndo();
+
+            // La obra: tres fases de piezas encima de la tela.
+            var site = Group("Obra", bed);
+            Material wood = Mat("Cama_Madera", new Color(0.55f, 0.4f, 0.24f));
+            Material filling = Mat("Cama_Relleno", new Color(0.72f, 0.7f, 0.62f));
+            Material blanket = Mat("Cama_Manta", new Color(0.35f, 0.42f, 0.58f));
+            Material pillow = Mat("Cama_Almohada", new Color(0.85f, 0.84f, 0.8f));
+
+            var phase1 = new List<GameObject>();
+            for (int i = 0; i < 4; i++)
+            {
+                float zc = -0.75f + i * 0.5f;
+                var piece = Group($"Base_{i + 1}", site);
+                BoxMinMax("Tabla", piece, new Vector3(-0.44f, 0.26f, zc - 0.23f), new Vector3(0.44f, 0.31f, zc + 0.23f), wood);
+                BoxMinMax("Pata_A", piece, new Vector3(-0.42f, 0.08f, zc - 0.04f), new Vector3(-0.36f, 0.26f, zc + 0.04f), wood);
+                BoxMinMax("Pata_B", piece, new Vector3(0.36f, 0.08f, zc - 0.04f), new Vector3(0.42f, 0.26f, zc + 0.04f), wood);
+                phase1.Add(piece.gameObject);
+            }
+            var phase2 = new List<GameObject>();
+            for (int i = 0; i < 3; i++)
+            {
+                float zc = -0.64f + i * 0.64f;
+                phase2.Add(BoxMinMax($"Relleno_{i + 1}", site, new Vector3(-0.43f, 0.31f, zc - 0.31f), new Vector3(0.43f, 0.42f, zc + 0.31f), filling));
+            }
+            var phase3 = new List<GameObject>
+            {
+                BoxMinMax("Manta", site, new Vector3(-0.45f, 0.42f, -0.35f), new Vector3(0.45f, 0.46f, 0.96f), blanket),
+                BoxMinMax("Almohada", site, new Vector3(-0.3f, 0.42f, -0.95f), new Vector3(0.3f, 0.5f, -0.45f), pillow),
+            };
+
+            // Zona de uso: un volumen invisible sobre toda la cama, para apuntarla aunque las piezas sean fantasmas.
+            var zone = BoxMinMax("Zona_Obra", site, new Vector3(-0.5f, 0f, -1.05f), new Vector3(0.5f, 0.75f, 1.05f), dirty);
+            zone.GetComponent<Collider>().isTrigger = true;
+            Object.DestroyImmediate(zone.GetComponent<MeshRenderer>());
+
+            NewBuildSite(site, project, "obra_tren_cama_001",
+                new List<GameObject[]> { phase1.ToArray(), phase2.ToArray(), phase3.ToArray() }, sleeping);
+            SetReference(sleeping, "site", site.GetComponent<BuildSite>());
+        }
+
         // ---------------------------------------------------------------- Objetos desmontables (M7)
 
         private static BackpackSettings LoadBackpackSettings()
@@ -1129,7 +1270,7 @@ namespace SurvivalEnTren.EditorTools
             BuildProbeConsole(root, cab, p);
 
             var rest = Group("Zona_Descanso", interior);
-            BoxMinMax("Descanso_Cama", rest, new Vector3(InnerHalfWidth - 0.9f, FloorTop, 3.5f), new Vector3(InnerHalfWidth, FloorTop + 0.45f, 5.5f), p.Furniture).AddComponent<Bed>(); // hoy: "lugar miserable" (M4); se mejora en M8
+            BuildBed(rest, p); // el "lugar miserable" del inicio y su obra para mejorarlo por etapas (M8)
             BoxMinMax("Descanso_Calefaccion", rest, new Vector3(-InnerHalfWidth, FloorTop, 3.8f), new Vector3(-(InnerHalfWidth - 0.6f), FloorTop + 0.9f, 4.4f), p.Controls);
 
             var workshop = Group("Zona_Taller", interior);

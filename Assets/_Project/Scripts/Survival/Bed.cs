@@ -1,4 +1,5 @@
 using System.Collections;
+using SurvivalEnTren.Building;
 using SurvivalEnTren.Interaction;
 using SurvivalEnTren.Train;
 using SurvivalEnTren.UI;
@@ -21,12 +22,16 @@ namespace SurvivalEnTren.Survival
         [SerializeField, Range(1f, 16f)] private float sleepHours = 8f;
         [Tooltip("Energía que se recupera por hora durmiendo acá (lugar miserable: 6 → 8 h dan +48).")]
         [SerializeField, Range(0f, 50f)] private float recoveryPerHour = 6f;
+        [Tooltip("La obra que mejora esta cama (M8): si existe, la recuperación por hora sale de ella y sube con lo aportado.")]
+        [SerializeField] private BuildSite site;
         [Tooltip("Dónde aparece el jugador al despertar, desde el centro de la cama y girado con ella (metros, sin escala).")]
         [SerializeField] private Vector3 wakePointLocal = new Vector3(-0.85f, -0.2f, 0f);
 
         private TrainMover _train;
         private bool _busy;
 
+        /// <summary>Cuánta energía se recupera por hora durmiendo acá ahora (con la obra, depende de cuánto se construyó).</summary>
+        public float RecoveryPerHour => site != null ? site.Value : recoveryPerHour;
         public Vector3 WakePoint => transform.position + transform.rotation * wakePointLocal;
         public Rigidbody Platform => _train != null ? _train.GetComponent<Rigidbody>() : null;
 
@@ -59,7 +64,7 @@ namespace SurvivalEnTren.Survival
             interactor.Motor.MovementLocked = true;
             yield return fader.FadeTo(1f, 1f);
             vitals.IsSleeping = true;
-            vitals.SleepRecoveryPerHour = recoveryPerHour;
+            vitals.SleepRecoveryPerHour = RecoveryPerHour;
             vitals.Clock.Skip(sleepHours);
             vitals.IsSleeping = false;
             yield return fader.FadeTo(1f, 1.2f, $"{sleepHours:0} horas después");
