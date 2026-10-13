@@ -62,7 +62,7 @@ namespace SurvivalEnTren.Items
             if (interactor.IsEngaged) return null;
             int fits = backpack.MaxAddable(item);
             float kg = item.WeightKg * count;
-            if (fits <= 0) return $"{item.DisplayName} ×{count} ({kg:0.0} kg): no entra, mochila llena";
+            if (fits <= 0) return $"{item.DisplayName} ×{count} ({kg:0.0} kg): no entra, falta lugar en la mochila";
             if (fits >= count) return $"guardar {item.DisplayName} ×{count}   ({kg:0.0} kg)";
             return $"guardar {item.DisplayName} ×{fits} de {count}   (entra lo que da el peso)";
         }

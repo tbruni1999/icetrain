@@ -48,8 +48,15 @@ namespace SurvivalEnTren.Items
 
             string what = $"{recipe.YieldText()}, {recipe.TotalMassKg:0.0} kg";
             string progress = _progress > 0.01f ? $"   [{_progress * 100f:0}%]" : "";
-            string overflow = recipe.TotalMassKg > backpack.FreeKg + 1e-3f ? "   (no entra todo: el resto queda en el piso)" : "";
+            string overflow = !backpack.WouldFitAll(YieldsAsPieces()) ? "   (no entra todo: el resto queda en el piso)" : "";
             return $"mantener para desarmar {recipe.DisplayName}   → {what}{overflow}{progress}";
+        }
+
+        // Las piezas que dejaría la receta, para saber si entran todas en la mochila.
+        private System.Collections.Generic.IEnumerable<(ItemDefinition item, int count)> YieldsAsPieces()
+        {
+            foreach (SalvageYield y in recipe.Yields)
+                if (y.item != null) yield return (y.item, y.count);
         }
 
         public float GetHoldSeconds(PlayerInteractor interactor) => 0f;

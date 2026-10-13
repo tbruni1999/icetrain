@@ -436,15 +436,25 @@ namespace SurvivalEnTren.EditorTools
             public ItemDefinition Wood, Metal, Cloth, Parts;
         }
 
-        private static MaterialSet LoadMaterials() => new MaterialSet
-        {
-            Wood = LoadOrCreateItem("Madera", "item_madera", "madera", 2f, new Color(0.62f, 0.45f, 0.26f)),
-            Metal = LoadOrCreateItem("Metal", "item_metal", "metal", 3.5f, new Color(0.55f, 0.57f, 0.6f)),
-            Cloth = LoadOrCreateItem("Tela", "item_tela", "tela", 0.8f, new Color(0.55f, 0.62f, 0.72f)),
-            Parts = LoadOrCreateItem("Componentes", "item_componentes", "componentes", 0.3f, new Color(0.3f, 0.7f, 0.45f)),
-        };
 
-        private static ItemDefinition LoadOrCreateItem(string fileName, string id, string displayName, float weightKg, Color color)
+        // Materiales de la V1 con su tamaño en casillas (DECISIÓN de Tomi: inventario en cuadrícula): el tablón es largo
+        // (1 x 4) y no entra en un estante chico, la chapa es 2 x 2, el rollo de tela 1 x 2 y el componente 1 x 1.
+        private static MaterialSet LoadMaterials()
+        {
+            EnsureFolder(ItemsFolderPath, "Iconos");
+            return new MaterialSet
+            {
+                Wood = LoadOrCreateItem("Madera", "item_madera", "madera", "tablón", 2f, new Vector2Int(1, 4), new Color(0.62f, 0.45f, 0.26f), DrawPlankIcon),
+                Metal = LoadOrCreateItem("Metal", "item_metal", "metal", "chapa", 3.5f, new Vector2Int(2, 2), new Color(0.55f, 0.57f, 0.6f), DrawSheetIcon),
+                Cloth = LoadOrCreateItem("Tela", "item_tela", "tela", "rollo de tela", 0.8f, new Vector2Int(1, 2), new Color(0.55f, 0.62f, 0.72f), DrawClothIcon),
+                Parts = LoadOrCreateItem("Componentes", "item_componentes", "componentes", "componente", 0.3f, new Vector2Int(1, 1), new Color(0.3f, 0.7f, 0.45f), DrawChipIcon),
+            };
+        }
+
+        // Un material como archivo de datos. Se crea una sola vez: si Tomi cambia el peso, el tamaño o el icono en el
+        // archivo (por ejemplo, para poner arte final), reconstruir la escena no lo pisa.
+        private static ItemDefinition LoadOrCreateItem(string fileName, string id, string displayName, string pieceName, float weightKg,
+            Vector2Int size, Color color, System.Action<Texture2D, Color> drawIcon)
         {
             string path = $"{ItemsFolderPath}/{fileName}.asset";
             var item = AssetDatabase.LoadAssetAtPath<ItemDefinition>(path);
@@ -454,10 +464,105 @@ namespace SurvivalEnTren.EditorTools
             var so = new SerializedObject(item);
             so.FindProperty("id").stringValue = id;
             so.FindProperty("displayName").stringValue = displayName;
+            so.FindProperty("pieceName").stringValue = pieceName;
             so.FindProperty("weightKg").floatValue = weightKg;
+            so.FindProperty("sizeCells").vector2IntValue = size;
             so.FindProperty("color").colorValue = color;
+            so.FindProperty("icon").objectReferenceValue = MakePlaceholderIcon($"{ItemsFolderPath}/Iconos/Icono_{fileName}.png", size, color, drawIcon);
             so.ApplyModifiedPropertiesWithoutUndo();
             return item;
+        }
+
+        // ---- Iconos provisorios dibujados con código (un dibujito simple por material; el arte final los reemplaza).
+        private const int IconPixelsPerCell = 48;
+
+        private static Sprite MakePlaceholderIcon(string path, Vector2Int cells, Color color, System.Action<Texture2D, Color> draw)
+        {
+            var texture = new Texture2D(cells.x * IconPixelsPerCell, cells.y * IconPixelsPerCell, TextureFormat.RGBA32, false);
+            var clear = new Color32[texture.width * texture.height];
+            texture.SetPixels32(clear);
+            draw(texture, color);
+            texture.Apply();
+            System.IO.File.WriteAllBytes(path, texture.EncodeToPNG());
+            Object.DestroyImmediate(texture);
+            AssetDatabase.ImportAsset(path);
+            var importer = (TextureImporter)AssetImporter.GetAtPath(path);
+            importer.textureType = TextureImporterType.Sprite;
+            importer.alphaIsTransparency = true;
+            importer.mipmapEnabled = false;
+            importer.filterMode = FilterMode.Bilinear;
+            importer.SaveAndReimport();
+            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        }
+
+        private static void FillRect(Texture2D t, int x, int y, int w, int h, Color c)
+        {
+            for (int j = Mathf.Max(0, y); j < Mathf.Min(t.height, y + h); j++)
+                for (int i = Mathf.Max(0, x); i < Mathf.Min(t.width, x + w); i++)
+                    t.SetPixel(i, j, c);
+        }
+
+        private static void FillDisc(Texture2D t, int cx, int cy, int radius, Color c)
+        {
+            for (int j = cy - radius; j <= cy + radius; j++)
+                for (int i = cx - radius; i <= cx + radius; i++)
+                    if ((i - cx) * (i - cx) + (j - cy) * (j - cy) <= radius * radius && i >= 0 && j >= 0 && i < t.width && j < t.height)
+                        t.SetPixel(i, j, c);
+        }
+
+        // Tablón: una tabla larga con vetas y dos clavos.
+        private static void DrawPlankIcon(Texture2D t, Color c)
+        {
+            Color dark = c * 0.6f; dark.a = 1f;
+            Color light = Color.Lerp(c, Color.white, 0.25f);
+            FillRect(t, 6, 4, t.width - 12, t.height - 8, dark);
+            FillRect(t, 9, 7, t.width - 18, t.height - 14, c);
+            for (int k = 0; k < 6; k++) FillRect(t, 14 + k * 5, 12, 2, t.height - 24, k % 2 == 0 ? light : dark);
+            FillDisc(t, t.width / 2, 18, 3, new Color(0.15f, 0.12f, 0.1f));
+            FillDisc(t, t.width / 2, t.height - 18, 3, new Color(0.15f, 0.12f, 0.1f));
+        }
+
+        // Chapa: lámina gris con borde, remaches y un brillo en diagonal.
+        private static void DrawSheetIcon(Texture2D t, Color c)
+        {
+            Color dark = c * 0.55f; dark.a = 1f;
+            Color light = Color.Lerp(c, Color.white, 0.35f);
+            FillRect(t, 6, 6, t.width - 12, t.height - 12, dark);
+            FillRect(t, 10, 10, t.width - 20, t.height - 20, c);
+            for (int k = 0; k < t.width - 26; k++) FillRect(t, 14 + k, t.height - 18 - k, 3, 3, light);
+            foreach (int rx in new[] { 16, t.width - 16 })
+                foreach (int ry in new[] { 16, t.height - 16 })
+                    FillDisc(t, rx, ry, 4, dark);
+        }
+
+        // Rollo de tela: un cilindro con la tapa en espiral y una cinta.
+        private static void DrawClothIcon(Texture2D t, Color c)
+        {
+            Color dark = c * 0.6f; dark.a = 1f;
+            Color light = Color.Lerp(c, Color.white, 0.3f);
+            FillRect(t, 8, 8, t.width - 16, t.height - 16, c);
+            FillRect(t, 8, t.height / 2 - 2, t.width - 16, 4, dark);
+            FillRect(t, 8, 8, t.width - 16, 5, dark);
+            FillRect(t, 8, t.height - 13, t.width - 16, 5, dark);
+            FillRect(t, 12, 14, 3, t.height - 28, light);
+            FillDisc(t, t.width / 2, t.height - 22, 9, dark);
+            FillDisc(t, t.width / 2, t.height - 22, 5, light);
+            FillDisc(t, t.width / 2, t.height - 22, 2, dark);
+        }
+
+        // Componente: un chip verde con patitas a los costados.
+        private static void DrawChipIcon(Texture2D t, Color c)
+        {
+            Color dark = c * 0.5f; dark.a = 1f;
+            Color metal = new Color(0.75f, 0.75f, 0.7f);
+            for (int k = 0; k < 4; k++)
+            {
+                FillRect(t, 4, 11 + k * 8, 8, 3, metal);
+                FillRect(t, t.width - 12, 11 + k * 8, 8, 3, metal);
+            }
+            FillRect(t, 10, 8, t.width - 20, t.height - 16, dark);
+            FillRect(t, 13, 11, t.width - 26, t.height - 22, c);
+            FillDisc(t, 20, t.height - 20, 3, dark);
         }
 
         private static void BuildJerrycan(string name, Transform parent, Vector3 position, Quaternion rotation, Material material, Palette p, FuelSettings fuel)

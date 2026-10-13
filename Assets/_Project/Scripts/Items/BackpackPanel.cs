@@ -128,12 +128,12 @@ namespace SurvivalEnTren.Items
             GUI.color = Color.white;
 
             // Título y peso: "MOCHILA        21,5 / 30 kg".
-            float mass = backpack.MassKg, capacity = backpack.CapacityKg;
-            float fill = Mathf.Clamp01(mass / Mathf.Max(0.01f, capacity));
+            float mass = backpack.MassKg, capacity = backpack.CellCount; // (provisorio: el panel con casillas llega en el paso siguiente)
+            float fill = Mathf.Clamp01((float)backpack.UsedCells / Mathf.Max(1, backpack.CellCount));
             _label.normal.textColor = Color.white;
             GUI.Label(new Rect(area.x + 16f, area.y + 10f, 200f, 28f), "MOCHILA", _label);
             _label.alignment = TextAnchor.UpperRight;
-            GUI.Label(new Rect(area.xMax - 216f, area.y + 10f, 200f, 28f), $"{mass:0.0} / {capacity:0} kg", _label);
+            GUI.Label(new Rect(area.xMax - 216f, area.y + 10f, 200f, 28f), $"{backpack.UsedCells} / {capacity:0} casillas, {mass:0.0} kg", _label);
             _label.alignment = TextAnchor.UpperLeft;
 
             // Barra de peso: blanca, ámbar desde el 80%, roja desde el 95%.

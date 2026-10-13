@@ -140,7 +140,7 @@ namespace SurvivalEnTren.Spike
             if (backpack == null) return "";
             string contents = "";
             foreach (ItemStack stack in backpack.Stacks) contents += $"  {stack.Item.DisplayName} ×{stack.Count}";
-            return $"mochila {backpack.MassKg:0.0} / {backpack.CapacityKg:0} kg{(contents == "" ? "  (vacía)" : ":" + contents)}\n";
+            return $"mochila {backpack.MassKg:0.0} kg, {backpack.UsedCells} de {backpack.CellCount} casillas{(contents == "" ? "  (vacía)" : ":" + contents)}\n";
         }
 
         private string FuelLine()

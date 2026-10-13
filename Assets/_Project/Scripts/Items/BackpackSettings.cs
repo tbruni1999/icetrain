@@ -4,15 +4,15 @@ namespace SurvivalEnTren.Items
 {
     /// <summary>
     /// Valores de la mochila (secciones 9.4 y 22.2: "el peso y el volumen convierten el saqueo en decisión").
-    /// PROPUESTA: el documento deja abierto si es por slots o por peso; para la V1 es solo peso, en kg.
-    /// Lo que se lleva en la mochila se suma a lo que se lleva en la mano para frenar el caminar
-    /// (la fórmula está en CarrySettings).
+    /// DECISIÓN de Tomi: la mochila es una cuadrícula de casillas; cada pieza ocupa su tamaño (ItemDefinition).
+    /// El peso de lo que se lleva suma al de la mano para frenar el caminar (la fórmula está en CarrySettings).
     /// </summary>
     [CreateAssetMenu(menuName = "Survival en tren/Objetos/Mochila", fileName = "BackpackSettings")]
     public class BackpackSettings : ScriptableObject
     {
-        [Tooltip("Peso máximo que entra en la mochila, en kg. Más allá de esto no entra nada más.")]
-        [SerializeField, Range(1f, 200f)] private float capacityKg = 30f;
+        [Header("Cuadrícula de la mochila (en casillas)")]
+        [SerializeField, Range(1, 20)] private int gridWidth = 6;
+        [SerializeField, Range(1, 20)] private int gridHeight = 5;
 
         [Header("Bultos en el piso (lo que se suelta de la mochila)")]
         [Tooltip("Material (Lit, blanco) de los bultos; el color de cada uno sale del material que contiene.")]
@@ -24,7 +24,8 @@ namespace SurvivalEnTren.Items
         [Tooltip("A qué distancia delante de los ojos se suelta un bulto, en metros.")]
         [SerializeField, Range(0.3f, 2f)] private float dropDistanceMeters = 0.9f;
 
-        public float CapacityKg => capacityKg;
+        public int GridWidth => gridWidth;
+        public int GridHeight => gridHeight;
         public Material BundleMaterial => bundleMaterial;
         public float BundleBaseSizeMeters => bundleBaseSizeMeters;
         public float BundleGrowthMeters => bundleGrowthMeters;

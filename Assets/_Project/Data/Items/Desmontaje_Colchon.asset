@@ -12,10 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b3229ccef3778b4599fcefbd4fe3fc5, type: 3}
   m_Name: Desmontaje_Colchon
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalEnTren.Items.SalvageRecipe
-  displayName: "colch\xF3n"
+  displayName: objeto
   requiredTool: 0
   salvageSeconds: 4
-  yields:
-  - item: {fileID: 11400000, guid: 11d890b8564682a4f9e69b36087f10f6, type: 2}
-    count: 3
+  yields: []
   shardCount: 8
