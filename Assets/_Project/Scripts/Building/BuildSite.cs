@@ -77,6 +77,21 @@ namespace SurvivalEnTren.Building
             }
         }
 
+        /// <summary>Cuántas piezas de un material se aportaron en total a la obra (fases completas + lo de la fase actual).</summary>
+        public int ContributedOf(ItemDefinition item)
+        {
+            int total = 0;
+            for (int p = 0; p < Mathf.Min(_level, project.PhaseCount); p++)
+                foreach (BuildRequirement r in project.Phase(p).requirements)
+                    if (r.item == item) total += r.count;
+            if (!IsComplete && _contributed != null)
+            {
+                BuildRequirement[] current = project.Phase(_level).requirements;
+                for (int i = 0; i < current.Length; i++) if (current[i].item == item) total += _contributed[i];
+            }
+            return total;
+        }
+
         /// <summary>Se dispara cuando se aporta una pieza o se completa una fase.</summary>
         public event Action Changed;
 

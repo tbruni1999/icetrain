@@ -975,6 +975,110 @@ namespace SurvivalEnTren.EditorTools
             SetReference(sleeping, "site", site.GetComponent<BuildSite>());
         }
 
+        // ---------------------------------------------------------------- Almacenamiento (M8)
+
+        // Lugares donde se ven los cubos de lo guardado: pequeños transforms sobre las tablas del mueble.
+        private static Transform[] DisplaySlots(Transform parent, string prefix, params Vector3[] localPositions)
+        {
+            var slots = new Transform[localPositions.Length];
+            for (int i = 0; i < slots.Length; i++)
+            {
+                slots[i] = Group($"{prefix}_{i + 1}", parent);
+                slots[i].localPosition = localPositions[i];
+            }
+            return slots;
+        }
+
+        private static void ConfigureStorage(StorageContainer storage, string id, string displayName, Vector2Int fixedSize, BuildSite site, Transform[] slots)
+        {
+            SetReference(storage, "settings", LoadBackpackSettings());
+            if (site != null) SetReference(storage, "site", site);
+            var so = new SerializedObject(storage);
+            so.FindProperty("stableId").stringValue = id;
+            so.FindProperty("displayName").stringValue = displayName;
+            so.FindProperty("fixedGridSize").vector2IntValue = fixedSize;
+            var list = so.FindProperty("displaySlots");
+            list.arraySize = slots.Length;
+            for (int i = 0; i < slots.Length; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = slots[i];
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        // El estante precario del taller (sección 4: "un estante o cajas muy limitadas"): ya existe, ahora guarda en una
+        // cuadrícula chica de 4 x 3. Lo guardado se ve en las dos tablas de abajo.
+        private static void BuildStarterStorage(Transform shelf)
+        {
+            Transform[] slots = DisplaySlots(shelf, "Guardado",
+                new Vector3(InnerHalfWidth - 0.2f, FloorTop + 0.13f, -2.1f), new Vector3(InnerHalfWidth - 0.2f, FloorTop + 0.13f, -1.1f),
+                new Vector3(InnerHalfWidth - 0.2f, FloorTop + 0.73f, -2.1f), new Vector3(InnerHalfWidth - 0.2f, FloorTop + 0.73f, -1.1f));
+            var storage = shelf.gameObject.AddComponent<StorageContainer>();
+            ConfigureStorage(storage, "storage_tren_estante_precario_001", "estante precario", new Vector2Int(4, 3), null, slots);
+        }
+
+        // El estante reforzado (sección 11.1, "Ejemplo: estante"): una obra de cuatro fases en la pared izquierda del taller:
+        // soportes de metal, estructura de madera, primer estante y segundo estante. Se vuelve útil con el primer estante
+        // (cuadrícula de 4 x 2) y llega a 6 x 4 con el segundo.
+        private static void BuildReinforcedShelf(Transform parent, Palette p)
+        {
+            MaterialSet materials = LoadMaterials();
+            BuildProject project = LoadOrCreateBuildProject("Estante", "estante reforzado", new float[] { 0f, 0f, 0f, 0f, 0f },
+                ("soportes", new[] { (materials.Metal, 2) }),
+                ("estructura", new[] { (materials.Wood, 2) }),
+                ("primer estante", new[] { (materials.Wood, 2) }),
+                ("segundo estante", new[] { (materials.Wood, 2) }));
+            // Tamaño de la cuadrícula por nivel (0 = soportes, 1 = estructura, 2 = primer estante, 3 = segundo): solo crece.
+            var projectSo = new SerializedObject(project);
+            var sizes = projectSo.FindProperty("levelGridSizes");
+            if (sizes.arraySize != 5)
+            {
+                sizes.arraySize = 5;
+                Vector2Int[] values = { Vector2Int.zero, Vector2Int.zero, Vector2Int.zero, new Vector2Int(4, 2), new Vector2Int(6, 4) };
+                for (int i = 0; i < values.Length; i++) sizes.GetArrayElementAtIndex(i).vector2IntValue = values[i];
+                projectSo.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            var root = Group("Taller_EstanteReforzado", parent);
+            root.localPosition = new Vector3(-InnerHalfWidth, FloorTop, 2.4f); // contra la pared izquierda, z de 1,4 a 3,4
+            Material wood = Mat("Cama_Madera", new Color(0.55f, 0.4f, 0.24f));
+
+            var phase1 = new List<GameObject>();
+            foreach (float z in new[] { -0.9f, 0.9f })
+            {
+                var bracket = Group($"Soporte_{(z < 0 ? 1 : 2)}", root);
+                BoxMinMax("Placa", bracket, new Vector3(0f, 0.3f, z - 0.05f), new Vector3(0.04f, 1.4f, z + 0.05f), p.Track);
+                BoxMinMax("Brazo_Bajo", bracket, new Vector3(0f, 0.46f, z - 0.04f), new Vector3(0.32f, 0.5f, z + 0.04f), p.Track);
+                BoxMinMax("Brazo_Alto", bracket, new Vector3(0f, 1.06f, z - 0.04f), new Vector3(0.32f, 1.1f, z + 0.04f), p.Track);
+                phase1.Add(bracket.gameObject);
+            }
+            var phase2 = new List<GameObject>();
+            foreach (float z in new[] { -0.9f, 0.9f })
+                phase2.Add(BoxMinMax($"Poste_{(z < 0 ? 1 : 2)}", root, new Vector3(0.3f, 0f, z - 0.04f), new Vector3(0.36f, 1.6f, z + 0.04f), wood));
+            var phase3 = new List<GameObject>
+            {
+                BoxMinMax("Tabla_Baja_1", root, new Vector3(0f, 0.5f, -0.95f), new Vector3(0.34f, 0.55f, 0f), wood),
+                BoxMinMax("Tabla_Baja_2", root, new Vector3(0f, 0.5f, 0f), new Vector3(0.34f, 0.55f, 0.95f), wood),
+            };
+            var phase4 = new List<GameObject>
+            {
+                BoxMinMax("Tabla_Alta_1", root, new Vector3(0f, 1.1f, -0.95f), new Vector3(0.34f, 1.15f, 0f), wood),
+                BoxMinMax("Tabla_Alta_2", root, new Vector3(0f, 1.1f, 0f), new Vector3(0.34f, 1.15f, 0.95f), wood),
+            };
+
+            // Zona de uso invisible sobre todo el estante (para apuntarlo aunque haya piezas fantasma).
+            var zone = BoxMinMax("Zona_Obra", root, new Vector3(0f, 0f, -1.05f), new Vector3(0.55f, 1.8f, 1.05f), wood);
+            zone.GetComponent<Collider>().isTrigger = true;
+            Object.DestroyImmediate(zone.GetComponent<MeshRenderer>());
+
+            // El mueble en sí (sin colliders: lo que se apunta es la obra, que lo abre cuando no hay nada que aportar).
+            var storageHolder = Group("Almacen", root);
+            Transform[] slots = DisplaySlots(storageHolder, "Guardado",
+                new Vector3(0.17f, 0.55f, -0.7f), new Vector3(0.17f, 0.55f, -0.25f), new Vector3(0.17f, 0.55f, 0.25f), new Vector3(0.17f, 0.55f, 0.7f));
+            var storage = storageHolder.gameObject.AddComponent<StorageContainer>();
+
+            BuildSite site = NewBuildSite(root, project, "obra_tren_estante_001",
+                new List<GameObject[]> { phase1.ToArray(), phase2.ToArray(), phase3.ToArray(), phase4.ToArray() }, storage);
+            ConfigureStorage(storage, "storage_tren_estante_reforzado_001", "estante reforzado", Vector2Int.zero, site, slots);
+        }
+
         // ---------------------------------------------------------------- Objetos desmontables (M7)
 
         private static BackpackSettings LoadBackpackSettings()
@@ -1280,6 +1384,8 @@ namespace SurvivalEnTren.EditorTools
             BoxMinMax("Lateral_B", shelf, new Vector3(InnerHalfWidth - 0.4f, FloorTop, -0.53f), new Vector3(InnerHalfWidth, FloorTop + 1.8f, -0.5f), p.Furniture);
             foreach (float h in new[] { 0.1f, 0.7f, 1.3f })
                 BoxMinMax($"Repisa_{h:0.0}", shelf, new Vector3(InnerHalfWidth - 0.4f, FloorTop + h, -2.5f), new Vector3(InnerHalfWidth, FloorTop + h + 0.03f, -0.53f), p.Furniture);
+            BuildStarterStorage(shelf);
+            BuildReinforcedShelf(workshop, p);
 
             var cargo = Group("Zona_EntradaCarga", interior);
 

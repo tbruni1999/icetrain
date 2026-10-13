@@ -47,6 +47,9 @@ namespace SurvivalEnTren.Building
                  "final. Debe tener una más que las fases. Dentro de una fase el valor sube de a poco con lo aportado " +
                  "(sección 11.2: una fase incompleta ya aporta valor).")]
         [SerializeField] private float[] levelValues = Array.Empty<float>();
+        [Tooltip("Solo para muebles con cuadrícula (un estante): el tamaño de la cuadrícula en cada nivel, en casillas (ancho, alto). " +
+                 "(0, 0) = todavía no sirve para guardar. Debe tener una más que las fases. Solo crece de un nivel al siguiente.")]
+        [SerializeField] private Vector2Int[] levelGridSizes = Array.Empty<Vector2Int>();
         [Tooltip("Cuántas piezas se aportan por segundo manteniendo E.")]
         [SerializeField, Range(0.5f, 20f)] private float unitsPerSecond = 2f;
 
@@ -54,6 +57,13 @@ namespace SurvivalEnTren.Building
         public int PhaseCount => phases.Length;
         public BuildPhase Phase(int index) => phases[index];
         public float UnitsPerSecond => unitsPerSecond;
+
+        /// <summary>Tamaño de la cuadrícula del mueble en un nivel ((0, 0) si todavía no guarda nada).</summary>
+        public Vector2Int LevelGridSize(int level)
+        {
+            if (levelGridSizes.Length == 0) return Vector2Int.zero;
+            return levelGridSizes[Mathf.Clamp(level, 0, levelGridSizes.Length - 1)];
+        }
 
         /// <summary>Valor del efecto en un nivel (el último si se pide uno de más).</summary>
         public float LevelValue(int level)
