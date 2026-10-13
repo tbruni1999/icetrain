@@ -12,8 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b3229ccef3778b4599fcefbd4fe3fc5, type: 3}
   m_Name: Desmontaje_ArmarioMetalico
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalEnTren.Items.SalvageRecipe
-  displayName: objeto
+  displayName: "armario met\xE1lico"
   requiredTool: 0
-  salvageSeconds: 4
-  yields: []
+  salvageSeconds: 6
+  yields:
+  - item: {fileID: 11400000, guid: 459bee3c699ede349aecfebe9e6eb5db, type: 2}
+    count: 3
   shardCount: 8

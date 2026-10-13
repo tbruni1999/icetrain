@@ -64,7 +64,7 @@ namespace SurvivalEnTren.Items
             float kg = item.WeightKg * count;
             if (fits <= 0) return $"{item.DisplayName} ×{count} ({kg:0.0} kg): no entra, falta lugar en la mochila";
             if (fits >= count) return $"guardar {item.DisplayName} ×{count}   ({kg:0.0} kg)";
-            return $"guardar {item.DisplayName} ×{fits} de {count}   (entra lo que da el peso)";
+            return $"guardar {item.DisplayName} ×{fits} de {count}   (entra lo que da el lugar)";
         }
 
         public float GetHoldSeconds(PlayerInteractor interactor) => 0f;

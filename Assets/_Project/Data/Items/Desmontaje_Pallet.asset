@@ -12,8 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b3229ccef3778b4599fcefbd4fe3fc5, type: 3}
   m_Name: Desmontaje_Pallet
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalEnTren.Items.SalvageRecipe
-  displayName: objeto
+  displayName: pallet
   requiredTool: 0
-  salvageSeconds: 4
-  yields: []
+  salvageSeconds: 3
+  yields:
+  - item: {fileID: 11400000, guid: 99c9953acd394a8458acded756b3b3ac, type: 2}
+    count: 4
   shardCount: 8

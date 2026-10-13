@@ -12,8 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b3229ccef3778b4599fcefbd4fe3fc5, type: 3}
   m_Name: Desmontaje_TableroElectrico
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalEnTren.Items.SalvageRecipe
-  displayName: objeto
+  displayName: "tablero el\xE9ctrico"
   requiredTool: 0
-  salvageSeconds: 4
-  yields: []
+  salvageSeconds: 5
+  yields:
+  - item: {fileID: 11400000, guid: 95dbddb397966e8468272ccdc96c7c7a, type: 2}
+    count: 2
   shardCount: 8

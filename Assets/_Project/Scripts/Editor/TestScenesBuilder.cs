@@ -370,8 +370,8 @@ namespace SurvivalEnTren.EditorTools
             SetReference(motor.GetComponent<PlayerCarrier>(), "backpack", backpack);
             SetReference(overlay, "backpack", backpack);
 
-            // Panel de la mochila (Tab): lista, peso y soltar; lo soltado queda como bulto con física.
-            var panel = motor.gameObject.AddComponent<BackpackPanel>();
+            // Panel del inventario (Tab): cuadrícula con imágenes; arrastrar, girar con R, soltar al piso (bultos con física).
+            var panel = motor.gameObject.AddComponent<InventoryPanel>();
             SetReference(panel, "backpack", backpack);
             SetReference(panel, "settings", backpackSettings);
             SetReference(panel, "motor", motor);
@@ -381,8 +381,11 @@ namespace SurvivalEnTren.EditorTools
             SetReference(panel, "toggle", FindActionReference("Player/ToggleBackpack"));
             SetReference(panel, "up", FindActionReference("Backpack/Up"));
             SetReference(panel, "down", FindActionReference("Backpack/Down"));
-            SetReference(panel, "dropOne", FindActionReference("Backpack/DropOne"));
-            SetReference(panel, "dropAll", FindActionReference("Backpack/DropAll"));
+            SetReference(panel, "left", FindActionReference("Backpack/Left"));
+            SetReference(panel, "right", FindActionReference("Backpack/Right"));
+            SetReference(panel, "rotate", FindActionReference("Backpack/Rotate"));
+            SetReference(panel, "act", FindActionReference("Backpack/Act"));
+            SetReference(panel, "actAll", FindActionReference("Backpack/ActAll"));
             LoadMaterials(); // crea los archivos de datos de los materiales (los usan los objetos desmontables)
 
             var corner = Group("Equipo_Tren", train.transform);

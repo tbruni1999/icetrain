@@ -220,14 +220,20 @@
             "actions": [
                 { "name": "Up", "type": "Button", "id": "11c4e7a2-93d5-4b06-8f1e-6a2d9c3b5e01", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
                 { "name": "Down", "type": "Button", "id": "22d5f8b3-a4e6-4c17-9a2f-7b3e0d4c6f12", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
-                { "name": "DropOne", "type": "Button", "id": "33e6a9c4-b5f7-4d28-ab30-8c4f1e5d7a23", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
-                { "name": "DropAll", "type": "Button", "id": "44f7bad5-c608-4e39-bc41-9d502f6e8b34", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false }
+                { "name": "Act", "type": "Button", "id": "33e6a9c4-b5f7-4d28-ab30-8c4f1e5d7a23", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "ActAll", "type": "Button", "id": "44f7bad5-c608-4e39-bc41-9d502f6e8b34", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Left", "type": "Button", "id": "55081cc5-d6a9-4f3b-8c62-b1e24b8d7e10", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Right", "type": "Button", "id": "66192dd6-e7ba-4a4c-9d73-c2f35c9e8f21", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Rotate", "type": "Button", "id": "77203ee7-f8cb-4b5d-ae84-d3046daf9a32", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false }
             ],
             "bindings": [
                 { "name": "", "id": "6619dcf7-e82a-4a5b-9e63-bf724b8a0d56", "path": "<Keyboard>/upArrow", "interactions": "", "processors": "", "groups": "", "action": "Up", "isComposite": false, "isPartOfComposite": false },
                 { "name": "", "id": "772aed08-f93b-4b6c-af74-c0835c9b1e67", "path": "<Keyboard>/downArrow", "interactions": "", "processors": "", "groups": "", "action": "Down", "isComposite": false, "isPartOfComposite": false },
-                { "name": "", "id": "883bfe19-0a4c-4c7d-b085-d1946dac2f78", "path": "<Keyboard>/enter", "interactions": "", "processors": "", "groups": "", "action": "DropOne", "isComposite": false, "isPartOfComposite": false },
-                { "name": "", "id": "994c0f2a-1b5d-4d8e-c196-e2a57ebd3089", "path": "<Keyboard>/delete", "interactions": "", "processors": "", "groups": "", "action": "DropAll", "isComposite": false, "isPartOfComposite": false }
+                { "name": "", "id": "883bfe19-0a4c-4c7d-b085-d1946dac2f78", "path": "<Keyboard>/enter", "interactions": "", "processors": "", "groups": "", "action": "Act", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "994c0f2a-1b5d-4d8e-c196-e2a57ebd3089", "path": "<Keyboard>/delete", "interactions": "", "processors": "", "groups": "", "action": "ActAll", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "88314ff8-09dc-4c6e-bf95-e4157eb0ab43", "path": "<Keyboard>/leftArrow", "interactions": "", "processors": "", "groups": "", "action": "Left", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "99425009-1aed-4d7f-80a6-f5268bc1bc54", "path": "<Keyboard>/rightArrow", "interactions": "", "processors": "", "groups": "", "action": "Right", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "aa536110-1bfe-4e80-91b7-06379cd2cd65", "path": "<Keyboard>/r", "interactions": "", "processors": "", "groups": "", "action": "Rotate", "isComposite": false, "isPartOfComposite": false }
             ]
         },
         {

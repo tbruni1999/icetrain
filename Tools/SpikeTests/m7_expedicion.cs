@@ -145,7 +145,7 @@ System.Collections.IEnumerator WalkTo(UnityEngine.Vector3 point, float stop, flo
 
 // ---- Desde acá, lo propio de la expedición del M7 (las ayudas de arriba vienen de la expedición del M6).
 var backpack = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Items.Backpack>();
-var panel = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Items.BackpackPanel>();
+var panel = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Items.InventoryPanel>();
 var wood = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.ItemDefinition>("Assets/_Project/Data/Items/Madera.asset");
 var metal = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.ItemDefinition>("Assets/_Project/Data/Items/Metal.asset");
 var cloth = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.ItemDefinition>("Assets/_Project/Data/Items/Tela.asset");
@@ -249,7 +249,7 @@ System.Collections.IEnumerator Run()
     yield return Salvage(mattress, east, gained);
     float loaded = backpack.MassKg;
     for (int i = 0; i < 20; i++) yield return wait;
-    log.Append($" CARGADO: mochila {loaded:0.0} / {backpack.CapacityKg:0} kg ({Show(new[] { backpack.CountOf(wood), backpack.CountOf(metal), backpack.CountOf(cloth), backpack.CountOf(parts) })}); caminar x{motor.SpeedMultiplier:0.00}.");
+    log.Append($" CARGADO: mochila {loaded:0.0} kg, {backpack.UsedCells}/{backpack.CellCount} casillas ({Show(new[] { backpack.CountOf(wood), backpack.CountOf(metal), backpack.CountOf(cloth), backpack.CountOf(parts) })}); caminar x{motor.SpeedMultiplier:0.00}.");
 
     // 4) Volver al tren siguiendo la aguja blanca, cargado, y subir por la escalera.
     yield return WalkTo(stationCenter + new UnityEngine.Vector3(4.6f, 0f, 0f), 0.15f, r);
@@ -270,8 +270,8 @@ System.Collections.IEnumerator Run()
     // 5) Dejar todo en el piso del tren con el panel (Tab y Supr, con el teclado real): queda en bultos adentro.
     yield return Tap(UnityEngine.InputSystem.Key.Tab);
     bool opened = panel.IsOpen;
-    int rows = backpack.Stacks.Count;
-    for (int k = 0; k < rows + 1 && backpack.Stacks.Count > 0; k++) yield return Tap(UnityEngine.InputSystem.Key.Delete);
+    foreach (var item in allItems) panel.DropAll(item); // soltar todo, material por material (lo mismo que hace Supr)
+
     yield return Tap(UnityEngine.InputSystem.Key.Tab);
     for (int i = 0; i < 90; i++) yield return wait;
     int insideCount = 0, total = 0;
@@ -284,7 +284,7 @@ System.Collections.IEnumerator Run()
             if (System.Math.Abs(l.x) < 1.7f && l.z > -7.5f && l.z < 9.5f && l.y > 0.9f) insideCount++;
         }
     }
-    log.Append($" DEJAR EN EL TREN: panel abierto={opened}, mochila vacía={backpack.Stacks.Count == 0}, caminar x{motor.SpeedMultiplier:0.00}; bultos sueltos en el mundo (sin contar los de la estación) {total}, de los cuales adentro del tren {insideCount}.");
+    log.Append($" DEJAR EN EL TREN: panel abierto={opened}, mochila vacía={backpack.Grid.Items.Count == 0}, caminar x{motor.SpeedMultiplier:0.00}; bultos sueltos en el mundo (sin contar los de la estación) {total}, de los cuales adentro del tren {insideCount}.");
 
     // 6) Cuentas: lo que había + lo desmontado = lo que hay (mochila + bultos); nada se duplicó ni se perdió.
     var after = Units();

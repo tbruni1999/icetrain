@@ -121,21 +121,22 @@ System.Collections.IEnumerator Run()
     log.Append($" → mochila: componentes {backpack.CountOf(parts)} (el tablero da 2), pesa {backpack.MassKg:0.0} kg.");
 
     // 2) El armario (metal ×3 = 10,5 kg) con la mochila casi llena: lo que no entra queda en el piso.
-    Give(0, 5); // +10 kg de madera: quedan ~9 kg libres: entran 2 de metal (7 kg) y 1 queda como bulto
-    float free = backpack.FreeKg;
+    // (la mochila ya tiene 24 casillas ocupadas por el pallet, el colchón y el tablero: del armario, las chapas 2x2 que entren
+    //  entran y las que no, quedan en el piso)
+    float free = backpack.CellCount - backpack.UsedCells;
     int metalBefore = backpack.CountOf(metal);
     yield return Salvage(locker, east);
     int bundleMetal = 0;
     foreach (var b in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>()) if (b.Item == metal) bundleMetal += b.Count;
-    log.Append($" ARMARIO con {free:0.0} kg libres: en la mochila metal {backpack.CountOf(metal) - metalBefore} nuevos, en el piso {bundleMetal - before[1]} nuevos (+{before[1]} sueltos que ya había); mochila {backpack.MassKg:0.0} / {backpack.CapacityKg:0} kg.");
+    log.Append($" ARMARIO con {free:0} casillas libres (una chapa pide un hueco de 2x2): en la mochila metal {backpack.CountOf(metal) - metalBefore} nuevas, en el piso {bundleMetal - before[1]} nuevas (+{before[1]} sueltas que ya había); mochila {backpack.UsedCells}/{backpack.CellCount} casillas, {backpack.MassKg:0.0} kg.");
 
     // 3) Ya no hay nada que desmontar de nuevo.
     int left = UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.SalvageProp>().Length;
     log.Append($" Quedan {left} objetos desmontables (eran {props.Length}: se llevaron 4 y falta el pallet de afuera).");
 
     // 4) Vaciar la mochila soltando todo (queda en bultos, sin perder nada) y desmontar el pallet de afuera con la tecla E real.
-    var panel = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Items.BackpackPanel>();
-    while (backpack.Stacks.Count > 0) panel.Drop(0, all: true);
+    var panel = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Items.InventoryPanel>();
+    while (backpack.Grid.Items.Count > 0) panel.DropPiece(backpack.Grid.Items[0]);
     var outsideCenter = CenterOf(outsidePallet);
     float seconds = outsidePallet.Recipe.SalvageSeconds;
     StandAndLook(outsideCenter, outsideCenter + new UnityEngine.Vector3(5f, 0f, 0f));
