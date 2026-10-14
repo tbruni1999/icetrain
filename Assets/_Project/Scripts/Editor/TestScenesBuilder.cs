@@ -70,6 +70,12 @@ namespace SurvivalEnTren.EditorTools
         private const float SpurStraightLength = 220f;
         private const float StopSignDistance = 150f;     // metros desde el inicio de la recta 1 (z -150)
 
+        // Escena de conducción (M10): bifurcación dañada en la recta oeste (el tren va hacia -z) y su ruta desconocida.
+        private const float DamagedSwitchZ = 0f;         // la recta 3 va de z +300 a -300; el cambio queda a la mitad
+        private const float RouteCurveRadius = 300f;
+        private const float RouteAngleDegrees = 20f;
+        private const float RouteStraightLength = 800f;
+
         // Locomotora. Coordenadas locales: y = 0 es la cara superior del riel, z+ es adelante.
         private const float BodyHalfWidth = 1.7f;   // 3,4 m de ancho exterior (Tomi: con 3 m se sentía angosto)
         private const float BodyHalfLength = 9.5f;
@@ -145,11 +151,12 @@ namespace SurvivalEnTren.EditorTools
             GameObject locomotivePrefab = BuildLocomotivePrefab(palette);
 
             BuildEnvironment(palette, kind == Kind.Driving ? 0.009f : 0.004f); // más niebla en la de M2: sin ver el tren de lejos (M5)
-            RailSegment firstSegment = BuildTrack(palette, kind, out RailSwitch railSwitch, out RailSegment spur);
+            RailSegment firstSegment = BuildTrack(palette, kind, out RailSwitch railSwitch, out RailSegment spur, out RailSwitch damagedSwitch, out RailSegment unknownRoute);
             BuildPosts(firstSegment, palette, kind == Kind.Driving ? -1f : 1f);
             if (kind == Kind.Driving)
             {
                 BuildSwitchStand(railSwitch, palette);
+                BuildDamagedSwitch(damagedSwitch, palette);
                 BuildStopSign(firstSegment, palette);
                 BuildProbeSignals(palette);
             }
@@ -158,7 +165,11 @@ namespace SurvivalEnTren.EditorTools
             var mover = train.GetComponent<TrainMover>();
             SetReference(mover, "startSegment", firstSegment);
             mover.SnapToRail();
-            if (kind == Kind.Driving) BuildBufferStop(spur, mover, palette);
+            if (kind == Kind.Driving)
+            {
+                BuildBufferStop(spur, mover, palette, "Tope_ViaMuerta");
+                BuildBufferStop(unknownRoute, mover, palette, "Tope_RutaDesconocida");
+            }
 
             var controls = new GameObject(kind == Kind.Spike ? "Spike_Controles" : "Pruebas_Controles");
             TrainTestDriver driver = null;
@@ -1955,7 +1966,8 @@ namespace SurvivalEnTren.EditorTools
 
         // Vía de prueba: óvalo. En la escena de conducción, la primera recta se parte en un cambio de vía
         // con un desvío a una vía muerta (railSwitch y spur quedan en null en la del spike).
-        private static RailSegment BuildTrack(Palette p, Kind kind, out RailSwitch railSwitch, out RailSegment spur)
+        private static RailSegment BuildTrack(Palette p, Kind kind, out RailSwitch railSwitch, out RailSegment spur,
+            out RailSwitch damagedSwitch, out RailSegment unknownRoute)
         {
             var track = new GameObject("Via");
             float h = RailTopHeight;
@@ -1963,6 +1975,8 @@ namespace SurvivalEnTren.EditorTools
             float r = CurveRadius;
             railSwitch = null;
             spur = null;
+            damagedSwitch = null;
+            unknownRoute = null;
 
             var curveNorth = Arc(new Vector3(0f, h, halfL), r, 0f, Mathf.PI);
             var straightWest = new List<Vector3> { new Vector3(-r, h, halfL), new Vector3(-r, h, -halfL) };
@@ -2006,13 +2020,53 @@ namespace SurvivalEnTren.EditorTools
             }
 
             RailSegment s2 = Segment("Tramo_2_Curva", track.transform, curveNorth, p);
-            RailSegment s3 = Segment("Tramo_3_Recta", track.transform, straightWest, p);
+            RailSegment s3, s3Exit;
+            if (kind == Kind.Driving)
+            {
+                // La recta oeste se parte en la bifurcación dañada (M10): el desvío sale hacia afuera del óvalo (-x) y se
+                // pierde en la niebla (la "ruta desconocida"). Mientras el cambio no se repare, el tren sigue de largo.
+                s3 = Segment("Tramo_3_Recta", track.transform,
+                    new List<Vector3> { new Vector3(-r, h, halfL), new Vector3(-r, h, DamagedSwitchZ) }, p);
+                s3Exit = Segment("Tramo_3b_Recta", track.transform,
+                    new List<Vector3> { new Vector3(-r, h, DamagedSwitchZ), new Vector3(-r, h, -halfL) }, p);
+
+                var routePoints = new List<Vector3>();
+                var routeCenter = new Vector3(-r - RouteCurveRadius, h, DamagedSwitchZ);
+                float routeAngle = RouteAngleDegrees * Mathf.Deg2Rad;
+                int routeSteps = Mathf.CeilToInt(routeAngle * RouteCurveRadius / CurvePointSpacing);
+                for (int i = 0; i <= routeSteps; i++)
+                {
+                    float a = routeAngle * i / routeSteps;
+                    routePoints.Add(routeCenter + new Vector3(Mathf.Cos(a) * RouteCurveRadius, 0f, -Mathf.Sin(a) * RouteCurveRadius));
+                }
+                var routeDirection = new Vector3(-Mathf.Sin(routeAngle), 0f, -Mathf.Cos(routeAngle));
+                routePoints.Add(routePoints[routePoints.Count - 1] + routeDirection * RouteStraightLength);
+                unknownRoute = Segment("Tramo_RutaDesconocida", track.transform, routePoints, p);
+
+                s3.Connect(s3Exit);
+                var damagedObject = new GameObject("Cambio_2_Danado");
+                damagedObject.transform.SetParent(track.transform, false);
+                damagedObject.transform.position = new Vector3(-r, h, DamagedSwitchZ);
+                damagedSwitch = damagedObject.AddComponent<RailSwitch>();
+                damagedSwitch.Configure(s3, s3Exit, unknownRoute);
+                var damagedSo = new SerializedObject(damagedSwitch);
+                damagedSo.FindProperty("stableId").stringValue = "rail_switch_oeste_001";
+                damagedSo.FindProperty("condition").enumValueIndex = (int)RailSwitchCondition.Frozen;
+                damagedSo.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(damagedSwitch);
+                EditorUtility.SetDirty(unknownRoute);
+                EditorUtility.SetDirty(s3Exit);
+            }
+            else
+            {
+                s3 = s3Exit = Segment("Tramo_3_Recta", track.transform, straightWest, p);
+            }
             RailSegment s4 = Segment("Tramo_4_Curva", track.transform, curveSouth, p);
             lastOfStraight.Connect(s2);
             s2.Connect(s3);
-            s3.Connect(s4);
+            s3Exit.Connect(s4);
             s4.Connect(first);
-            foreach (var s in new[] { first, lastOfStraight, s2, s3, s4 }) EditorUtility.SetDirty(s);
+            foreach (var s in new[] { first, lastOfStraight, s2, s3, s3Exit, s4 }) EditorUtility.SetDirty(s);
             return first;
         }
 
@@ -2046,13 +2100,55 @@ namespace SurvivalEnTren.EditorTools
             SetReference(lever, "indicatorPivot", indicator);
         }
 
+        // Bifurcación dañada (M10, secciones 6.3 y 20.9): igual que el cambio del M2 pero al costado de la recta oeste y en mal
+        // estado. El mecanismo de la palanca está bajo un bloque de hielo (barreta, mantener E); sin hielo se ve la palanca
+        // rota, doblada contra el suelo. El estado vive en el RailSwitch (congelado → roto → reparado).
+        private static void BuildDamagedSwitch(RailSwitch damaged, Palette p)
+        {
+            Vector3 forward = new Vector3(0f, 0f, -1f);          // en la recta oeste el tren va hacia -z
+            Vector3 left = Vector3.Cross(forward, Vector3.up);   // a la izquierda del sentido de marcha (adentro del óvalo)
+            Vector3 basePoint = new Vector3(damaged.Point.x, 0f, damaged.Point.z) + left * 3.6f - forward * 6f;
+
+            var stand = new GameObject("Cambio_2_Palanca").transform;
+            stand.position = basePoint;
+            stand.rotation = Quaternion.LookRotation(forward, Vector3.up);
+            BoxMinMax("Base", stand, new Vector3(-0.3f, 0f, -0.25f), new Vector3(0.3f, 0.3f, 0.25f), p.Track);
+            Label("CAMBIO", stand, new Vector3(0f, 0.305f, -0.15f));
+
+            // La palanca rota: un muñón doblado que se ve cuando el hielo ya no la tapa.
+            var broken = Group("Palanca_Rota", stand);
+            broken.localPosition = new Vector3(0f, 0.3f, 0f);
+            broken.localRotation = Quaternion.Euler(0f, 0f, 72f);
+            BoxMinMax("Munon", broken, new Vector3(-0.03f, 0f, -0.03f), new Vector3(0.03f, 0.38f, 0.03f), p.Track, false);
+            BoxMinMax("Punta", broken, new Vector3(-0.045f, 0.36f, -0.045f), new Vector3(0.045f, 0.42f, 0.045f), p.Post, false);
+
+            // Bloque de hielo grueso sobre todo el mecanismo (más grueso que cualquier zona de uso: se apunta primero al hielo).
+            Material iceMat = Mat("Hielo", new Color(0.72f, 0.88f, 0.97f));
+            var ice = Group("Hielo", stand);
+            ice.localPosition = new Vector3(-0.6f, 0f, 0f);
+            BoxMinMax("Bloque_Principal", ice, new Vector3(0f, 0f, -0.7f), new Vector3(1.35f, 1.1f, 0.7f), iceMat);
+            BoxMinMax("Bloque_Pie", ice, new Vector3(-0.05f, 0f, -0.85f), new Vector3(1.45f, 0.6f, 0.8f), iceMat);
+            BoxMinMax("Bloque_Alto", ice, new Vector3(0.2f, 0.9f, -0.45f), new Vector3(1.0f, 1.5f, 0.5f), iceMat);
+            var frozen = ice.gameObject.AddComponent<FrozenDoor>();
+            var frozenSo = new SerializedObject(frozen);
+            frozenSo.FindProperty("stableId").stringValue = "ice_switch_oeste_001";
+            frozenSo.FindProperty("shardCenter").vector3Value = new Vector3(0.65f, 0.75f, 0f);
+            frozenSo.FindProperty("shardHalfSize").vector3Value = new Vector3(0.65f, 0.7f, 0.7f);
+            frozenSo.FindProperty("needCrowbarPrompt").stringValue = "el hielo traba el cambio: hace falta una barreta";
+            frozenSo.ApplyModifiedPropertiesWithoutUndo();
+
+            var link = stand.gameObject.AddComponent<DamagedSwitch>();
+            SetReference(link, "railSwitch", damaged);
+            SetReference(link, "ice", frozen);
+        }
+
         // Tope al final de la vía muerta: la cara de la placa coincide con el final de la vía; la placa
         // se hunde en el bloque cuando el tren la comprime (BufferStop), la física está en TrainDynamics.
-        private static void BuildBufferStop(RailSegment spur, TrainMover train, Palette p)
+        private static void BuildBufferStop(RailSegment spur, TrainMover train, Palette p, string name)
         {
             Vector3 end = spur.GetPosition(spur.Length);
             Vector3 direction = spur.GetDirection(spur.Length);
-            var stop = new GameObject("Tope_ViaMuerta").transform;
+            var stop = new GameObject(name).transform;
             stop.position = new Vector3(end.x, end.y, end.z);
             stop.rotation = Quaternion.LookRotation(new Vector3(direction.x, 0f, direction.z), Vector3.up);
             BoxMinMax("Bloque", stop, new Vector3(-1.4f, -0.6f, 1.0f), new Vector3(1.4f, 1.2f, 1.8f), p.PostMarker);

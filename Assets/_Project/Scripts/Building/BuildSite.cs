@@ -18,6 +18,7 @@ namespace SurvivalEnTren.Building
     /// - Si no hay nada que aportar (sin materiales, o la obra terminada), E usa el objeto de "fallback" (dormir en la
     ///   cama, abrir el estante), así la obra y el mueble comparten el mismo lugar.
     /// - El ID estable es para el guardado futuro (obras y materiales aportados, Anexo B.4).
+    /// - Puede depender de un plano (requiredBlueprint) o de una compuerta (GateOpen: el hielo que tapa un cambio de vía).
     /// </summary>
     public class BuildSite : MonoBehaviour, IChanneledInteractable
     {
@@ -41,6 +42,8 @@ namespace SurvivalEnTren.Building
         [SerializeField] private BlueprintBook book;
         [Tooltip("Lo que se usa cuando no hay nada que aportar (debe implementar IInteractable): dormir, abrir el estante.")]
         [SerializeField] private MonoBehaviour fallback;
+        [Tooltip("Al terminar la obra, se apagan las zonas de uso para que se apunte directo a lo construido (una palanca que ahora funciona). Los muebles (cama, estante) lo dejan apagado.")]
+        [SerializeField] private bool zonesOffWhenComplete;
 
         private sealed class PieceVisual
         {
@@ -54,11 +57,26 @@ namespace SurvivalEnTren.Building
         private Collider[] _zones;
         private int[] _contributed;
         private int _level;
+        private bool _gateOpen = true;
         private float _timer;
 
         public string StableId => stableId;
         /// <summary>Todavía no se conoce el plano de esta obra: no se ve ni se puede construir.</summary>
-        public bool Locked => requiredBlueprint != null && book != null && !book.Knows(requiredBlueprint);
+        public bool Locked => !_gateOpen || (requiredBlueprint != null && book != null && !book.Knows(requiredBlueprint));
+
+        /// <summary>
+        /// Otra cosa decide si la obra se puede empezar (el hielo que tapa un cambio de vía): cerrada, no se ve ni se puede apuntar.
+        /// </summary>
+        public bool GateOpen
+        {
+            get => _gateOpen;
+            set
+            {
+                if (_gateOpen == value) return;
+                _gateOpen = value;
+                ApplyVisuals();
+            }
+        }
         public BuildProject Project => project;
         /// <summary>Cuántas fases están completas (0 = sin avance, PhaseCount = terminada).</summary>
         public int Level => _level;
@@ -253,7 +271,7 @@ namespace SurvivalEnTren.Building
         private void ApplyVisuals()
         {
             if (_visuals == null) return;
-            if (_zones != null) foreach (Collider z in _zones) z.enabled = !Locked;
+            if (_zones != null) foreach (Collider z in _zones) z.enabled = !Locked && !(zonesOffWhenComplete && IsComplete);
             for (int p = 0; p < _visuals.Length; p++)
             {
                 PieceVisual[] pieces = _visuals[p];

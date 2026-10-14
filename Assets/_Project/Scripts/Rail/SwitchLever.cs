@@ -11,6 +11,7 @@ namespace SurvivalEnTren.Rail
     /// - El indicador (un cartel que gira) muestra hacia dónde va el tren: cara clara = vía directa,
     ///   cara ámbar = desvío (sección 18.4: ámbar = atención).
     /// - Si hay un tren pisando el cambio, la palanca no se mueve: se sacude y vuelve.
+    /// - Si el cambio está congelado o roto (sección 6.3) no se mueve y la indicación dice por qué.
     /// </summary>
     public class SwitchLever : MonoBehaviour, IInteractable
     {
@@ -39,12 +40,21 @@ namespace SurvivalEnTren.Rail
             _indicator = IndicatorTarget;
         }
 
-        public string GetPrompt(PlayerInteractor interactor) => "mover el cambio";
+        public string GetPrompt(PlayerInteractor interactor)
+        {
+            switch (railSwitch.Condition)
+            {
+                case RailSwitchCondition.Frozen: return "el hielo traba el cambio";
+                case RailSwitchCondition.Broken: return "la palanca está rota";
+                default: return "mover el cambio";
+            }
+        }
 
-        public float GetHoldSeconds(PlayerInteractor interactor) => holdSeconds;
+        public float GetHoldSeconds(PlayerInteractor interactor) => railSwitch.CanMove ? holdSeconds : 0f;
 
         public void Interact(PlayerInteractor interactor)
         {
+            if (!railSwitch.CanMove) return; // congelado o roto: no hay nada que mover
             if (!railSwitch.TrySetDiverging(!railSwitch.IsDiverging, IsTrainOnSwitch))
                 _shakeTimeLeft = blockedShakeSeconds;
         }
