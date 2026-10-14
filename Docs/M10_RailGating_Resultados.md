@@ -1,0 +1,59 @@
+# M10 — Rail gating: resultados
+
+Escena `Assets/_Project/Scenes/Pruebas/M2_Conduccion.unity` (menú "Survival en tren > M2 > Construir escena de conducción"; la escena Spike también se reconstruye pero no tiene la bifurcación). Pruebas automáticas en `Tools/SpikeTests/m10_*.cs`. Valores del proyecto de reparación en `Assets/_Project/Data/Build/Obra_CambioOeste.asset`; la pieza especial en `Assets/_Project/Data/Items/AgujaCambio.asset`.
+
+## Qué hay
+
+Es el "primer gran objetivo" de la V1 (secciones 6.3 y 20.9): una **bifurcación congelada y dañada** que lleva a una región desconocida. Para abrirla hay que romper el hielo, reunir materiales de verdad, tener **una pieza ferroviaria especial** y reparar el cambio. Después se acciona la palanca y el tren entra por primera vez a la ruta desconocida.
+
+### La bifurcación dañada
+- Un **segundo cambio de vía** sobre la recta oeste del óvalo (a la mitad de esa recta; el tren va hacia el sur). Su desvío sale hacia afuera del óvalo y se pierde en la niebla: la **ruta desconocida**, un tramo de **905 m** que termina en un tope. Sale tangente a la vía (sin curva brusca) y de momento no tiene nada: los lugares son del M11.
+- **El estado del cambio vive en un dato** (`RailSwitch`, con ID estable `rail_switch_oeste_001`), con tres estados que se resuelven en orden: **congelado → roto → reparado**. Congelado o roto, no se puede mover y el tren sigue de largo por la vía directa. El cambio manual del M2 sigue como estaba.
+- **Hielo sobre el mecanismo:** un bloque grueso tapa la palanca. Es el mismo hielo de la puerta de la estación (barreta + **mantener E** unos 4 s; sin barreta dice "el hielo traba el cambio: hace falta una barreta"). Al romperse pasa a **roto** y se ve la palanca doblada contra el suelo.
+- **Proyecto de reparación** (las obras por fases del M8; todo lo aportado se conserva si te vas y volvés):
+  | Fase | Qué se ve | Pide (PROPUESTA, en datos) |
+  |---|---|---|
+  | 1. palanca | la palanca y su cartel indicador | chapa ×2 + componente ×1 |
+  | 2. durmientes y riel | durmientes nuevos y placas de unión en el cruce | madera ×4 + chapa ×3 |
+  | 3. aguja de cambio | las dos hojas de la aguja y la caja de maniobra | **aguja de cambio ×1** (la pieza especial) |
+  Hasta romper el hielo la obra ni se ve. Con el hielo roto aparece como **fantasmas** y se van volviendo sólidos. Al completar la última fase, el cambio queda **REPARADO** y la palanca (que es una pieza de la obra) funciona como la del M2: mantener E 1 s.
+- **La pieza especial** es una **aguja de cambio** (ítem nuevo, 1×3 casillas, 5 kg, se puede girar). Está en la **segunda sala de la estación**, sobre el piso junto al escritorio del plano. El nombre es PROPUESTA (el documento solo dice "1 componente ferroviario específico").
+- **Con qué reunir el proyecto:** el mundo no alcanzaba (la sierra y el bidón ya gastaron chapas), así que junto a la bifurcación, hacia adentro del óvalo, hay **1 pallet (madera ×4), 2 armarios (chapas ×6) y 1 tablero (componentes ×2)** para desarmar con la barreta. Es provisorio: el M11 los reemplaza por lugares de verdad. (Con 1 solo armario no alcanzaban las chapas.)
+
+### La consola y la sonda leen la red (sección 14.3)
+- La bifurcación aparece en la pantalla de la cabina como **lectura de la red**: un **rombo blanco** (las señales de lugares siguen siendo puntos verdes). Al fijarla con E dice **"OBJETIVO: BIFURCACIÓN BLOQUEADA"**, la distancia y la dirección, y **"RUTA DESCONOCIDA"** con los metros por la vía. Cuando se repara pasa a **ABIERTA**.
+- La **sonda portátil** puede apuntarle como a cualquier señal: la aguja ámbar lleva hasta la palanca.
+
+## Mediciones (Editor, 60 FPS)
+
+| Prueba | Resultado |
+|---|---|
+| `m10_bifurcacion.cs` (paso 1) | el cambio arranca **Congelado** y no se puede mover; la vía directa sigue a `Tramo_3b_Recta`; el desvío va a `Tramo_RutaDesconocida` (905 m, **sale tangente a la vía**, termina en (−492, −854) con tope); sin barreta el hielo no avanza y dice "el hielo traba el cambio: hace falta una barreta"; con barreta, a la mitad "(50%)" y se rompe en **4,0 s**; queda **Roto** y sigue sin poder moverse; manejando el tren de verdad a 30 km/h por el cambio: `Tramo_3_Recta > Tramo_3b_Recta`, **no entra a la ruta**, temblor del jugador **0,01 mm**; marcha atrás por el cambio: vuelve a `Tramo_3_Recta` |
+| `m10_reparacion.cs` (paso 2) | pieza especial 1×3, 5,0 kg, rota; los desmontables de la bifurcación dan madera ×4, chapas ×6, componentes ×2; **congelado:** obra bloqueada, 0 piezas visibles, zonas apagadas, ni con materiales en la mochila recibe nada; **hielo roto:** aparece fase 1 como fantasmas, "palanca pide chapa ×2, componente ×1", se ve el muñón; fase 1 con solo las chapas: fracción 0,67 y 2 de 3 piezas sólidas; completa: nivel 1, el muñón desaparece, el cambio sigue roto y no se mueve; fase 2: tras aportar 2 de 4 tablones, **irse lejos y volver conserva el avance** (0,29); completa con la 3 visible; sin la pieza "aguja de cambio pide aguja de cambio ×1" y las chapas de sobra no sirven; la aguja se recoge con E ("guardar aguja de cambio ×1 (5,0 kg)", ocupa 1×3); con ella la obra se completa y el cambio queda **Reparado**; las zonas de la obra se apagan y al apuntar a la palanca el objetivo es `SwitchLever` "mover el cambio" (mantener 1,0 s); la palanca manda el desvío a `Tramo_RutaDesconocida` y vuelve; **cuentas exactas:** madera 4, chapas 5, componentes 1, agujas 1 |
+| `m10_sonda_red.cs` (paso 3) | la sonda detecta la bifurcación como lectura de la red (3 señales a la vista desde el inicio), **~475 m**; pantalla: "OBJETIVO: BIFURCACIÓN BLOQUEADA" / "~475 M ADELANTE IZQ." / "RUTA DESCONOCIDA 950 M ATRÁS"; el punto está girado 45° (rombo); una señal de un lugar no lo muestra; **sonda portátil:** caminando solo con la aguja ámbar, 159 m para 166 m en línea recta en 32 s, termina a **14,9 m** de la bifurcación (10,3 m de la palanca); al romper el hielo sigue BLOQUEADA y al completar la reparación pasa a **"ABIERTA"** |
+| `m10_slice.cs` (paso 4, jugador automático, de cero a la ruta) | desde cero: toma la aguja en la segunda sala de la estación; maneja el tren (Tramo_1a > 1b > Curva > Tramo_3_Recta) y **frena a 50 m del cambio** (temblor del jugador 0,07 mm); rompe el hielo (4,0 s); desarma armario y tablero (chapas 3, componentes 2); fase 1; desarma el segundo armario y el pallet; fases 2 y 3: **nivel 3/3, cambio Reparado**; la consola dice "ABIERTA"; la palanca apuntada de verdad ("mover el cambio") manda el tren a la ruta; de vuelta en el tren pasa `Tramo_3_Recta > Tramo_RutaDesconocida` y se detiene a 163 m dentro de la ruta (de 905 m), con el jugador adentro (temblor 0,03 mm). **228 s reales (3,8 h de juego)**; combustible 50,0 → 22,4 L; vida 100, comida 69, energía 56, calor 100 |
+| **Regresión (28 pruebas, todas con el M10 en la escena)** | Dan lo mismo que en el M9: `m2_cambio_y_parada` (parada a 0,15 m del cartel; las pruebas del M2 ahora eligen la palanca del `Cambio_1`, porque hay dos), `m2_tope` (a 10 km/h: 23 cm, 2,6 g, rebote 1,8 km/h, igual que en el M2), `m3_puertas`, `m3_llevar`, `m4_*`, `m5_sonda_portatil` (96 %; interferencia junto a la masa metálica igual), `m6_combustible`, `m6_equipo_y_bidon`, `m6_interactor_e`, `m6_expedicion` (idéntica: 4,88 h, bombea 20 L, carga 19,8 L; en la corrida larga no llegó a imprimir a tiempo y se repitió sola), `m7_*`, `m8_obras_y_cama`, `m8_almacenamiento`, `m8_ciclo_completo`, `m8_mouse_inventario`, `m9_*`, `m10_*`, `parado_en_caja` y `recentrado` (temblor del jugador 0,03 mm, deriva 0,02 cm). Ajuste: `m8_ciclo_completo` juntaba **todo** lo que hay en el mundo y, con los objetos nuevos de la bifurcación, no alcanzaba a terminar en 8 viajes (las cuentas seguían exactas); ahora usa solo el mundo del M8 (estación y pallets de afuera) y vuelve a dar 4 viajes, todo terminado, +88. El "temblorCajas" de `recentrado.cs` dio 68 mm: es el número del componente de medición ya explicado en el M9 (las cajas dibujadas no pasan de 1,2 mm) |
+
+## Cómo probarlo vos en Unity (paso a paso)
+
+1. Abrí `Assets/_Project/Scenes/Pruebas/M2_Conduccion` y dale Play.
+2. **La consola:** mirá la pantalla de la cabina (pared izquierda). Apretá **E** sobre ella hasta fijar la bifurcación: tiene que verse un **rombo blanco** y decir **"OBJETIVO: BIFURCACIÓN BLOQUEADA"** y "RUTA DESCONOCIDA".
+3. **La pieza especial:** en la estación (como en el M6, con la sonda portátil, **Q**) vas a la **segunda sala** y levantás la **aguja de cambio** del piso (**E**). Ocupa 1×3 casillas.
+4. **La barreta:** del perchero junto a la puerta de atrás.
+5. **Manejar hasta la bifurcación:** tomá los controles (E sobre el pupitre), reversor adelante (**R**) y potencia (**W**). La vía da toda la vuelta del óvalo: son unos 2 minutos y medio a 40 km/h. La bifurcación está sobre la recta oeste: **frená con el freno 4 unos 100 m antes** (el tren tiene que quedar a más de 14 m del cambio, si no la palanca se traba como en el M2). Si pasás de largo no pasa nada: se puede volver (S o marcha atrás).
+   - La consola puede decir "ATRÁS" porque el óvalo es un círculo y por atrás está más cerca; para **entrar al desvío** hay que llegar de frente, avanzando por la recta oeste hacia el sur.
+6. **Romper el hielo:** bajá y andá al costado izquierdo de la vía, pasos antes del cambio: hay un bloque de hielo. Con la barreta, **mantené E** unos 4 s. Tiene que aparecer la palanca rota y los fantasmas.
+7. **Juntar:** hacia adentro del óvalo hay un pallet, dos armarios y un tablero: desarmalos con la barreta (mantener E). Necesitás en total **chapa ×5, tablón ×4, componente ×1 y la aguja**. La mochila es chica: aportá por tandas.
+8. **Aportar:** apuntá a la palanca (o al cruce, en la vía) y **mantené E** con los materiales en la mochila. Probá irte a buscar algo y volver: lo aportado se conserva. Se ven los fantasmas ponerse sólidos fase por fase.
+9. **Accionar:** cuando la última fase termina, la consola pasa a **ABIERTA**. Apuntá a la palanca y mantené **E** 1 s: el cartel gira.
+10. **Entrar:** volvé al tren (el cambio no se mueve con el tren encima, pero ahora lo dejaste en desvío), avanzá y el tren tiene que tomar el desvío hacia la niebla.
+
+## Pendientes y riesgos
+
+- **El hielo solo cubre la palanca**, no la aguja del cambio: es greybox. Las piezas del cruce (durmientes, placas, aguja) se dibujan encima de los rieles que ya existen; con el arte final se resuelve.
+- **Una sola vía de ida y vuelta:** si el tren llega por atrás (hacia el norte) pasa por el cambio "a resorte" y no puede usar el desvío; hay que pasar el cambio, detenerse, accionar la palanca y avanzar. Se puede endurecer más adelante (cambio a resorte, sección 6.2).
+- **La ruta desconocida está vacía** (905 m hasta un tope): los lugares y recursos son del M11. Los objetos desmontables junto a la bifurcación y la aguja en la estación son provisorios.
+- **Los números del proyecto (chapa ×5, madera ×4, componente ×1, aguja ×1) son PROPUESTA** y se ajustan en `Obra_CambioOeste.asset`. La "reserva de combustible" que menciona el documento queda fuera (el combustible está en el tanque, no en la mochila); si la querés, se suma como otro mecanismo.
+- **El combustible alcanza justo para hacer la vuelta una vez:** la prueba de punta a punta gastó unos 28 L de los 50 L del tanque (el óvalo es largo). Más vueltas requieren repostar en el vehículo o el depósito de la estación.
+- El estado del cambio, de la obra y de la pieza no se guarda hasta el M12 (todo tiene ID estable: `rail_switch_oeste_001`, `obra_cambio_oeste_001`, `ice_switch_oeste_001`, `net_rail_oeste_001`). Sin sonidos (M13). Las pruebas largas (`m10_slice.cs` dura ~4 minutos) hay que correrlas con la ventana de Unity en primer plano.
+- **Otros bloqueos de la sección 6.3** (palanca eléctrica sin energía, nieve acumulada, riel dañado solo, túnel o puente), actuadores eléctricos y control remoto de cambios desde la consola quedan para más adelante.

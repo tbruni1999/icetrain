@@ -60,6 +60,12 @@ void StandNear(UnityEngine.Vector3 target)
     typeof(SurvivalEnTren.Player.PlayerLook).GetField("_pitch", flags).SetValue(look, -UnityEngine.Mathf.Atan2(d.y, new UnityEngine.Vector2(d.x, d.z).magnitude) * UnityEngine.Mathf.Rad2Deg);
 }
 bool IsOutside(UnityEngine.Component c) => UnityEngine.Vector3.Distance(c.transform.position, trainBody.position) > 25f;
+// El ciclo del M8 usa solo el mundo de ese milestone: la estación y los pallets de afuera. Lo que se agregó después (los
+// objetos de la bifurcación del M10, los lugares del M11, la aguja de cambio) queda fuera de esta prueba.
+var stationCenter = new UnityEngine.Vector3(40f, 0f, -200f);
+bool M8Prop(SurvivalEnTren.Items.SalvageProp p) => p.StableId.StartsWith("salv_estacion_") || p.StableId.StartsWith("salv_prueba_");
+bool M8Bundle(SurvivalEnTren.Items.MaterialBundle b) => System.Array.IndexOf(items, b.Item) >= 0 &&
+    (UnityEngine.Vector3.Distance(b.transform.position, stationCenter) < 40f || UnityEngine.Vector3.Distance(b.transform.position, trainBody.position) < 60f);
 // Cuántas piezas de cada material hay en el mundo: mochila + estantes + bultos + lo que todavía hay que desmontar (por receta)
 // + lo ya aportado a las obras (no se puede mirar adentro: se cuenta aparte).
 int[] InWorld()
@@ -70,9 +76,9 @@ int[] InWorld()
         u[k] = backpack.CountOf(items[k]) + starter.Grid.CountOf(items[k]);
         if (reinforced.Grid != null) u[k] += reinforced.Grid.CountOf(items[k]);
     }
-    foreach (var b in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>())
+    foreach (var b in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>()) if (M8Bundle(b))
         for (int k = 0; k < 4; k++) if (b.Item == items[k]) u[k] += b.Count;
-    foreach (var p in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.SalvageProp>())
+    foreach (var p in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.SalvageProp>()) if (M8Prop(p))
         foreach (var y in p.Recipe.Yields) for (int k = 0; k < 4; k++) if (items[k] == y.item) u[k] += y.count;
     return u;
 }
@@ -90,8 +96,8 @@ System.Collections.IEnumerator Run()
     {
         // ---- Ida: desmontar y juntar hasta llenar la mochila.
         var targets = new System.Collections.Generic.List<UnityEngine.Component>();
-        foreach (var p in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.SalvageProp>()) targets.Add(p);
-        foreach (var b in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>()) if (IsOutside(b)) targets.Add(b);
+        foreach (var p in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.SalvageProp>()) if (M8Prop(p)) targets.Add(p);
+        foreach (var b in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>()) if (IsOutside(b) && M8Bundle(b)) targets.Add(b);
         if (targets.Count == 0) break;
         trips++;
         int taken = 0;
@@ -154,8 +160,8 @@ System.Collections.IEnumerator Run()
 
     // ---- Resultado.
     int outsideBundles = 0;
-    foreach (var b in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>()) if (IsOutside(b)) outsideBundles++;
-    int propsLeft = UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.SalvageProp>().Length;
+    foreach (var b in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>()) if (IsOutside(b) && M8Bundle(b)) outsideBundles++;
+    int propsLeft = 0; foreach (var p in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.SalvageProp>()) if (M8Prop(p)) propsLeft++;
     log.Append($" TERMINÓ en {trips} viajes: cama {(bedSite.IsComplete ? "terminada" : "nivel " + bedSite.Level)}, estante reforzado {(shelfSite.IsComplete ? "terminado" : "nivel " + shelfSite.Level)} ({(reinforced.Grid == null ? "sin cuadrícula" : reinforced.Grid.Width + "x" + reinforced.Grid.Height)}), objetos por desmontar {propsLeft}, bultos afuera {outsideBundles}.");
     var starterSummary = $"estante precario {starter.Grid.UsedCells}/{starter.Grid.CellCount} casillas ({starter.Grid.Items.Count} piezas)";
     var reinforcedSummary = reinforced.Grid == null ? "" : $"; estante reforzado {reinforced.Grid.UsedCells}/{reinforced.Grid.CellCount} ({reinforced.Grid.Items.Count} piezas)";
