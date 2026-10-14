@@ -14,6 +14,8 @@ namespace SurvivalEnTren.Equipment
         [Tooltip("Cómo se llama en la indicación (\"tomar barreta\").")]
         [SerializeField] private string displayName = "herramienta";
 
+        public GearId Gear => gear;
+
         public string GetPrompt(PlayerInteractor interactor)
         {
             var equipment = interactor.GetComponent<PlayerGear>();

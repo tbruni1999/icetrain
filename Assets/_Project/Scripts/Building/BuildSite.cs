@@ -118,6 +118,20 @@ namespace SurvivalEnTren.Building
             return total;
         }
 
+        /// <summary>Lo aportado a cada requisito de la fase actual (una copia, para guardar la partida).</summary>
+        public int[] ContributedSnapshot() => _contributed != null ? (int[])_contributed.Clone() : new int[0];
+
+        /// <summary>Deja la obra en un nivel con lo aportado a la fase actual (al cargar una partida).</summary>
+        public void Restore(int level, int[] contributed)
+        {
+            _level = Mathf.Clamp(level, 0, project.PhaseCount);
+            StartPhase();
+            if (contributed != null && _contributed != null)
+                for (int i = 0; i < Mathf.Min(contributed.Length, _contributed.Length); i++) _contributed[i] = Mathf.Max(0, contributed[i]);
+            ApplyVisuals();
+            Changed?.Invoke();
+        }
+
         /// <summary>Se dispara cuando se aporta una pieza o se completa una fase.</summary>
         public event Action Changed;
 

@@ -31,6 +31,9 @@ namespace SurvivalEnTren.Survival
         /// <summary>Se dispara al saltar horas de golpe, con la cantidad de horas.</summary>
         public event Action<float> Skipped;
 
+        /// <summary>Pone el reloj en una hora total (al cargar una partida).</summary>
+        public void SetTotalHours(double hours) => _totalHours = hours;
+
         private void Awake()
         {
             _totalHours = startHour;

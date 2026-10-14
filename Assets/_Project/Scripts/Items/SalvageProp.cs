@@ -33,6 +33,13 @@ namespace SurvivalEnTren.Items
         public float Progress => _progress;
         public SalvageRecipe Recipe => recipe;
 
+        /// <summary>Deja el objeto a medio desarmar (al cargar una partida).</summary>
+        public void RestoreProgress(float progress)
+        {
+            _progress = Mathf.Clamp01(progress);
+            transform.localScale = _fullScale * Mathf.Lerp(1f, thinnestScale, _progress);
+        }
+
         private void Awake()
         {
             _fullScale = transform.localScale;

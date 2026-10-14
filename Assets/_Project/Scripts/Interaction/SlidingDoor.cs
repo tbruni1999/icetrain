@@ -34,6 +34,14 @@ namespace SurvivalEnTren.Interaction
 
         public bool IsOpen => _open;
 
+        /// <summary>Abre o cierra la puerta de golpe, sin animación (al cargar una partida).</summary>
+        public void SetOpenImmediate(bool open)
+        {
+            _open = open;
+            _openness = open ? 1f : 0f;
+            ApplyLeaf(0f);
+        }
+
         private void Awake()
         {
             _leafClosedLocal = leaf.localPosition;

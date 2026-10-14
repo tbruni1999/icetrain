@@ -81,6 +81,15 @@ namespace SurvivalEnTren.Rail
             ConditionChanged?.Invoke();
         }
 
+        /// <summary>Pone el estado y la posición del cambio de golpe (al cargar una partida).</summary>
+        public void RestoreState(RailSwitchCondition value, bool divergingValue)
+        {
+            condition = value;
+            diverging = divergingValue && CanMove;
+            ConditionChanged?.Invoke();
+            Changed?.Invoke();
+        }
+
         /// <summary>Intenta mover el cambio. Devuelve false si está congelado o roto, o si un tren lo está pisando.</summary>
         public bool TrySetDiverging(bool value, Func<Vector3, bool> isOccupiedNear)
         {

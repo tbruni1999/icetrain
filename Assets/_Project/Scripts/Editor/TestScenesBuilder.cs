@@ -9,6 +9,7 @@ using SurvivalEnTren.Player;
 using SurvivalEnTren.Poi;
 using SurvivalEnTren.Probe;
 using SurvivalEnTren.Rail;
+using SurvivalEnTren.Save;
 using SurvivalEnTren.Spike;
 using SurvivalEnTren.Train;
 using SurvivalEnTren.Survival;
@@ -248,11 +249,19 @@ namespace SurvivalEnTren.EditorTools
             {
                 BuildSurvival(motor, train, overlay, palette);
                 BuildPortableProbe(motor, train, palette);
+                BuildSaveSystem(motor, train);
             }
 
             string path = kind == Kind.Spike ? SpikeScenePath : DrivingScenePath;
             EditorSceneManager.SaveScene(scene, path);
             AssetDatabase.SaveAssets();
+            // La escena en la lista del proyecto: cargar una partida la recarga (y sirve para hacer una build).
+            var buildScenes = new List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
+            if (!buildScenes.Exists(s => s.path == path))
+            {
+                buildScenes.Add(new EditorBuildSettingsScene(path, true));
+                EditorBuildSettings.scenes = buildScenes.ToArray();
+            }
             Debug.Log("[Escenas] Escena construida en " + path);
         }
 
@@ -900,6 +909,44 @@ namespace SurvivalEnTren.EditorTools
             interference.FindProperty("radiusMeters").floatValue = 10f;
             interference.FindProperty("strength").floatValue = 0.35f;
             interference.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        // ---------------------------------------------------------------- Guardado (M12)
+
+        // El sistema de guardado de la partida: un objeto de la escena (no global) con referencias a lo que guarda. F5 guarda,
+        // F9 carga. Los materiales que conoce son los de la V1 más la aguja de cambio; el bidón fabricado sale del mismo prefab
+        // que usa el banco de trabajo.
+        private static void BuildSaveSystem(PlayerMotor motor, GameObject train)
+        {
+            MaterialSet materials = LoadMaterials();
+            var saveObject = new GameObject("Partida");
+            var saver = saveObject.AddComponent<SaveSystem>();
+            SetReference(saver, "motor", motor);
+            SetReference(saver, "look", motor.GetComponent<PlayerLook>());
+            SetReference(saver, "carrier", motor.GetComponent<PlayerCarrier>());
+            SetReference(saver, "vitals", Object.FindAnyObjectByType<PlayerVitals>());
+            SetReference(saver, "gear", motor.GetComponent<PlayerGear>());
+            SetReference(saver, "backpack", motor.GetComponent<Backpack>());
+            SetReference(saver, "book", motor.GetComponent<BlueprintBook>());
+            SetReference(saver, "inventory", motor.GetComponent<InventoryPanel>());
+            SetReference(saver, "workbench", motor.GetComponent<WorkbenchPanel>());
+            SetReference(saver, "train", train.GetComponent<TrainMover>());
+            SetReference(saver, "controls", train.GetComponentInChildren<TrainControls>(true));
+            SetReference(saver, "tank", train.GetComponent<FuelTank>());
+            SetReference(saver, "climate", train.GetComponent<TrainInteriorClimate>());
+            SetReference(saver, "clock", Object.FindAnyObjectByType<GameClock>());
+            SetReference(saver, "scanner", train.GetComponent<ProbeScanner>());
+            SetReference(saver, "origin", Object.FindAnyObjectByType<FloatingOrigin>());
+            SetReference(saver, "backpackSettings", LoadBackpackSettings());
+            SetReference(saver, "jerrycanPrefab", AssetDatabase.LoadAssetAtPath<GameObject>(JerrycanPrefabPath));
+            SetReference(saver, "saveAction", FindActionReference("Partida/Guardar"));
+            SetReference(saver, "loadAction", FindActionReference("Partida/Cargar"));
+            var so = new SerializedObject(saver);
+            var list = so.FindProperty("items");
+            ItemDefinition[] known = { materials.Wood, materials.Metal, materials.Cloth, materials.Parts, materials.SwitchPoint };
+            list.arraySize = known.Length;
+            for (int i = 0; i < known.Length; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = known[i];
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
 
         // ---------------------------------------------------------------- Mini-región (M11)
@@ -2171,6 +2218,9 @@ namespace SurvivalEnTren.EditorTools
                 switchObject.transform.position = new Vector3(r, h, SwitchZ);
                 railSwitch = switchObject.AddComponent<RailSwitch>();
                 railSwitch.Configure(first, lastOfStraight, spur);
+                var manualSo = new SerializedObject(railSwitch);
+                manualSo.FindProperty("stableId").stringValue = "rail_switch_m2_001"; // para el guardado (M12)
+                manualSo.ApplyModifiedPropertiesWithoutUndo();
                 EditorUtility.SetDirty(railSwitch);
                 EditorUtility.SetDirty(spur);
             }

@@ -92,6 +92,15 @@ namespace SurvivalEnTren.Train
         /// <summary>Se dispara cuando el tren se detiene contra un final de vía.</summary>
         public event System.Action ReachedEndOfTrack;
 
+        /// <summary>Pone el tren en un lugar de la vía con una velocidad (al cargar una partida).</summary>
+        public void PlaceOnRail(RailPosition position, float speedMetersPerSecond)
+        {
+            if (!position.IsValid) return;
+            _railPosition = position;
+            SpeedMetersPerSecond = speedMetersPerSecond;
+            SnapToRail();
+        }
+
         /// <summary>Coloca el tren de golpe en su posición de vía (al iniciar, o desde el editor).</summary>
         public void SnapToRail()
         {

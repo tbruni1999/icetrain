@@ -45,6 +45,9 @@ namespace SurvivalEnTren.Survival
         public bool FuelStarved { get; private set; }
         public int OpenDoors { get; private set; }
 
+        /// <summary>Pone la temperatura de adentro (al cargar una partida).</summary>
+        public void RestoreTemperature(float celsius) => InteriorTemperatureC = celsius;
+
         private void Awake()
         {
             _doors = GetComponentsInChildren<SlidingDoor>();

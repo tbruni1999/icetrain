@@ -31,6 +31,9 @@ namespace SurvivalEnTren.Train
         public string StableId => stableId;
         public float Liters => liters;
 
+        /// <summary>Pone cuánto combustible le queda (al cargar una partida).</summary>
+        public void RestoreLiters(float value) => liters = Mathf.Max(0f, value);
+
         private bool HasTool(PlayerInteractor interactor)
         {
             if (method == Method.Siphon) return true;

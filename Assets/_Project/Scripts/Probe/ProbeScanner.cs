@@ -118,6 +118,9 @@ namespace SurvivalEnTren.Probe
             return false;
         }
 
+        /// <summary>Fija una señal como objetivo (al cargar una partida).</summary>
+        public void SelectTarget(ProbeSignal signal) => SetTarget(signal);
+
         /// <summary>Pasa a la siguiente señal detectada (ordenadas por distancia) y la fija como objetivo.</summary>
         public void SelectNext()
         {

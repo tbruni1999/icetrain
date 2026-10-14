@@ -115,7 +115,11 @@ namespace SurvivalEnTren.Crafting
                     break;
                 case CraftOutputKind.Jerrycan:
                     if (jerrycanPrefab != null && outputPoint != null)
-                        Instantiate(jerrycanPrefab, outputPoint.position + Vector3.up * 0.02f, outputPoint.rotation);
+                    {
+                        // El nombre marca que es fabricado: no está en la escena y al cargar una partida se vuelve a crear.
+                        GameObject made = Instantiate(jerrycanPrefab, outputPoint.position + Vector3.up * 0.02f, outputPoint.rotation);
+                        made.name = "Bidon_Fabricado";
+                    }
                     break;
             }
             return true;

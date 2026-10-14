@@ -68,6 +68,22 @@ namespace SurvivalEnTren.Poi
             return false;
         }
 
+        /// <summary>Deja el hielo a medio romper (al cargar una partida).</summary>
+        public void RestoreProgress(float progress)
+        {
+            _progress = Mathf.Clamp01(progress);
+            transform.localScale = new Vector3(Mathf.Lerp(1f, thinnestScale, _progress), 1f, 1f);
+        }
+
+        /// <summary>El hielo ya estaba roto (al cargar una partida): desaparece sin pedazos y avisa como si se rompiera.</summary>
+        public void RestoreBroken()
+        {
+            if (IsBroken) return;
+            IsBroken = true;
+            Broken?.Invoke();
+            Destroy(gameObject);
+        }
+
         private void Break(CharacterController breaker)
         {
             IsBroken = true;

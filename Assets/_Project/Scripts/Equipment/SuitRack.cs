@@ -22,6 +22,9 @@ namespace SurvivalEnTren.Equipment
 
         public float GetHoldSeconds(PlayerInteractor interactor) => 0f;
 
+        /// <summary>Muestra el traje colgado solo si no se lo lleva puesto (al cargar una partida).</summary>
+        public void Sync(bool worn) => hangingSuit.SetActive(!worn);
+
         public void Interact(PlayerInteractor interactor)
         {
             var equipment = interactor.GetComponent<PlayerGear>();

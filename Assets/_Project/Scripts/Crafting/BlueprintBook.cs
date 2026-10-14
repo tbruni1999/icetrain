@@ -24,6 +24,14 @@ namespace SurvivalEnTren.Crafting
 
         public bool Knows(Blueprint blueprint) => blueprint != null && (blueprint.KnownFromStart || _learned.Contains(blueprint.Id));
 
+        /// <summary>Deja el libro con estos planos aprendidos, sin aviso (al cargar una partida).</summary>
+        public void Restore(IEnumerable<string> ids)
+        {
+            _learned.Clear();
+            foreach (string id in ids) if (!string.IsNullOrEmpty(id)) _learned.Add(id);
+            Changed?.Invoke();
+        }
+
         /// <summary>Aprende un plano. Devuelve false si ya lo sabía (no se aprende dos veces).</summary>
         public bool Learn(Blueprint blueprint)
         {

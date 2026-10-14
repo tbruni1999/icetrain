@@ -105,6 +105,12 @@ namespace SurvivalEnTren.Player
             jump.action.performed -= OnJump;
         }
 
+        /// <summary>Hacia dónde mira el cuerpo, en grados (relativo a lo que pisa: el tren o el mundo).</summary>
+        public float Yaw => _yaw;
+
+        /// <summary>Pone hacia dónde mira el cuerpo (al cargar una partida).</summary>
+        public void SetYaw(float degrees) => _yaw = Mathf.Repeat(degrees, 360f);
+
         /// <summary>Gira el cuerpo (lo llama PlayerLook con el mouse).</summary>
         public void AddYaw(float degrees)
         {

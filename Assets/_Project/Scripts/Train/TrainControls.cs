@@ -63,6 +63,15 @@ namespace SurvivalEnTren.Train
             return true;
         }
 
+        /// <summary>Pone las palancas en una posición de golpe (al cargar una partida).</summary>
+        public void Restore(ReverserPosition reverser, int powerNotch, int brakeNotch)
+        {
+            Reverser = reverser;
+            PowerNotch = Mathf.Clamp(powerNotch, 0, settings.PowerNotchCount);
+            BrakeNotch = PowerNotch > 0 ? 0 : Mathf.Clamp(brakeNotch, 0, settings.BrakeNotchCount);
+            Changed?.Invoke();
+        }
+
         /// <summary>Palanca combinada: +1 suelta freno o suma potencia; -1 quita potencia o suma freno.</summary>
         public void MovePowerBrake(int step)
         {

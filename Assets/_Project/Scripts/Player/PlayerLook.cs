@@ -27,6 +27,9 @@ namespace SurvivalEnTren.Player
         /// <summary>Cuánto mira hacia abajo (positivo) o arriba (negativo), en grados.</summary>
         public float Pitch => _pitch;
 
+        /// <summary>Pone la inclinación de la mirada (al cargar una partida).</summary>
+        public void SetPitch(float degrees) => _pitch = degrees;
+
         /// <summary>
         /// Libera el cursor para usar un panel con el mouse (la mochila): mientras tanto no se mira con el mouse.
         /// Al volver a false, el cursor se oculta y se fija de nuevo.
