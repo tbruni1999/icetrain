@@ -1,6 +1,6 @@
-// Prueba del M10 paso 4: el final de la slice, de punta a punta. Desde cero: se toma la aguja de cambio de la segunda sala de la
+// Prueba del M10 paso 4: el final de la slice, de punta a punta. Desde cero: se toma la aguja de cambio del taller ferroviario (M11; antes en la segunda sala de la
 // estación, se maneja el tren hasta la bifurcación dañada (la consola la muestra BLOQUEADA), se frena antes del cambio, se baja,
-// se rompe el hielo con la barreta, se desarman los objetos de al lado (armarios, tablero, pallet) y se aporta el proyecto por
+// se rompe el hielo con la barreta, se desarman objetos del taller y del refugio (armarios, tablero, pallet; antes estaban al lado del cambio) y se aporta el proyecto por
 // fases, se acciona la palanca ya reparada, se vuelve al tren y se entra por primera vez a la ruta desconocida.
 // Cómo correrla: escena M2_Conduccion recién puesta en Play (esperar ~12 s),
 //   unity command eval_file --file "Tools/SpikeTests/m10_slice.cs" --timeout 60
@@ -105,7 +105,7 @@ System.Collections.IEnumerator Run()
     yield return Frames(30);
     log.Append($"AL EMPEZAR: cambio {sw.Condition}, la consola dice \"{line1.text}\"; obra {site.Level}/{site.Project.PhaseCount} (bloqueada={site.Locked}); mochila: {Backpack()}.");
 
-    // 1) La pieza especial: segunda sala de la estación (afuera, a 160 m del tren, con la sonda portátil en la mano real; acá se va directo).
+    // 1) La pieza especial: en el taller ferroviario (M11; a pie con la sonda portátil en el juego real; acá se va directo).
     SurvivalEnTren.Items.MaterialBundle needleBundle = null;
     foreach (var b in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>()) if (b.Item == needle) needleBundle = b;
     var bp = needleBundle.transform.position;
@@ -114,7 +114,7 @@ System.Collections.IEnumerator Run()
     yield return Frames(40);
     needleBundle.Interact(who);
     yield return Frames(10);
-    log.Append($" ESTACIÓN: tomó la aguja de cambio de la segunda sala (en la mochila {backpack.CountOf(needle)}).");
+    log.Append($" TALLER: tomó la aguja de cambio de la mesa del taller ferroviario (en la mochila {backpack.CountOf(needle)}).");
 
     // 2) Volver al tren y manejar hasta la bifurcación (recta oeste, hacia -z).
     motor.TeleportTo(trainBody.position + trainBody.rotation * new UnityEngine.Vector3(0f, 1.05f, 2f), trainBody);
@@ -152,17 +152,17 @@ System.Collections.IEnumerator Run()
     log.Append($" HIELO: apuntando el objetivo era {Name(tIce)} \"{icePrompt}\"; se rompió en {held:0.0} s; el cambio pasó a {sw.Condition}.");
 
     // 4) Juntar y aportar por tandas (la mochila es de 6x5 casillas).
-    yield return Salvage("salv_cambio_armario_001");
-    yield return Salvage("salv_cambio_tablero_001");
+    yield return Salvage("salv_taller_armario_001");
+    yield return Salvage("salv_taller_tablero_001");
     log.Append($" JUNTÓ armario y tablero: {Backpack()}.");
     StandNear(stand.position + new UnityEngine.Vector3(0f, 0.3f, 0f));
     yield return Frames(20);
     yield return Contribute();
     log.Append($" FASE 1: nivel {site.Level}, {Backpack()}.");
-    yield return Salvage("salv_cambio_armario_002");
+    yield return Salvage("salv_taller_armario_002");
     yield return Contribute();
     log.Append($" Más chapas → nivel {site.Level}, fracción {site.Fraction:0.00}, {Backpack()}.");
-    yield return Salvage("salv_cambio_pallet_001");
+    yield return Salvage("salv_refugio_pallet_001");
     yield return Contribute();
     log.Append($" FASES 2 y 3: nivel {site.Level}/{site.Project.PhaseCount}, obra completa={site.IsComplete}, cambio {sw.Condition}, {Backpack()}.");
 

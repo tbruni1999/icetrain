@@ -475,8 +475,6 @@ namespace SurvivalEnTren.EditorTools
             Vector3 palletSpot2 = train.transform.position + train.transform.forward * 26f + train.transform.right * 8.5f;
             BuildPallet(null, new Vector3(palletSpot2.x, 0f, palletSpot2.z), train.transform.eulerAngles.y - 15f, "salv_prueba_pallet_002",
                 LoadOrCreateRecipe("Pallet", "pallet", 3f, (LoadMaterials().Wood, 4)), backpackSettings, p); // la madera de la sierra y del estante
-            // Objetos desmontables junto a la bifurcación dañada (M10): con qué reunir el proyecto de vía hasta que haya mini-región (M11).
-            BuildSwitchSupplies(GameObject.Find("Cambio_2_Danado").GetComponent<RailSwitch>(), backpackSettings, p);
         }
 
         // Los cuatro materiales de la V1 (sección 9.1) como archivos de datos. Se crean una sola vez: si Tomi cambia
@@ -728,6 +726,7 @@ namespace SurvivalEnTren.EditorTools
                 marker =>
                 {
                     BoxMinMax("Restos_Metalicos", marker, new Vector3(-1.5f, 0f, -3.5f), new Vector3(1.5f, 2.2f, 3.5f), p.Track);
+                    BuildRailWorkshop(marker, p); // M11: el taller ferroviario al lado de los restos (la puerta mira a la vía)
                     // El metal interfiere la sonda portátil de cerca (sección 13.2), para probar las interferencias.
                     var zone = new SerializedObject(marker.gameObject.AddComponent<ProbeInterference>());
                     zone.FindProperty("radiusMeters").floatValue = 40f;
@@ -737,14 +736,7 @@ namespace SurvivalEnTren.EditorTools
             Signal("poi_prueba_rail3_003", ProbeSignalType.CalorResidual, 0.25f, new Vector3(-520f, 0f, 50f), straight3, root,
                 marker =>
                 {
-                    BoxMinMax("Refugio", marker, new Vector3(-1.5f, 0f, -1.5f), new Vector3(1.5f, 2.4f, 1.5f), p.Body);
-                    var light = new GameObject("Calor").AddComponent<Light>();
-                    light.transform.SetParent(marker, false);
-                    light.transform.localPosition = new Vector3(0f, 1.2f, -1.8f);
-                    light.type = LightType.Point;
-                    light.color = new Color(1f, 0.6f, 0.3f);
-                    light.range = 6f;
-                    light.intensity = 3f;
+                    BuildShelter(marker, p); // M11: el refugio con la estufa todavía tibia (la señal de calor residual)
                 });
 
             // Lectura de la red (M10, sección 14.3): la bifurcación dañada. No es una emisión de un lugar sino una bifurcación
@@ -887,7 +879,6 @@ namespace SurvivalEnTren.EditorTools
             var annex = Group("Sala_Opcional", station);
             BoxMinMax("Escritorio", annex, new Vector3(-3.9f, 0f, -0.6f), new Vector3(-3.2f, 0.8f, 0.6f), p.Furniture);
             BuildBlueprintSheet(annex, new Vector3(-3.55f, 0.8f, 0.1f), Blueprints().ShelfProject);
-            PlaceBundle(annex, backpackSettings, materials.SwitchPoint, 1, new Vector3(-3.3f, 0.3f, 1.5f)); // la pieza especial del M10 (aguja de cambio)
 
             // Luz de emergencia tenue (sin energía, pero hay que poder ver adentro).
             var lamp = new GameObject("Luz_Emergencia").AddComponent<Light>();
@@ -909,6 +900,140 @@ namespace SurvivalEnTren.EditorTools
             interference.FindProperty("radiusMeters").floatValue = 10f;
             interference.FindProperty("strength").floatValue = 0.35f;
             interference.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        // ---------------------------------------------------------------- Mini-región (M11)
+
+        // Un galpón chico de una sala (los lugares del M11): piso, cuatro paredes con el vano de la puerta en la pared que mira
+        // a la vía (doorSide = +1 pared +x, -1 pared -x), techo, una puerta corrediza cerrada (como la de la estación) y una zona
+        // sin viento adentro (frío, pero resguardado). Coordenadas locales del grupo: piso en y = 0, centro en x = z = 0.
+        private static Transform BuildShed(string name, Transform parent, Vector3 localCenter, float halfX, float halfZ, float height,
+            int doorSide, Material wall, Material floor, Material roof, Material doorMat, Palette p)
+        {
+            var shed = Group(name, parent);
+            shed.localPosition = localCenter;
+            BoxMinMax("Piso", shed, new Vector3(-halfX, 0f, -halfZ), new Vector3(halfX, 0.05f, halfZ), floor);
+            var doorway = new List<Opening> { new Opening(-0.55f, 0.55f, 0f, 2.1f) };
+            var none = new List<Opening>();
+            WallAlongZ("Pared_Este", shed, halfX - 0.05f, -halfZ, halfZ, 0f, height, doorSide > 0 ? doorway : none, wall);
+            WallAlongZ("Pared_Oeste", shed, -halfX + 0.05f, -halfZ, halfZ, 0f, height, doorSide < 0 ? doorway : none, wall);
+            WallAlongX("Pared_Norte", shed, halfZ - 0.05f, -halfX, halfX, 0f, height, none, wall);
+            WallAlongX("Pared_Sur", shed, -halfZ + 0.05f, -halfX, halfX, 0f, height, none, wall);
+            BoxMinMax("Techo", shed, new Vector3(-halfX - 0.2f, height, -halfZ - 0.2f), new Vector3(halfX + 0.2f, height + 0.2f, halfZ + 0.2f), roof);
+
+            // Puerta corrediza por afuera de la pared, cerrada; se corre hacia -z.
+            float s = doorSide;
+            var door = Group("Puerta", shed);
+            door.localPosition = new Vector3(s * halfX, 0f, 0f);
+            var leaf = Group("Hoja", door);
+            BoxMinMax("Panel", leaf, new Vector3(Mathf.Min(0.01f * s, 0.07f * s), 0f, -0.57f), new Vector3(Mathf.Max(0.01f * s, 0.07f * s), 2.12f, 0.57f), doorMat);
+            BoxMinMax("Manija", leaf, new Vector3(Mathf.Min(0.07f * s, 0.1f * s), 0.95f, 0.35f), new Vector3(Mathf.Max(0.07f * s, 0.1f * s), 1.05f, 0.5f), p.Track, false);
+            var doorZone = BoxMinMax("Zona_Uso", door, new Vector3(-0.15f, 0.05f, -0.5f), new Vector3(0.15f, 2.05f, 0.5f), doorMat);
+            doorZone.GetComponent<Collider>().isTrigger = true;
+            Object.DestroyImmediate(doorZone.GetComponent<MeshRenderer>());
+            var sliding = door.gameObject.AddComponent<SlidingDoor>();
+            SetReference(sliding, "leaf", leaf);
+            var slidingSo = new SerializedObject(sliding);
+            slidingSo.FindProperty("openOffset").vector3Value = new Vector3(0f, 0f, -1.15f);
+            slidingSo.FindProperty("doorwayCenter").vector3Value = new Vector3(0f, 1.05f, 0f);
+            slidingSo.FindProperty("doorwayHalfExtents").vector3Value = new Vector3(0.35f, 1.0f, 0.55f);
+            slidingSo.ApplyModifiedPropertiesWithoutUndo();
+
+            var thermal = Group("Zona_Termica", shed);
+            var thermalSo = new SerializedObject(thermal.gameObject.AddComponent<ThermalZone>());
+            thermalSo.FindProperty("center").vector3Value = new Vector3(0f, height * 0.5f, 0f);
+            thermalSo.FindProperty("size").vector3Value = new Vector3(halfX * 2f, height, halfZ * 2f);
+            thermalSo.ApplyModifiedPropertiesWithoutUndo();
+            return shed;
+        }
+
+        private static void BuildRation(Transform parent, string name, Vector3 localPosition, Palette p)
+        {
+            var ration = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            ration.name = name;
+            ration.transform.SetParent(parent, false);
+            ration.transform.localPosition = localPosition;
+            ration.transform.localScale = new Vector3(0.18f, 0.1f, 0.12f);
+            ration.GetComponent<MeshRenderer>().sharedMaterial = p.Food;
+            var body = ration.AddComponent<Rigidbody>();
+            body.mass = 0.4f;
+            body.interpolation = RigidbodyInterpolation.Interpolate;
+            ration.AddComponent<FoodItem>();
+        }
+
+        // Taller ferroviario abandonado (M11), junto a la masa metálica (sección 15, "taller mecánico" y "estación ferroviaria":
+        // metal, piezas, repuestos de la Red Blanca). Un galpón de chapa con la puerta hacia la vía (oeste): dos armarios
+        // metálicos (chapas x6), un tablero (componentes x2) y, sobre la mesa de trabajo, la aguja de cambio (la pieza especial
+        // del M10). Está dentro de la zona de interferencia de la masa metálica: la sonda portátil tiembla adentro.
+        private static void BuildRailWorkshop(Transform marker, Palette p)
+        {
+            MaterialSet materials = LoadMaterials();
+            BackpackSettings settings = LoadBackpackSettings();
+            Material wall = Mat("Taller_Chapa", new Color(0.42f, 0.4f, 0.36f));
+            Material floor = Mat("Estacion_Piso", new Color(0.3f, 0.3f, 0.32f));
+            Material roof = Mat("Estacion_Techo", new Color(0.32f, 0.33f, 0.36f));
+            Material door = Mat("Taller_Puerta", new Color(0.45f, 0.36f, 0.25f));
+            var shed = BuildShed("Taller_Ferroviario", marker, new Vector3(-9f, 0f, 0f), 3f, 3.5f, 2.8f, -1, wall, floor, roof, door, p);
+            BoxMinMax("Nieve_Techo", shed, new Vector3(-3.2f, 3.0f, -1.0f), new Vector3(3.2f, 3.3f, 3.7f), p.Snow);
+            var north = BoxMinMax("Nieve_Norte", shed, new Vector3(-3.5f, -1f, -1.5f), new Vector3(3.5f, 1f, 1.5f), p.Snow);
+            north.transform.localPosition = new Vector3(0f, 0.6f, 4.6f);
+            north.transform.localRotation = Quaternion.Euler(20f, 0f, 0f);
+
+            SalvageRecipe locker = LoadOrCreateRecipe("ArmarioMetalico", "armario metálico", 6f, (materials.Metal, 3));
+            SalvageRecipe panel = LoadOrCreateRecipe("TableroElectrico", "tablero eléctrico", 5f, (materials.Parts, 2));
+            BuildLocker(shed, new Vector3(-1.4f, 0f, 3.05f), 0f, "salv_taller_armario_001", locker, settings, p);
+            BuildLocker(shed, new Vector3(0.0f, 0f, 3.05f), 0f, "salv_taller_armario_002", locker, settings, p);
+            BuildPowerPanel(shed, new Vector3(2.75f, 0f, 1.6f), 90f, "salv_taller_tablero_001", panel, settings);
+            BoxMinMax("Mesa", shed, new Vector3(-1.6f, 0f, -3.4f), new Vector3(1.2f, 0.9f, -2.6f), p.Furniture);
+            PlaceBundle(shed, settings, materials.SwitchPoint, 1, new Vector3(-0.2f, 1.05f, -3.0f)); // la pieza especial del M10
+            // Rieles viejos en el piso contra la pared: cuentan qué era este lugar; no se desarman.
+            BoxMinMax("Riel_Viejo_1", shed, new Vector3(2.6f, 0f, -3.3f), new Vector3(2.75f, 0.15f, 0.2f), p.Track);
+            BoxMinMax("Riel_Viejo_2", shed, new Vector3(2.3f, 0f, -3.3f), new Vector3(2.45f, 0.15f, 0.2f), p.Track);
+
+            var lamp = new GameObject("Luz_Taller").AddComponent<Light>();
+            lamp.transform.SetParent(shed, false);
+            lamp.transform.localPosition = new Vector3(0f, 2.5f, 0f);
+            lamp.type = LightType.Point;
+            lamp.color = new Color(0.75f, 0.85f, 1f);
+            lamp.range = 7f;
+            lamp.intensity = 0.8f;
+        }
+
+        // Refugio (M11), donde está la señal de calor residual (sección 13.1): una casilla de madera con la puerta hacia la vía
+        // (este) y una estufa que todavía da un poco de calor. Adentro: leña (dos pallets, madera x8), un colchón (tela x3) y dos
+        // raciones en un estante.
+        private static void BuildShelter(Transform marker, Palette p)
+        {
+            MaterialSet materials = LoadMaterials();
+            BackpackSettings settings = LoadBackpackSettings();
+            Material wall = Mat("Refugio_Madera", new Color(0.45f, 0.33f, 0.22f));
+            Material floor = Mat("Refugio_Piso", new Color(0.36f, 0.28f, 0.2f));
+            Material roof = Mat("Estacion_Techo", new Color(0.32f, 0.33f, 0.36f));
+            Material door = Mat("Refugio_Puerta", new Color(0.5f, 0.38f, 0.25f));
+            var shed = BuildShed("Refugio", marker, Vector3.zero, 2.5f, 2.0f, 2.5f, 1, wall, floor, roof, door, p);
+            BoxMinMax("Nieve_Techo", shed, new Vector3(-2.7f, 2.7f, -2.2f), new Vector3(1.0f, 3.0f, 2.2f), p.Snow);
+
+            SalvageRecipe pallet = LoadOrCreateRecipe("Pallet", "pallet", 3f, (materials.Wood, 4));
+            SalvageRecipe mattress = LoadOrCreateRecipe("Colchon", "colchón", 4f, (materials.Cloth, 3));
+            BuildPallet(shed, new Vector3(-1.6f, 0f, -1.0f), 90f, "salv_refugio_pallet_001", pallet, settings, p);
+            BuildPallet(shed, new Vector3(-1.6f, 0f, 0.9f), 90f, "salv_refugio_pallet_002", pallet, settings, p);
+            BuildMattress(shed, new Vector3(0.6f, 0f, 1.4f), 0f, "salv_refugio_colchon_001", mattress, settings);
+
+            // La estufa (el "calor residual" que leyó la sonda): todavía tibia, con brasas.
+            BoxMinMax("Estufa", shed, new Vector3(-0.3f, 0f, -1.85f), new Vector3(0.4f, 0.9f, -1.25f), p.Track);
+            BoxMinMax("Brasas", shed, new Vector3(-0.15f, 0.25f, -1.27f), new Vector3(0.25f, 0.45f, -1.24f), UnlitMat("Brasas", new Color(1f, 0.45f, 0.12f)), false);
+            var heat = new GameObject("Calor").AddComponent<Light>();
+            heat.transform.SetParent(shed, false);
+            heat.transform.localPosition = new Vector3(0.05f, 0.6f, -0.9f);
+            heat.type = LightType.Point;
+            heat.color = new Color(1f, 0.6f, 0.3f);
+            heat.range = 5f;
+            heat.intensity = 2.5f;
+
+            // Estante con dos raciones contra la pared sur.
+            BoxMinMax("Estante", shed, new Vector3(1.0f, 0.9f, -1.9f), new Vector3(2.3f, 0.95f, -1.55f), p.Furniture);
+            BuildRation(shed, "Racion_Refugio_1", new Vector3(1.4f, 1.02f, -1.72f), p);
+            BuildRation(shed, "Racion_Refugio_2", new Vector3(1.9f, 1.02f, -1.72f), p);
         }
 
         // ---------------------------------------------------------------- Planos y taller (M9)
@@ -2234,23 +2359,6 @@ namespace SurvivalEnTren.EditorTools
             SetReference(link, "ice", frozen);
             SetReference(link, "repair", site);
             SetReference(link, "brokenParts", broken.gameObject);
-        }
-
-        // Los objetos desmontables junto a la bifurcación: con qué reunir el proyecto de vía mientras no hay mini-región (el M11
-        // los reemplaza por lugares de verdad). Un pallet (madera), dos armarios (chapas), un tablero (componentes).
-        private static void BuildSwitchSupplies(RailSwitch damaged, BackpackSettings backpackSettings, Palette p)
-        {
-            MaterialSet materials = LoadMaterials();
-            Vector3 point = damaged.Point;
-            Vector3 interior = new Vector3(point.x + 8f, 0f, point.z); // hacia adentro del óvalo, pasando la palanca
-            BuildPallet(null, interior + new Vector3(0f, 0f, 12f), 20f, "salv_cambio_pallet_001",
-                LoadOrCreateRecipe("Pallet", "pallet", 3f, (materials.Wood, 4)), backpackSettings, p);
-            BuildLocker(null, interior + new Vector3(2f, 0f, 6f), 90f, "salv_cambio_armario_001",
-                LoadOrCreateRecipe("ArmarioMetalico", "armario metálico", 6f, (materials.Metal, 3)), backpackSettings, p);
-            BuildLocker(null, interior + new Vector3(2f, 0f, 9f), 90f, "salv_cambio_armario_002",
-                LoadOrCreateRecipe("ArmarioMetalico", "armario metálico", 6f, (materials.Metal, 3)), backpackSettings, p);
-            BuildPowerPanel(null, interior + new Vector3(0f, 0f, 2f), 90f, "salv_cambio_tablero_001",
-                LoadOrCreateRecipe("TableroElectrico", "tablero eléctrico", 5f, (materials.Parts, 2)), backpackSettings);
         }
 
         // Tope al final de la vía muerta: la cara de la placa coincide con el final de la vía; la placa

@@ -1,6 +1,6 @@
 // Prueba del M10 paso 2: el proyecto de reparación de la bifurcación. Congelado, la obra no se ve ni se puede empezar; con el
 // hielo roto aparece como fantasmas; se aporta por fases (palanca, durmientes y riel, aguja de cambio), el avance parcial se
-// conserva entre viajes, la pieza especial se recoge de la segunda sala de la estación, y al terminar el cambio queda
+// conserva entre viajes, la pieza especial se recoge del taller ferroviario (M11), y al terminar el cambio queda
 // REPARADO y la palanca (apuntada de verdad) lo mueve.
 // Cómo correrla: escena M2_Conduccion recién puesta en Play (esperar ~12 s),
 //   unity command eval_file --file "Tools/SpikeTests/m10_reparacion.cs" --timeout 60
@@ -90,13 +90,13 @@ System.Collections.IEnumerator Run()
     clock.SpeedMultiplier = 0f;
     for (int i = 0; i < 30; i++) yield return wait;
 
-    // 0) Datos y lugares: la pieza especial, los objetos desmontables de la bifurcación.
+    // 0) Datos y lugares: la pieza especial y los objetos desmontables de los lugares del M11.
     SurvivalEnTren.Items.MaterialBundle needleBundle = null;
     foreach (var b in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>()) if (b.Item == needle) needleBundle = b;
     int woodSup = 0, metalSup = 0, partsSup = 0, supProps = 0;
     foreach (var p in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.SalvageProp>())
     {
-        if (!p.StableId.StartsWith("salv_cambio_")) continue;
+        if (!p.StableId.StartsWith("salv_taller_") && !p.StableId.StartsWith("salv_refugio_")) continue; // los lugares del M11
         supProps++;
         foreach (var y in p.Recipe.Yields) { if (y.item == wood) woodSup += y.count; if (y.item == metal) metalSup += y.count; if (y.item == parts) partsSup += y.count; }
     }
@@ -109,7 +109,7 @@ System.Collections.IEnumerator Run()
         foreach (var r in ph.requirements) parts2.Add($"{r.item.PieceName} ×{r.count}");
         reqText += $" fase {i + 1} \"{ph.name}\" pide {string.Join(" + ", parts2)};";
     }
-    log.Append($"DATOS: pieza especial \"{needle.DisplayName}\" {needle.SizeCells.x}x{needle.SizeCells.y}, {needle.WeightKg:0.0} kg, rota={needle.CanRotate}, en la segunda sala de la estación={(needleBundle != null)} (a {(needleBundle != null ? UnityEngine.Vector3.Distance(needleBundle.transform.position, new UnityEngine.Vector3(40f, 0f, -200f)) : -1f):0} m del centro de la estación); proyecto \"{req.DisplayName}\":{reqText} objetos desmontables junto a la bifurcación: {supProps} (madera ×{woodSup}, chapas ×{metalSup}, componentes ×{partsSup}).");
+    log.Append($"DATOS: pieza especial \"{needle.DisplayName}\" {needle.SizeCells.x}x{needle.SizeCells.y}, {needle.WeightKg:0.0} kg, rota={needle.CanRotate}, en el taller ferroviario={(needleBundle != null)} (a {(needleBundle != null ? UnityEngine.Vector3.Distance(needleBundle.transform.position, new UnityEngine.Vector3(480f, 0f, 150f)) : -1f):0} m de la masa metálica); proyecto \"{req.DisplayName}\":{reqText} objetos desmontables en el taller y el refugio: {supProps} (madera ×{woodSup}, chapas ×{metalSup}, componentes ×{partsSup}).");
 
     // 1) Congelado: la obra no se ve ni se puede empezar.
     StandAtLever();
