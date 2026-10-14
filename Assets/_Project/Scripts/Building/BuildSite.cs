@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using SurvivalEnTren.Crafting;
 using SurvivalEnTren.Interaction;
 using SurvivalEnTren.Items;
 using UnityEngine;
@@ -34,6 +35,10 @@ namespace SurvivalEnTren.Building
         [SerializeField] private PhasePieces[] phasePieces = Array.Empty<PhasePieces>();
         [Tooltip("Material translúcido de las piezas que todavía faltan.")]
         [SerializeField] private Material ghostMaterial;
+        [Tooltip("Plano que hay que conocer para construir esta obra (opcional). Mientras no se conoce, no se ve nada: la pared está vacía.")]
+        [SerializeField] private Blueprint requiredBlueprint;
+        [Tooltip("Libro de planos del jugador (se conecta en la escena). Sin libro, la obra no pide plano.")]
+        [SerializeField] private BlueprintBook book;
         [Tooltip("Lo que se usa cuando no hay nada que aportar (debe implementar IInteractable): dormir, abrir el estante.")]
         [SerializeField] private MonoBehaviour fallback;
 
@@ -46,11 +51,14 @@ namespace SurvivalEnTren.Building
         }
 
         private PieceVisual[][] _visuals;
+        private Collider[] _zones;
         private int[] _contributed;
         private int _level;
         private float _timer;
 
         public string StableId => stableId;
+        /// <summary>Todavía no se conoce el plano de esta obra: no se ve ni se puede construir.</summary>
+        public bool Locked => requiredBlueprint != null && book != null && !book.Knows(requiredBlueprint);
         public BuildProject Project => project;
         /// <summary>Cuántas fases están completas (0 = sin avance, PhaseCount = terminada).</summary>
         public int Level => _level;
@@ -117,8 +125,18 @@ namespace SurvivalEnTren.Building
                 }
             }
             StartPhase();
+            // La zona de uso (un trigger sobre toda la obra) se apaga mientras el plano no se conoce.
+            var zones = new System.Collections.Generic.List<Collider>();
+            foreach (Collider c in GetComponentsInChildren<Collider>(true)) if (c.isTrigger) zones.Add(c);
+            _zones = zones.ToArray();
+            if (book != null) book.Changed += ApplyVisuals;
             ApplyVisuals();
         }
+        private void OnDestroy()
+        {
+            if (book != null) book.Changed -= ApplyVisuals;
+        }
+
 
         private void StartPhase()
         {
@@ -170,6 +188,7 @@ namespace SurvivalEnTren.Building
 
         public string GetPrompt(PlayerInteractor interactor)
         {
+            if (Locked) return null; // sin el plano, la pared está vacía
             var backpack = interactor.GetComponent<Backpack>();
             string fallbackPrompt = Fallback?.GetPrompt(interactor);
             if (IsComplete || backpack == null) return fallbackPrompt;
@@ -208,6 +227,7 @@ namespace SurvivalEnTren.Building
 
         public bool Channel(PlayerInteractor interactor, float deltaTime)
         {
+            if (Locked) return false;
             var backpack = interactor.GetComponent<Backpack>();
             if (!CanContribute(backpack))
             {
@@ -233,6 +253,7 @@ namespace SurvivalEnTren.Building
         private void ApplyVisuals()
         {
             if (_visuals == null) return;
+            if (_zones != null) foreach (Collider z in _zones) z.enabled = !Locked;
             for (int p = 0; p < _visuals.Length; p++)
             {
                 PieceVisual[] pieces = _visuals[p];
@@ -241,7 +262,7 @@ namespace SurvivalEnTren.Building
                 else if (p == _level && !IsComplete)
                     solidCount = Mathf.FloorToInt(Fraction * pieces.Length + 1e-4f);
                 else solidCount = 0;
-                bool visible = p <= _level;
+                bool visible = !Locked && p <= _level;
 
                 for (int i = 0; i < pieces.Length; i++)
                 {

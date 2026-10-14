@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using SurvivalEnTren.Building;
+using SurvivalEnTren.Crafting;
 using SurvivalEnTren.Equipment;
 using SurvivalEnTren.Interaction;
 using SurvivalEnTren.Items;
@@ -52,6 +53,7 @@ namespace SurvivalEnTren.EditorTools
         private const string BackpackSettingsPath = "Assets/_Project/Data/Items/BackpackSettings.asset";
         private const string ItemsFolderPath = "Assets/_Project/Data/Items";
         private const string BuildFolderPath = "Assets/_Project/Data/Build";
+        private const string CraftingFolderPath = "Assets/_Project/Data/Crafting";
         private const string InputPath = "Assets/_Project/Data/Input/IceTrainInput.inputactions";
 
         // Vía de prueba: un óvalo de dos rectas y dos curvas (~2,46 km por vuelta).
@@ -131,6 +133,7 @@ namespace SurvivalEnTren.EditorTools
             EnsureFolder("Assets/_Project/Data", "Probe");
             EnsureFolder("Assets/_Project/Data", "Items");
             EnsureFolder("Assets/_Project/Data", "Build");
+            EnsureFolder("Assets/_Project/Data", "Crafting");
 
             // La escena nueva va primero: crearla descarga de memoria los assets recién
             // creados y las referencias a ellos quedarían vacías.
@@ -366,6 +369,11 @@ namespace SurvivalEnTren.EditorTools
             SetReference(gear, "vitals", vitals);
             SetReference(overlay, "gear", gear);
 
+            // Libro de planos (M9): los iniciales se saben; el del estante reforzado hay que encontrarlo. Las obras que piden plano
+            // reciben el libro del jugador (en el prefab del tren no se puede apuntar a objetos de la escena).
+            var book = motor.gameObject.AddComponent<BlueprintBook>();
+            foreach (BuildSite buildSite in train.GetComponentsInChildren<BuildSite>(true)) SetReference(buildSite, "book", book);
+
             // Mochila (M7): materiales con peso y un límite; el peso se suma al de la mano para frenar el caminar.
             var backpackSettings = LoadBackpackSettings();
             var backpack = motor.gameObject.AddComponent<Backpack>();
@@ -434,6 +442,9 @@ namespace SurvivalEnTren.EditorTools
             Vector3 palletSpot = train.transform.position + train.transform.forward * 31f + train.transform.right * 10f;
             BuildPallet(null, new Vector3(palletSpot.x, 0f, palletSpot.z), train.transform.eulerAngles.y + 20f, "salv_prueba_pallet_001",
                 LoadOrCreateRecipe("Pallet", "pallet", 3f, (LoadMaterials().Wood, 4)), backpackSettings, p);
+            Vector3 palletSpot2 = train.transform.position + train.transform.forward * 26f + train.transform.right * 8.5f;
+            BuildPallet(null, new Vector3(palletSpot2.x, 0f, palletSpot2.z), train.transform.eulerAngles.y - 15f, "salv_prueba_pallet_002",
+                LoadOrCreateRecipe("Pallet", "pallet", 3f, (LoadMaterials().Wood, 4)), backpackSettings, p); // la madera de la sierra y del estante
         }
 
         // Los cuatro materiales de la V1 (sección 9.1) como archivos de datos. Se crean una sola vez: si Tomi cambia
@@ -815,6 +826,7 @@ namespace SurvivalEnTren.EditorTools
             // Segunda sala (oeste): vacía por ahora, con un escritorio. Reservada para la tentación opcional de 20.6.
             var annex = Group("Sala_Opcional", station);
             BoxMinMax("Escritorio", annex, new Vector3(-3.9f, 0f, -0.6f), new Vector3(-3.2f, 0.8f, 0.6f), p.Furniture);
+            BuildBlueprintSheet(annex, new Vector3(-3.55f, 0.8f, 0.1f), Blueprints().ShelfProject);
 
             // Luz de emergencia tenue (sin energía, pero hay que poder ver adentro).
             var lamp = new GameObject("Luz_Emergencia").AddComponent<Light>();
@@ -836,6 +848,81 @@ namespace SurvivalEnTren.EditorTools
             interference.FindProperty("radiusMeters").floatValue = 10f;
             interference.FindProperty("strength").floatValue = 0.35f;
             interference.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        // ---------------------------------------------------------------- Planos y taller (M9)
+
+        private sealed class BlueprintSet
+        {
+            public Blueprint Saw, Jerrycan, ShelfProject;
+        }
+
+        // Los tres planos de la V1 como archivos de datos (se crean una sola vez; si se ajustan, no se pisan).
+        private static BlueprintSet Blueprints()
+        {
+            MaterialSet materials = LoadMaterials();
+            return new BlueprintSet
+            {
+                Saw = LoadOrCreateBlueprint("SierraManual", "plano_sierra_manual", "sierra manual",
+                    "Una sierra para cortar chapa y madera: la piden otras recetas (no se gasta).", true, BlueprintKind.Craft,
+                    new[] { (materials.Wood, 1), (materials.Metal, 1) }, new GearId[0], 6f, CraftOutputKind.Gear, GearId.Saw, "queda al cinto, colgada en el taller"),
+                Jerrycan = LoadOrCreateBlueprint("Bidon", "plano_bidon", "bidón",
+                    "Un recipiente de 20 L para el combustible. Hay que cortar la chapa: pide la sierra.", true, BlueprintKind.Craft,
+                    new[] { (materials.Metal, 2) }, new[] { GearId.Saw }, 8f, CraftOutputKind.Jerrycan, GearId.Saw, "un bidón vacío sobre la mesa"),
+                ShelfProject = LoadOrCreateBlueprint("EstanteReforzado", "plano_estante_reforzado", "estante reforzado",
+                    "Un estante de verdad contra la pared del taller: se construye por fases.", false, BlueprintKind.Project,
+                    new (ItemDefinition, int)[0], new GearId[0], 0.5f, CraftOutputKind.Gear, GearId.Saw, ""),
+            };
+        }
+
+        private static Blueprint LoadOrCreateBlueprint(string fileName, string id, string displayName, string description, bool knownFromStart,
+            BlueprintKind kind, (ItemDefinition item, int count)[] ingredients, GearId[] tools, float seconds, CraftOutputKind outputKind,
+            GearId outputGear, string outputText)
+        {
+            string path = $"{CraftingFolderPath}/Plano_{fileName}.asset";
+            var blueprint = AssetDatabase.LoadAssetAtPath<Blueprint>(path);
+            if (blueprint != null) return blueprint;
+            blueprint = ScriptableObject.CreateInstance<Blueprint>();
+            AssetDatabase.CreateAsset(blueprint, path);
+            var so = new SerializedObject(blueprint);
+            so.FindProperty("id").stringValue = id;
+            so.FindProperty("displayName").stringValue = displayName;
+            so.FindProperty("description").stringValue = description;
+            so.FindProperty("knownFromStart").boolValue = knownFromStart;
+            so.FindProperty("kind").enumValueIndex = (int)kind;
+            var list = so.FindProperty("ingredients");
+            list.arraySize = ingredients.Length;
+            for (int i = 0; i < ingredients.Length; i++)
+            {
+                list.GetArrayElementAtIndex(i).FindPropertyRelative("item").objectReferenceValue = ingredients[i].item;
+                list.GetArrayElementAtIndex(i).FindPropertyRelative("count").intValue = ingredients[i].count;
+            }
+            var toolList = so.FindProperty("requiredTools");
+            toolList.arraySize = tools.Length;
+            for (int i = 0; i < tools.Length; i++) toolList.GetArrayElementAtIndex(i).enumValueIndex = (int)tools[i];
+            so.FindProperty("craftSeconds").floatValue = seconds;
+            so.FindProperty("outputKind").enumValueIndex = (int)outputKind;
+            so.FindProperty("outputGear").enumValueIndex = (int)outputGear;
+            so.FindProperty("outputText").stringValue = outputText;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            return blueprint;
+        }
+
+        // Una hoja de plano sobre un escritorio (se lee con E).
+        private static void BuildBlueprintSheet(Transform parent, Vector3 localPosition, Blueprint blueprint)
+        {
+            Material paper = Mat("Plano_Hoja", new Color(0.88f, 0.86f, 0.78f));
+            Material ink = Mat("Plano_Tinta", new Color(0.2f, 0.32f, 0.5f));
+            var sheet = Group("Plano_" + blueprint.DisplayName, parent);
+            sheet.localPosition = localPosition;
+            sheet.localRotation = Quaternion.Euler(0f, 18f, 0f);
+            BoxMinMax("Hoja", sheet, new Vector3(-0.17f, 0f, -0.22f), new Vector3(0.17f, 0.012f, 0.22f), paper, false);
+            for (int i = 0; i < 4; i++)
+                BoxMinMax("Trazo", sheet, new Vector3(-0.12f, 0.012f, -0.15f + i * 0.08f), new Vector3(0.12f - i * 0.03f, 0.014f, -0.13f + i * 0.08f), ink, false);
+            var zone = BoxMinMax("Zona_Uso", sheet, new Vector3(-0.25f, 0f, -0.3f), new Vector3(0.25f, 0.2f, 0.3f), paper);
+            zone.GetComponent<Collider>().isTrigger = true;
+            Object.DestroyImmediate(zone.GetComponent<MeshRenderer>());
+            SetReference(sheet.gameObject.AddComponent<BlueprintPickup>(), "blueprint", blueprint);
         }
 
         // ---------------------------------------------------------------- Obras por fases (M8)
@@ -1078,6 +1165,7 @@ namespace SurvivalEnTren.EditorTools
             BuildSite site = NewBuildSite(root, project, "obra_tren_estante_001",
                 new List<GameObject[]> { phase1.ToArray(), phase2.ToArray(), phase3.ToArray(), phase4.ToArray() }, storage);
             ConfigureStorage(storage, "storage_tren_estante_reforzado_001", "estante reforzado", Vector2Int.zero, site, slots);
+            SetReference(site, "requiredBlueprint", Blueprints().ShelfProject); // sin el plano, la pared está vacía (sección 20.6)
         }
 
         // ---------------------------------------------------------------- Objetos desmontables (M7)

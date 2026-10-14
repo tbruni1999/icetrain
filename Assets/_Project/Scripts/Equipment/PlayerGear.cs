@@ -8,7 +8,8 @@ namespace SurvivalEnTren.Equipment
     public enum GearId
     {
         Crowbar,
-        HandPump
+        HandPump,
+        Saw
     }
 
     /// <summary>
@@ -23,6 +24,7 @@ namespace SurvivalEnTren.Equipment
 
         private bool _crowbar;
         private bool _handPump;
+        private bool _saw;
 
         public bool SuitWorn { get; private set; }
 
@@ -35,6 +37,7 @@ namespace SurvivalEnTren.Equipment
             {
                 case GearId.Crowbar: return _crowbar;
                 case GearId.HandPump: return _handPump;
+                case GearId.Saw: return _saw;
                 default: return false;
             }
         }
@@ -45,6 +48,7 @@ namespace SurvivalEnTren.Equipment
             {
                 case GearId.Crowbar: _crowbar = true; break;
                 case GearId.HandPump: _handPump = true; break;
+                case GearId.Saw: _saw = true; break;
             }
             Changed?.Invoke();
         }

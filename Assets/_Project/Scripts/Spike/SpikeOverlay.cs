@@ -148,7 +148,7 @@ namespace SurvivalEnTren.Spike
             if (fuel == null) return "";
             string heater = climate == null ? "" : climate.FuelStarved ? "   calefacción SIN combustible" : "   calefacción encendida";
             string equipment = gear == null ? "" :
-                $"   equipo: barreta {(gear.Has(GearId.Crowbar) ? "sí" : "no")}, bomba {(gear.Has(GearId.HandPump) ? "sí" : "no")}, traje {(gear.SuitWorn ? "puesto" : "no")}";
+                $"   equipo: barreta {(gear.Has(GearId.Crowbar) ? "sí" : "no")}, bomba {(gear.Has(GearId.HandPump) ? "sí" : "no")}, sierra {(gear.Has(GearId.Saw) ? "sí" : "no")}, traje {(gear.SuitWorn ? "puesto" : "no")}";
             return $"combustible {fuel.Liters:0.0} / {fuel.Capacity:0} L{(fuel.IsEmpty ? " (VACÍO)" : fuel.IsLow ? " (reserva)" : "")}{heater}{equipment}\n";
         }
 

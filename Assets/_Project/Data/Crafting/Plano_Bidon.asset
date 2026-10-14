@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c700b5c027c57a46ac2b9aaab043524, type: 3}
+  m_Name: Plano_Bidon
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalEnTren.Crafting.Blueprint
+  id: plano_bidon
+  displayName: "bid\xF3n"
+  description: 'Un recipiente de 20 L para el combustible. Hay que cortar la chapa: pide la sierra.'
+  knownFromStart: 1
+  kind: 0
+  ingredients:
+  - item: {fileID: 11400000, guid: 459bee3c699ede349aecfebe9e6eb5db, type: 2}
+    count: 2
+  requiredTools: 02000000i
+  craftSeconds: 8
+  outputKind: 1
+  outputGear: 2
+  outputText: "un bid\xF3n vac\xEDo sobre la mesa"
