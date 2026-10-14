@@ -746,6 +746,12 @@ namespace SurvivalEnTren.EditorTools
                     light.range = 6f;
                     light.intensity = 3f;
                 });
+
+            // Lectura de la red (M10, sección 14.3): la bifurcación dañada. No es una emisión de un lugar sino una bifurcación
+            // de la red: la pantalla la dibuja como un rombo blanco y dice BLOQUEADA hasta que se repara el cambio.
+            RailSwitch damagedSwitch = GameObject.Find("Cambio_2_Danado").GetComponent<RailSwitch>();
+            Signal("net_rail_oeste_001", ProbeSignalType.Bifurcacion, 1f, damagedSwitch.Point, straight3, root, marker => { });
+            SetReference(root.Find("Senal_Bifurcacion").GetComponent<ProbeSignal>(), "network", damagedSwitch);
         }
 
         // ---------------------------------------------------------------- Estación de mantenimiento (M6)

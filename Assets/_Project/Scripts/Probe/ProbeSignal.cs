@@ -10,7 +10,9 @@ namespace SurvivalEnTren.Probe
         EstructuraBajoNieve,
         MasaMetalica,
         EmisionAutomatica,
-        Hidrocarburo
+        Hidrocarburo,
+        /// <summary>No es una emisión: es la lectura de la red ferroviaria (sección 14.3: bifurcaciones, rutas desconocidas y bloqueos).</summary>
+        Bifurcacion
     }
 
     /// <summary>
@@ -26,6 +28,8 @@ namespace SurvivalEnTren.Probe
         [SerializeField] private ProbeSignalType type;
         [Tooltip("Intensidad (0-1): multiplica el alcance de la sonda. Débil = se detecta más cerca.")]
         [SerializeField, Range(0.05f, 1f)] private float strength = 1f;
+        [Tooltip("Solo para la lectura de la red (tipo Bifurcación): el cambio de vía cuyo estado muestra la pantalla.")]
+        [SerializeField] private RailSwitch network;
 
         [Header("Ancla en la vía")]
         [SerializeField] private RailSegment anchorSegment;
@@ -38,6 +42,12 @@ namespace SurvivalEnTren.Probe
         public string StableId => stableId;
         public ProbeSignalType Type => type;
         public float Strength => strength;
+        /// <summary>Es una lectura de la red (una bifurcación) y no una señal de un lugar: la pantalla la dibuja distinta.</summary>
+        public bool IsNetworkMarker => type == ProbeSignalType.Bifurcacion;
+        /// <summary>Una bifurcación que todavía no se puede usar (congelada o rota).</summary>
+        public bool IsBlocked => network != null && !network.CanMove;
+        /// <summary>El estado que muestra la pantalla de una bifurcación.</summary>
+        public string StatusText => network == null ? "" : IsBlocked ? "BLOQUEADA" : "ABIERTA";
         public RailPosition Anchor => new RailPosition(anchorSegment, anchorDistanceMeters);
         public int AnchorSide => anchorSide;
         public float AnchorLateralMeters => anchorLateralMeters;
@@ -51,6 +61,7 @@ namespace SurvivalEnTren.Probe
                 case ProbeSignalType.EstructuraBajoNieve: return "ESTRUCTURA BAJO NIEVE";
                 case ProbeSignalType.MasaMetalica: return "MASA METÁLICA";
                 case ProbeSignalType.EmisionAutomatica: return "EMISIÓN AUTOMÁTICA";
+                case ProbeSignalType.Bifurcacion: return "BIFURCACIÓN";
                 default: return "INDICIO DE HIDROCARBURO";
             }
         }

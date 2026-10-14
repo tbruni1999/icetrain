@@ -8,7 +8,8 @@ namespace SurvivalEnTren.Probe
     /// Pantalla de la sonda principal en la cabina (secciones 13.1, 18.1 y 19: "CRT o pantallas
     /// pequeñas"). Arriba de la pantalla es el frente del tren. Un barrido gira; las señales aparecen
     /// como puntos que se encienden al pasar el barrido y se apagan de a poco. Debajo, la lectura de
-    /// la señal elegida (tipo, distancia, dirección, posición por la vía). E pasa a la siguiente señal
+    /// la señal elegida (tipo, distancia, dirección, posición por la vía). Una bifurcación (lectura de la red,
+    /// sección 14.3) se dibuja como un rombo blanco y dice si está BLOQUEADA o ABIERTA. E pasa a la siguiente señal
     /// y la fija como objetivo de la sonda portátil (punto ámbar).
     /// Solo dibuja: los cálculos están en ProbeScanner.
     /// </summary>
@@ -17,6 +18,7 @@ namespace SurvivalEnTren.Probe
         private static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
         private static readonly Color Trace = new Color(0.45f, 1f, 0.55f);
         private static readonly Color TargetColor = new Color(1f, 0.72f, 0.2f);
+        private static readonly Color NetworkColor = new Color(0.92f, 0.95f, 1f);
 
         [SerializeField] private ProbeScanner scanner;
         [Tooltip("Centro del círculo del radar (local a la pantalla) y su radio, en metros.")]
@@ -67,7 +69,10 @@ namespace SurvivalEnTren.Probe
                 float a = bearing * Mathf.Deg2Rad;
                 blips[i].gameObject.SetActive(true);
                 blips[i].localPosition = radarCenter.localPosition + new Vector3(Mathf.Sin(a), Mathf.Cos(a), 0f) * radius;
-                Color color = r.Signal == scanner.Target ? TargetColor : Trace;
+                // La lectura de la red (una bifurcación) es un rombo blanco: se distingue de las señales de lugares (puntos verdes).
+                bool network = r.Signal.IsNetworkMarker;
+                blips[i].localRotation = Quaternion.Euler(0f, 0f, network ? 45f : 0f);
+                Color color = r.Signal == scanner.Target ? TargetColor : network ? NetworkColor : Trace;
                 _block.SetColor(BaseColor, color * Mathf.Lerp(0.25f, 1f, glow));
                 blips[i].GetComponent<Renderer>().SetPropertyBlock(_block);
             }
@@ -90,6 +95,16 @@ namespace SurvivalEnTren.Probe
                 line1.text = readings.Count == 0 ? "SIN SEÑALES AL ALCANCE" : "E: FIJAR OBJETIVO";
                 line2.text = "";
                 line3.text = "";
+                return;
+            }
+            if (r.Signal.IsNetworkMarker)
+            {
+                // Lectura de la red (sección 14.3): estado de la bifurcación y que la ruta es desconocida.
+                line1.text = $"OBJETIVO: {ProbeSignal.DisplayName(r.Signal.Type)} {r.Signal.StatusText}";
+                line2.text = $"~{Km(r.Distance)}   {Direction(r.BearingDegrees)}";
+                line3.text = r.AlongKnown
+                    ? $"RUTA DESCONOCIDA  {Km(Mathf.Abs(r.AlongMeters))} {(r.AlongMeters >= 0 ? "ADELANTE" : "ATRÁS")}"
+                    : "RUTA DESCONOCIDA  FUERA DE RUTA";
                 return;
             }
             line1.text = "OBJETIVO: " + ProbeSignal.DisplayName(r.Signal.Type);
