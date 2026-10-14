@@ -33,6 +33,9 @@ namespace SurvivalEnTren.Items
         public float Progress => _progress;
         public SalvageRecipe Recipe => recipe;
 
+        /// <summary>Se dispara cuando el objeto termina de desarmarse (justo antes de romperse).</summary>
+        public event System.Action Salvaged;
+
         /// <summary>Deja el objeto a medio desarmar (al cargar una partida).</summary>
         public void RestoreProgress(float progress)
         {
@@ -87,6 +90,7 @@ namespace SurvivalEnTren.Items
         private void Complete(Backpack backpack, CharacterController breaker)
         {
             IsDone = true; // antes de crear nada: que no se pueda repetir
+            Salvaged?.Invoke();
             Vector3 center = transform.position + Vector3.up * 0.5f;
             int bundles = 0;
             foreach (SalvageYield y in recipe.Yields)

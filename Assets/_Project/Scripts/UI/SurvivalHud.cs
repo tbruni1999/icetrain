@@ -30,6 +30,9 @@ namespace SurvivalEnTren.UI
         private GUIStyle _label;
         private float _alpha = 1f;
 
+        // Dibuja con GUI.* (sin el maquetado automático de GUILayout): menos memoria nueva por cuadro (M13).
+        private void Awake() => useGUILayout = false;
+
         private void OnGUI()
         {
             if (_label == null)

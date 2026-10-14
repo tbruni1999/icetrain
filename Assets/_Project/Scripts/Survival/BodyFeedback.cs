@@ -59,6 +59,7 @@ namespace SurvivalEnTren.Survival
 
         private void Awake()
         {
+            useGUILayout = false; // dibuja con GUI.* (sin GUILayout): menos memoria nueva por cuadro (M13)
             VolumeProfile profile = volume.profile; // copia propia en tiempo de juego (no toca el asset)
             profile.TryGet(out _vignette);
             profile.TryGet(out _color);

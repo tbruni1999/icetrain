@@ -32,10 +32,17 @@ namespace SurvivalEnTren.Probe
         [SerializeField] private TextMesh line3;
         [Tooltip("Cuánto tarda en apagarse un punto después de que pasa el barrido, en segundos.")]
         [SerializeField] private float blipFadeSeconds = 2.5f;
+        [Tooltip("La mezcla de sonido (M13): un \"ping\" cuando el barrido pasa por una señal.")]
+        [SerializeField] private SurvivalEnTren.Audio.AudioMixSettings audioMix;
 
         private float _sweepAngle;
         private readonly Dictionary<ProbeSignal, float> _lastLit = new Dictionary<ProbeSignal, float>();
         private MaterialPropertyBlock _block;
+        private AudioSource _ping;
+        private AudioClip _pingClip;
+
+        /// <summary>Cuántos "ping" dio la pantalla (lo usan las pruebas).</summary>
+        public int Pings { get; private set; }
 
         public string GetPrompt(PlayerInteractor interactor) =>
             scanner.Readings.Count == 0 ? null : scanner.Target == null ? "fijar objetivo" : "siguiente señal";
@@ -61,7 +68,11 @@ namespace SurvivalEnTren.Probe
                 }
                 ProbeReading r = readings[i];
                 float bearing = Mathf.Repeat(r.BearingDegrees, 360f);
-                if (Passed(previous, _sweepAngle, bearing)) _lastLit[r.Signal] = Time.time;
+                if (Passed(previous, _sweepAngle, bearing))
+                {
+                    _lastLit[r.Signal] = Time.time;
+                    Ping(r.Signal == scanner.Target);
+                }
                 _lastLit.TryGetValue(r.Signal, out float lit);
                 float glow = Mathf.Clamp01(1f - (Time.time - lit) / blipFadeSeconds);
 
@@ -80,6 +91,24 @@ namespace SurvivalEnTren.Probe
             WriteText(readings);
         }
 
+
+        // Un "ping" de la pantalla cuando el barrido pasa por una señal: más agudo si es el objetivo fijado.
+        private void Ping(bool isTarget)
+        {
+            if (audioMix == null) return;
+            if (_ping == null)
+            {
+                _ping = gameObject.AddComponent<AudioSource>();
+                _ping.spatialBlend = 1f;
+                _ping.minDistance = 1.5f;
+                _ping.maxDistance = 15f;
+                _ping.playOnAwake = false;
+                _pingClip = SurvivalEnTren.Audio.ProceduralClips.Beep("Consola_Ping", 880f, 0.09f);
+            }
+            _ping.pitch = isTarget ? 1.5f : 1f;
+            _ping.PlayOneShot(_pingClip, audioMix.ProbeVolume);
+            Pings++;
+        }
         // ¿El barrido pasó por este ángulo en este cuadro?
         private static bool Passed(float from, float to, float angle)
         {

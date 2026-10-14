@@ -44,7 +44,23 @@ namespace SurvivalEnTren.Spike
 
         private float _smoothedFrameMs;
         private GUIStyle _style;
+        [Tooltip("Si el panel arranca visible (en la escena de juego arranca oculto: F1 lo muestra).")]
+        [SerializeField] private bool startVisible = true;
         private bool _visible = true;
+        private bool _visibleSet;
+
+        /// <summary>Si el panel se ve (F1 lo cambia).</summary>
+        public bool Visible
+        {
+            get => _visible;
+            set { _visible = value; _visibleSet = true; }
+        }
+
+        private void Awake()
+        {
+            useGUILayout = false; // dibuja con GUI.* (sin GUILayout): menos memoria nueva por cuadro (M13)
+            if (!_visibleSet) _visible = startVisible;
+        }
 
         private void OnEnable()
         {

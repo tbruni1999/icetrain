@@ -8,4 +8,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Project/Scenes/Pruebas/M2_Conduccion.unity
     guid: c576e92e5b8492849b0a35cf2bae4e13
+  - enabled: 1
+    path: Assets/_Project/Scenes/Spike/Spike_TrenEstable.unity
+    guid: 0e539914803973c4fa7fc0e63cabb5f0
   m_configObjects: {}

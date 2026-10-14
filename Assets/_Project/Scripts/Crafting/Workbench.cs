@@ -46,6 +46,9 @@ namespace SurvivalEnTren.Crafting
         public Blueprint[] Catalog => catalog;
         public Transform OutputPoint => outputPoint;
 
+        /// <summary>Se dispara cuando se termina de fabricar algo.</summary>
+        public event System.Action Crafted;
+
         /// <summary>Los planos del banco que el jugador conoce ahora, en el orden del banco.</summary>
         public List<Blueprint> KnownRecipes(BlueprintBook book)
         {
@@ -122,6 +125,7 @@ namespace SurvivalEnTren.Crafting
                     }
                     break;
             }
+            Crafted?.Invoke();
             return true;
         }
 

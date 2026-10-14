@@ -28,6 +28,9 @@ namespace SurvivalEnTren.UI
             if (alpha <= 0f) _caption = null;
         }
 
+        // Dibuja con GUI.* (sin el maquetado automático de GUILayout): menos memoria nueva por cuadro (M13).
+        private void Awake() => useGUILayout = false;
+
         private void OnGUI()
         {
             if (_alpha <= 0f) return;

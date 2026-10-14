@@ -43,6 +43,9 @@ namespace SurvivalEnTren.Crafting
             return true;
         }
 
+        // Dibuja con GUI.* (sin el maquetado automático de GUILayout): menos memoria nueva por cuadro (M13).
+        private void Awake() => useGUILayout = false;
+
         private void OnGUI()
         {
             if (Time.unscaledTime >= _noticeUntil) return;

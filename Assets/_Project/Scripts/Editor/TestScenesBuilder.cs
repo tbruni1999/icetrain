@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using SurvivalEnTren.Audio;
 using SurvivalEnTren.Building;
 using SurvivalEnTren.Crafting;
 using SurvivalEnTren.Equipment;
@@ -45,6 +46,8 @@ namespace SurvivalEnTren.EditorTools
         private const string PlayerSettingsPath = "Assets/_Project/Data/Player/PlayerMotorSettings.asset";
         private const string BoxPrefabPath = "Assets/_Project/Prefabs/Spike/Caja_Prueba.prefab";
         private const string JerrycanPrefabPath = "Assets/_Project/Prefabs/Items/Bidon.prefab";
+        private const string AudioMixPath = "Assets/_Project/Data/Audio/AudioMezcla.asset";
+        private const string DayNightPath = "Assets/_Project/Data/World/DiaNoche.asset";
         private const string FloatingOriginSettingsPath = "Assets/_Project/Data/World/FloatingOriginSettings.asset";
         private const string InteractionSettingsPath = "Assets/_Project/Data/Interaction/InteractionSettings.asset";
         private const string CarrySettingsPath = "Assets/_Project/Data/Interaction/CarrySettings.asset";
@@ -250,6 +253,10 @@ namespace SurvivalEnTren.EditorTools
                 BuildSurvival(motor, train, overlay, palette);
                 BuildPortableProbe(motor, train, palette);
                 BuildSaveSystem(motor, train);
+                BuildPresentation(motor, train, unknownRoute);
+                var overlaySo = new SerializedObject(overlay);
+                overlaySo.FindProperty("startVisible").boolValue = false; // la escena de juego arranca sin el panel de pruebas (F1 lo muestra)
+                overlaySo.ApplyModifiedPropertiesWithoutUndo();
             }
 
             string path = kind == Kind.Spike ? SpikeScenePath : DrivingScenePath;
@@ -696,15 +703,45 @@ namespace SurvivalEnTren.EditorTools
         }
 
         // Material transparente para el vaho (partículas sin iluminación de URP).
+        // Una mancha redonda que se desvanece hacia los bordes (para el vaho): se dibuja una sola vez y se guarda como imagen.
+        private static Texture2D SoftDotTexture()
+        {
+            string path = $"{MaterialsFolder}/Vaho_Mancha.png";
+            var existing = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            if (existing != null) return existing;
+            const int size = 64;
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            for (int y = 0; y < size; y++)
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = (x + 0.5f) / size * 2f - 1f, dy = (y + 0.5f) / size * 2f - 1f;
+                    float a = Mathf.Clamp01(1f - Mathf.Sqrt(dx * dx + dy * dy));
+                    texture.SetPixel(x, y, new Color(1f, 1f, 1f, a * a));
+                }
+            texture.Apply();
+            System.IO.File.WriteAllBytes(path, texture.EncodeToPNG());
+            Object.DestroyImmediate(texture);
+            AssetDatabase.ImportAsset(path);
+            var importer = (TextureImporter)AssetImporter.GetAtPath(path);
+            importer.alphaIsTransparency = true;
+            importer.mipmapEnabled = false;
+            importer.wrapMode = TextureWrapMode.Clamp;
+            importer.SaveAndReimport();
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        }
+
         private static Material BreathMaterial()
         {
             string path = $"{MaterialsFolder}/Vaho.mat";
             var material = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (material == null)
             {
-                material = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
+                material = new Material(Shader.Find("Universal Render Pipeline/Particles/Simple Lit"));
                 AssetDatabase.CreateAsset(material, path);
             }
+            // Iluminado por la escena (M13): de noche no brilla como una lámpara; y con una mancha redonda y suave, no un cuadrado.
+            material.shader = Shader.Find("Universal Render Pipeline/Particles/Simple Lit");
+            material.SetTexture("_BaseMap", SoftDotTexture());
             material.SetFloat("_Surface", 1f); // transparente
             material.SetFloat("_Blend", 0f);   // alpha
             material.SetOverrideTag("RenderType", "Transparent");
@@ -947,6 +984,75 @@ namespace SurvivalEnTren.EditorTools
             list.arraySize = known.Length;
             for (int i = 0; i < known.Length; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = known[i];
             so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        // ---------------------------------------------------------------- Pulido de la slice (M13)
+
+        // Sonido, día y noche, pausa y el final (M13; Anexo G: "audio interior/exterior, iluminación, UI mínima, performance
+        // pass, final entrando a vía nueva"). Todo lo que se ajusta a gusto vive en datos (AudioMezcla, DiaNoche).
+        private static void BuildPresentation(PlayerMotor motor, GameObject train, RailSegment unknownRoute)
+        {
+            EnsureFolder("Assets/_Project/Data", "Audio");
+            EnsureFolder("Assets/_Project/Data", "World");
+            var mix = LoadOrCreateAsset<AudioMixSettings>(AudioMixPath);
+            var dayNight = LoadOrCreateAsset<DayNightSettings>(DayNightPath);
+            Transform head = motor.transform.Find("Cabeza");
+
+            // El ambiente en el oído del jugador: viento afuera, apagado adentro, calefacción.
+            var ambient = head.gameObject.AddComponent<AmbientAudio>();
+            SetReference(ambient, "settings", mix);
+            SetReference(ambient, "climate", train.GetComponent<TrainInteriorClimate>());
+            var shelters = new SerializedObject(ambient);
+            var list = shelters.FindProperty("shelters");
+            ThermalZone[] zones = Object.FindObjectsByType<ThermalZone>();
+            list.arraySize = zones.Length;
+            for (int i = 0; i < zones.Length; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = zones[i];
+            shelters.ApplyModifiedPropertiesWithoutUndo();
+
+            // El motor (sala de máquinas) y las ruedas.
+            var engine = train.AddComponent<TrainEngineAudio>();
+            SetReference(engine, "settings", mix);
+            SetReference(engine, "train", train.GetComponent<TrainMover>());
+            SetReference(engine, "controls", train.GetComponent<TrainControls>());
+            SetReference(engine, "tank", train.GetComponent<FuelTank>());
+            Transform engineRoom = train.transform.Find("Interior/Zona_SalaMaquinas");
+            SetReference(engine, "engine", engineRoom != null ? engineRoom : train.transform);
+            SetReference(engine, "wheels", train.transform);
+
+            // Los golpes de las cosas del mundo.
+            var sounds = new GameObject("Sonidos_Mundo").AddComponent<WorldSounds>();
+            SetReference(sounds, "settings", mix);
+            SetReference(sounds, "controls", train.GetComponent<TrainControls>());
+            Transform desk = train.transform.Find("Interior/Zona_Cabina/Cabina_Pupitre");
+            SetReference(sounds, "cab", desk != null ? desk : train.transform);
+            SetReference(sounds, "book", motor.GetComponent<BlueprintBook>());
+            SetReference(sounds, "listener", head);
+
+            // El día y la noche.
+            var cycle = new GameObject("Dia_Noche").AddComponent<DayNightCycle>();
+            SetReference(cycle, "settings", dayNight);
+            SetReference(cycle, "clock", Object.FindAnyObjectByType<GameClock>());
+            SetReference(cycle, "sun", RenderSettings.sun);
+
+            // La pausa (Escape).
+            var pause = motor.gameObject.AddComponent<PauseMenu>();
+            SetReference(pause, "toggle", FindActionReference("Partida/Pausa"));
+            SetReference(pause, "saver", Object.FindAnyObjectByType<SaveSystem>());
+            SetReference(pause, "motor", motor);
+            SetReference(pause, "look", motor.GetComponent<PlayerLook>());
+            SetReference(pause, "interactor", motor.GetComponent<PlayerInteractor>());
+            SetReference(pause, "carrier", motor.GetComponent<PlayerCarrier>());
+            SetReference(pause, "inventory", motor.GetComponent<InventoryPanel>());
+            SetReference(pause, "workbench", motor.GetComponent<WorkbenchPanel>());
+
+            // El final de la slice: la primera vez que el tren entra a la ruta desconocida.
+            var ending = new GameObject("Final_Slice").AddComponent<SliceEnding>();
+            SetReference(ending, "train", train.GetComponent<TrainMover>());
+            SetReference(ending, "unknownRoute", unknownRoute);
+
+            // La sonda: un pitido cuando el barrido pasa por una señal; la portátil pita más seguido cerca del objetivo.
+            foreach (ProbeConsole console in train.GetComponentsInChildren<ProbeConsole>(true)) SetReference(console, "audioMix", mix);
+            foreach (PortableProbe probe in Object.FindObjectsByType<PortableProbe>()) SetReference(probe, "audioMix", mix);
         }
 
         // ---------------------------------------------------------------- Mini-región (M11)

@@ -34,8 +34,16 @@ namespace SurvivalEnTren.Probe
         [Tooltip("Posición del aparato en la mano (local a la cámara) y cuánto baja al guardarlo, en metros.")]
         [SerializeField] private Vector3 heldLocalPosition = new Vector3(0.15f, -0.12f, 0.34f);
         [SerializeField] private float stowDrop = 0.25f;
+        [Tooltip("La mezcla de sonido (M13): la sonda pita más seguido cuanto más cerca está el objetivo.")]
+        [SerializeField] private SurvivalEnTren.Audio.AudioMixSettings audioMix;
 
         private bool _out;
+        private AudioSource _beeper;
+        private AudioClip _beep;
+        private float _sinceBeep;
+
+        /// <summary>Cuántos pitidos dio (lo usan las pruebas).</summary>
+        public int Beeps { get; private set; }
         private float _raise;
         private float _trainAngle, _targetAngle;
         private MaterialPropertyBlock _block;
@@ -105,6 +113,7 @@ namespace SurvivalEnTren.Probe
                 targetText.text = $"OBJ.  ~{Approx(targetDistance)}";
             }
             else targetText.text = target == null ? "OBJ.  SIN OBJETIVO" : "OBJ.  SIN LECTURA";
+            Beep(targetInRange, targetDistance);
             targetNeedle.gameObject.SetActive(targetInRange);
 
             // Calidad: la mejor de las dos lecturas, menos la interferencia.
@@ -120,6 +129,28 @@ namespace SurvivalEnTren.Probe
             }
         }
 
+
+        // Pitido de la sonda (Anexo E.5: "señales de la sonda con firmas sonoras reconocibles"): cada 2 s lejos, cada 0,3 s
+        // encima del objetivo; más agudo cuanto más cerca. Sin objetivo a la vista, no pita.
+        private void Beep(bool inRange, float distance)
+        {
+            if (audioMix == null || !inRange) return;
+            if (_beeper == null)
+            {
+                _beeper = device.gameObject.AddComponent<AudioSource>();
+                _beeper.spatialBlend = 0f;
+                _beeper.playOnAwake = false;
+                _beep = SurvivalEnTren.Audio.ProceduralClips.Beep("Sonda_Pitido", 1320f, 0.06f);
+            }
+            float closeness = 1f - Mathf.Clamp01(distance / settings.PortableRangeMeters);
+            float interval = Mathf.Lerp(2f, 0.3f, closeness);
+            _sinceBeep += Time.deltaTime;
+            if (_sinceBeep < interval) return;
+            _sinceBeep = 0f;
+            _beeper.pitch = 0.85f + 0.5f * closeness;
+            _beeper.PlayOneShot(_beep, audioMix.ProbeVolume);
+            Beeps++;
+        }
         // Ángulo hacia un punto respecto de hacia dónde mira el jugador (horizontal), en grados.
         private float Bearing(Vector3 point) =>
             Vector3.SignedAngle(Flat(head.forward), Flat(point - head.position), Vector3.up);

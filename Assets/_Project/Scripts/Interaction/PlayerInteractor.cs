@@ -43,6 +43,7 @@ namespace SurvivalEnTren.Interaction
 
         private void Awake()
         {
+            useGUILayout = false; // dibuja con GUI.* (sin GUILayout): menos memoria nueva por cuadro (M13)
             _carrier = GetComponent<PlayerCarrier>();
         }
 

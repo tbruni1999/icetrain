@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace SurvivalEnTren.Interaction
@@ -34,6 +35,9 @@ namespace SurvivalEnTren.Interaction
 
         public bool IsOpen => _open;
 
+        /// <summary>Se dispara cuando la puerta empieza a abrirse (true) o a cerrarse (false) por un jugador.</summary>
+        public event Action<bool> Moved;
+
         /// <summary>Abre o cierra la puerta de golpe, sin animación (al cargar una partida).</summary>
         public void SetOpenImmediate(bool open)
         {
@@ -62,6 +66,7 @@ namespace SurvivalEnTren.Interaction
                 return;
             }
             _open = !_open;
+            Moved?.Invoke(_open);
         }
 
         private bool IsDoorwayOccupied()

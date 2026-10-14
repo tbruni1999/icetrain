@@ -208,7 +208,7 @@ System.Collections.IEnumerator Run()
     yield return Frames(60);
 
     // ---- A) Armar un estado.
-    var crowbarPickup = Find<SurvivalEnTren.Equipment.GearPickup>(g => true);
+    var crowbarPickup = Find<SurvivalEnTren.Equipment.GearPickup>(g => g.Gear == SurvivalEnTren.Equipment.GearId.Crowbar);
     crowbarPickup.Interact(who);                                    // la barreta del perchero
     gear.SetSuit(true);
     foreach (var rack in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Equipment.SuitRack>()) rack.Sync(true);

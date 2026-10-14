@@ -257,11 +257,13 @@
             "id": "c8d1e3f5-6a7b-4c9d-8e0f-1a2b3c4d5e60",
             "actions": [
                 { "name": "Guardar", "type": "Button", "id": "d9e2f4a6-7b8c-4dae-9f10-2b3c4d5e6f71", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
-                { "name": "Cargar", "type": "Button", "id": "eaf3a5b7-8c9d-4ebf-a021-3c4d5e6f7a82", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false }
+                { "name": "Cargar", "type": "Button", "id": "eaf3a5b7-8c9d-4ebf-a021-3c4d5e6f7a82", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Pausa", "type": "Button", "id": "1d26d8ea-bfc0-41e2-9354-6f7a8b9cadb5", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false }
             ],
             "bindings": [
                 { "name": "", "id": "fb04b6c8-9dae-4fc0-b132-4d5e6f7a8b93", "path": "<Keyboard>/f5", "interactions": "", "processors": "", "groups": "", "action": "Guardar", "isComposite": false, "isPartOfComposite": false },
-                { "name": "", "id": "0c15c7d9-aebf-40d1-8243-5e6f7a8b9ca4", "path": "<Keyboard>/f9", "interactions": "", "processors": "", "groups": "", "action": "Cargar", "isComposite": false, "isPartOfComposite": false }
+                { "name": "", "id": "0c15c7d9-aebf-40d1-8243-5e6f7a8b9ca4", "path": "<Keyboard>/f9", "interactions": "", "processors": "", "groups": "", "action": "Cargar", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "2e37e9fb-c0d1-42f3-a465-7a8b9cadbec6", "path": "<Keyboard>/escape", "interactions": "", "processors": "", "groups": "", "action": "Pausa", "isComposite": false, "isPartOfComposite": false }
             ]
         },
         {

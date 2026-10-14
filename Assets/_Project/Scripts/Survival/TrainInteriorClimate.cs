@@ -43,7 +43,16 @@ namespace SurvivalEnTren.Survival
         public bool HeaterOn { get; set; } = true;
         /// <summary>La calefacción está encendida pero sin combustible (no calienta).</summary>
         public bool FuelStarved { get; private set; }
-        public int OpenDoors { get; private set; }
+        /// <summary>Cuántas puertas del tren están abiertas ahora (se cuenta en el momento: el sonido lo usa aunque el tiempo esté quieto).</summary>
+        public int OpenDoors
+        {
+            get
+            {
+                int open = 0;
+                if (_doors != null) foreach (SlidingDoor door in _doors) if (door != null && door.IsOpen) open++;
+                return open;
+            }
+        }
 
         /// <summary>Pone la temperatura de adentro (al cargar una partida).</summary>
         public void RestoreTemperature(float celsius) => InteriorTemperatureC = celsius;
@@ -68,9 +77,7 @@ namespace SurvivalEnTren.Survival
         private void Simulate(float hours)
         {
             if (hours <= 0f) return;
-            OpenDoors = 0;
-            foreach (SlidingDoor door in _doors)
-                if (door.IsOpen) OpenDoors++;
+            int openDoors = OpenDoors;
 
             float outside = settings.OutsideTemperatureC;
             float t = InteriorTemperatureC;
@@ -88,7 +95,7 @@ namespace SurvivalEnTren.Survival
                     heating *= drawn / needed;
                 }
             }
-            float loss = (wallLossPerHour + openDoorLossPerHour * OpenDoors) * (t - outside);
+            float loss = (wallLossPerHour + openDoorLossPerHour * openDoors) * (t - outside);
             InteriorTemperatureC = t + (heating - loss) * hours;
         }
 
