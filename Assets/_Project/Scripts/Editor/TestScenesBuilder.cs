@@ -43,6 +43,7 @@ namespace SurvivalEnTren.EditorTools
         private const string DriveSettingsPath = "Assets/_Project/Data/Train/TrainTestDriveSettings.asset";
         private const string PlayerSettingsPath = "Assets/_Project/Data/Player/PlayerMotorSettings.asset";
         private const string BoxPrefabPath = "Assets/_Project/Prefabs/Spike/Caja_Prueba.prefab";
+        private const string JerrycanPrefabPath = "Assets/_Project/Prefabs/Items/Bidon.prefab";
         private const string FloatingOriginSettingsPath = "Assets/_Project/Data/World/FloatingOriginSettings.asset";
         private const string InteractionSettingsPath = "Assets/_Project/Data/Interaction/InteractionSettings.asset";
         private const string CarrySettingsPath = "Assets/_Project/Data/Interaction/CarrySettings.asset";
@@ -122,6 +123,7 @@ namespace SurvivalEnTren.EditorTools
             EnsureFolder("Assets/_Project", "Prefabs");
             EnsureFolder("Assets/_Project/Prefabs", "Train");
             EnsureFolder("Assets/_Project/Prefabs", "Spike");
+            EnsureFolder("Assets/_Project/Prefabs", "Items");
             EnsureFolder("Assets/_Project", "Materials");
             EnsureFolder("Assets/_Project/Materials", "Greybox");
             EnsureFolder("Assets/_Project", "Data");
@@ -399,6 +401,23 @@ namespace SurvivalEnTren.EditorTools
             SetReference(panel, "act", FindActionReference("Backpack/Act"));
             SetReference(panel, "actAll", FindActionReference("Backpack/ActAll"));
             LoadMaterials(); // crea los archivos de datos de los materiales (los usan los objetos desmontables)
+
+            // Banco de trabajo (M9): E sobre el banco abre el panel con los planos conocidos; Tab lo cierra. La sierra fabricada se
+            // ve colgada en el taller (el prefab del tren recibe el equipo del jugador acá).
+            var workbenchPanel = motor.gameObject.AddComponent<WorkbenchPanel>();
+            SetReference(workbenchPanel, "backpack", backpack);
+            SetReference(workbenchPanel, "gear", gear);
+            SetReference(workbenchPanel, "book", book);
+            SetReference(workbenchPanel, "motor", motor);
+            SetReference(workbenchPanel, "look", motor.GetComponent<PlayerLook>());
+            SetReference(workbenchPanel, "interactor", motor.GetComponent<PlayerInteractor>());
+            SetReference(workbenchPanel, "carrier", motor.GetComponent<PlayerCarrier>());
+            SetReference(workbenchPanel, "toggleBackpack", FindActionReference("Player/ToggleBackpack"));
+            SetReference(workbenchPanel, "up", FindActionReference("Workbench/Up"));
+            SetReference(workbenchPanel, "down", FindActionReference("Workbench/Down"));
+            SetReference(workbenchPanel, "confirm", FindActionReference("Workbench/Confirm"));
+            SetReference(workbenchPanel, "close", FindActionReference("Workbench/Close"));
+            foreach (GearDisplay display in train.GetComponentsInChildren<GearDisplay>(true)) SetReference(display, "gear", gear);
 
             var corner = Group("Equipo_Tren", train.transform);
             float wall = -InnerHalfWidth;
@@ -873,6 +892,55 @@ namespace SurvivalEnTren.EditorTools
                     "Un estante de verdad contra la pared del taller: se construye por fases.", false, BlueprintKind.Project,
                     new (ItemDefinition, int)[0], new GearId[0], 0.5f, CraftOutputKind.Gear, GearId.Saw, ""),
             };
+        }
+
+        // El bidón vacío que sale del banco: el mismo objeto que los bidones del tren (se lleva a una mano, se llena con
+        // sifón o bomba), guardado como prefab para poder fabricar uno cuando haga falta.
+        private static GameObject BuildJerrycanPrefab(Palette p)
+        {
+            FuelSettings fuel = LoadOrCreateAsset<FuelSettings>(FuelSettingsPath);
+            var holder = new GameObject("tmp_bidon").transform;
+            BuildJerrycan("Bidon", holder, Vector3.zero, Quaternion.identity, Mat("Bidon", new Color(0.7f, 0.16f, 0.1f)), p, fuel);
+            GameObject can = holder.GetChild(0).gameObject;
+            can.transform.SetParent(null);
+            GameObject prefab = PrefabUtility.SaveAsPrefabAsset(can, JerrycanPrefabPath);
+            Object.DestroyImmediate(can);
+            Object.DestroyImmediate(holder.gameObject);
+            return prefab;
+        }
+
+        // El banco de trabajo del taller (M9): el mueble de siempre, ahora con su lógica; el punto donde sale el bidón queda
+        // entre las dos cajas de prueba de la mesa, y la sierra aparece colgada en la pared cuando se fabrica.
+        private static void BuildWorkbench(GameObject bench, Transform workshop, Palette p)
+        {
+            BlueprintSet plans = Blueprints();
+            var workbench = bench.AddComponent<Workbench>();
+            var output = Group("Banco_Salida", workshop);
+            output.localPosition = new Vector3(-(InnerHalfWidth - 0.4f), FloorTop + 0.9f, 0.1f);
+            output.localRotation = Quaternion.Euler(0f, 90f, 0f); // el bidón queda de costado para entrar entre las dos cajas
+            SetReference(workbench, "outputPoint", output);
+            SetReference(workbench, "jerrycanPrefab", BuildJerrycanPrefab(p));
+            var so = new SerializedObject(workbench);
+            var catalog = so.FindProperty("catalog");
+            Blueprint[] recipes = { plans.Saw, plans.Jerrycan };
+            catalog.arraySize = recipes.Length;
+            for (int i = 0; i < recipes.Length; i++) catalog.GetArrayElementAtIndex(i).objectReferenceValue = recipes[i];
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            // La sierra colgada contra la pared izquierda, pasando el banco hacia atrás (sin colliders: solo se ve; aparece al fabricarla).
+            Material blade = Mat("Sierra_Hoja", new Color(0.66f, 0.68f, 0.7f));
+            Material handleMat = Mat("Cama_Madera", new Color(0.55f, 0.4f, 0.24f));
+            var holder = Group("Taller_Sierra", workshop);
+            holder.localPosition = new Vector3(-InnerHalfWidth, FloorTop + 1.3f, -2.4f); // tramo macizo de la pared (la ventana de arriba del banco no tiene pared)
+            var visual = Group("Sierra", holder);
+            BoxMinMax("Hoja", visual, new Vector3(0.0f, 0.0f, -0.3f), new Vector3(0.012f, 0.1f, 0.2f), blade, false);
+            BoxMinMax("Dientes", visual, new Vector3(0.0f, -0.02f, -0.3f), new Vector3(0.012f, 0.0f, 0.2f), p.Track, false);
+            BoxMinMax("Mango", visual, new Vector3(0.0f, -0.01f, 0.2f), new Vector3(0.04f, 0.13f, 0.34f), handleMat, false);
+            var display = holder.gameObject.AddComponent<GearDisplay>();
+            SetReference(display, "visual", visual.gameObject);
+            var displaySo = new SerializedObject(display);
+            displaySo.FindProperty("gearId").enumValueIndex = (int)GearId.Saw;
+            displaySo.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static Blueprint LoadOrCreateBlueprint(string fileName, string id, string displayName, string description, bool knownFromStart,
@@ -1467,7 +1535,8 @@ namespace SurvivalEnTren.EditorTools
             BoxMinMax("Descanso_Calefaccion", rest, new Vector3(-InnerHalfWidth, FloorTop, 3.8f), new Vector3(-(InnerHalfWidth - 0.6f), FloorTop + 0.9f, 4.4f), p.Controls);
 
             var workshop = Group("Zona_Taller", interior);
-            BoxMinMax("Taller_Workbench", workshop, new Vector3(-InnerHalfWidth, FloorTop, -1.0f), new Vector3(-(InnerHalfWidth - 0.8f), FloorTop + 0.9f, 1.0f), p.Furniture);
+            GameObject bench = BoxMinMax("Taller_Workbench", workshop, new Vector3(-InnerHalfWidth, FloorTop, -1.0f), new Vector3(-(InnerHalfWidth - 0.8f), FloorTop + 0.9f, 1.0f), p.Furniture);
+            BuildWorkbench(bench, workshop, p);
             var shelf = Group("Taller_Estante", workshop);
             BoxMinMax("Lateral_A", shelf, new Vector3(InnerHalfWidth - 0.4f, FloorTop, -2.53f), new Vector3(InnerHalfWidth, FloorTop + 1.8f, -2.5f), p.Furniture);
             BoxMinMax("Lateral_B", shelf, new Vector3(InnerHalfWidth - 0.4f, FloorTop, -0.53f), new Vector3(InnerHalfWidth, FloorTop + 1.8f, -0.5f), p.Furniture);

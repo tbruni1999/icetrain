@@ -237,6 +237,22 @@
             ]
         },
         {
+            "name": "Workbench",
+            "id": "b7a9c2d1-5e3f-4a68-8d14-2c6b0e9f7a40",
+            "actions": [
+                { "name": "Up", "type": "Button", "id": "c1d4e7f2-6a05-4b79-9e25-3d7c1f0a8b51", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Down", "type": "Button", "id": "d2e5f803-7b16-4c8a-8f36-4e8d2a1b9c62", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Confirm", "type": "Button", "id": "e3f60914-8c27-4d9b-a047-5f9e3b2c0d73", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Close", "type": "Button", "id": "f4071a25-9d38-4eac-b158-6a0f4c3d1e84", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false }
+            ],
+            "bindings": [
+                { "name": "", "id": "05182b36-ae49-4fbd-8269-7b1a5d4e2f95", "path": "<Keyboard>/upArrow", "interactions": "", "processors": "", "groups": "", "action": "Up", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "16293c47-bf5a-40ce-937a-8c2b6e5f30a6", "path": "<Keyboard>/downArrow", "interactions": "", "processors": "", "groups": "", "action": "Down", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "273a4d58-c06b-41df-a48b-9d3c7f6041b7", "path": "<Keyboard>/enter", "interactions": "", "processors": "", "groups": "", "action": "Confirm", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "384b5e69-d17c-42e0-b59c-ae4d807152c8", "path": "<Keyboard>/tab", "interactions": "", "processors": "", "groups": "", "action": "Close", "isComposite": false, "isPartOfComposite": false }
+            ]
+        },
+        {
             "name": "Train",
             "id": "2c8e5f17-9a4b-4d63-a0e7-5f1b3d8c6a20",
             "actions": [
