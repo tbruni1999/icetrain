@@ -34,6 +34,9 @@ namespace SurvivalEnTren.Interaction
 
         public Carryable Holding => _held;
 
+        /// <summary>Mientras es true, el clic izquierdo no lanza lo que se lleva (el panel del inventario usa ese clic).</summary>
+        public bool ThrowLocked { get; set; }
+
         private void OnEnable()
         {
             throwAction.action.performed += OnThrow;
@@ -80,7 +83,7 @@ namespace SurvivalEnTren.Interaction
 
         private void OnThrow(InputAction.CallbackContext _)
         {
-            if (_held != null) Drop(throwIt: true);
+            if (_held != null && !ThrowLocked) Drop(throwIt: true);
         }
 
         // El peso total que se lleva (mano + mochila) frena el caminar. Se recalcula cada tic porque puede cambiar

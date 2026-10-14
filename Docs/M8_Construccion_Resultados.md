@@ -9,7 +9,7 @@ Escena `Assets/_Project/Scenes/Pruebas/M2_Conduccion.unity` (menú "Survival en 
 - **La mochila es una cuadrícula de 6×5** (30 casillas). El límite duro es el **espacio**; el **peso** sigue frenando el caminar, sumado a lo que se lleva en la mano (×0,65 con 17 kg, mínimo ×0,45).
 - Las piezas **se giran** con R (si no son cuadradas), entran solas en el primer hueco (primero sin girar, después giradas) y **no entran si no hay lugar**: lo largo no entra en lo chico.
 - **Panel con Tab:** la mochila como cuadrícula con las piezas dibujadas sobre sus casillas. Al abrir un mueble aparece su cuadrícula al lado (un estante de 4×3 se ve más chico que la mochila).
-  - **Mouse:** arrastrar una pieza (dentro de la mochila, del estante a la mochila y al revés), R para girar mientras se arrastra, sombra **verde** si entra y **roja** si no, y soltar afuera del panel la deja en el piso. El pie del panel dice qué pieza se mira, cuántas casillas ocupa y su peso.
+  - **Mouse (sin Enter):** agarrás una pieza, la arrastrás y la soltás donde da verde (dentro de la mochila, del estante a la mochila y al revés); R la gira mientras la arrastrás; sombra **verde** si entra y **roja** si no (si no entra, vuelve a su lugar); soltar afuera del panel la deja en el piso; también se puede con dos clics (uno agarra, otro deja) y el clic derecho cancela. El pie del panel dice qué pieza se mira, cuántas casillas ocupa y su peso.
   - **Teclado:** flechas mueven el cursor entre casillas (pasa de una cuadrícula a la otra), R gira, Enter pasa la pieza al otro lado (o la suelta en el piso si solo está la mochila), Supr pasa o suelta todas las del mismo material.
   - Mientras está abierto no se camina ni se usa E y el cursor queda libre; el juego no se pausa.
 
@@ -52,7 +52,7 @@ Una nota sobre las pruebas: cuando Unity se traba un instante (por ejemplo, al c
 
 ## Pendientes y riesgos
 
-- **El arrastre con el mouse no se pudo probar automáticamente** (el panel usa la interfaz inmediata de Unity, que toma el mouse del sistema operativo, no del teclado virtual). Se probó la misma función que usa al soltar (`TryMovePiece`) y todo el teclado. Probar a mano: arrastrar, girar con R mientras se arrastra, la sombra verde/roja y soltar afuera.
+- **El mouse del panel ahora se lee por el Input System** (antes usaba la interfaz inmediata de Unity, que depende de eventos del sistema operativo y puede no responder con el nuevo sistema de entrada). Con un mouse virtual se probó todo (`m8_mouse_inventario.cs`): agarrar, arrastrar y soltar donde da verde **sin Enter**, rojo vuelve a su lugar, R mientras se arrastra, soltar afuera del panel = al piso, dos clics (uno agarra, otro deja), clic derecho cancela, de la mochila al estante y al revés, y un clic con una caja en la mano no la lanza. Sigue valiendo probarlo a mano para sentir el arrastre.
 - **Los materiales de los estantes no se aportan directo a las obras**: hay que sacarlos a la mochila primero (una acción). Se puede cambiar más adelante (el taller del M9 puede decidirlo).
 - **El mundo de prueba trae justo lo necesario**: tablones 10 (cama 4 + estante 6), chapas 5 (estante 2), rollos 5 (cama 5): no hay margen en tela ni madera.
 - Los objetos enteros (cajas, bidones) siguen yendo en la mano, no en la cuadrícula. La barreta y la bomba van "al cinto" sin ocupar lugar.

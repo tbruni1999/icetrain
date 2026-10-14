@@ -30,6 +30,7 @@ namespace SurvivalEnTren.Items
         [SerializeField] private PlayerMotor motor;
         [SerializeField] private PlayerLook look;
         [SerializeField] private PlayerInteractor interactor;
+        [SerializeField] private PlayerCarrier carrier;
         [SerializeField] private Transform head;
         [SerializeField] private InputActionReference toggle;
         [Header("Mapa \"Backpack\" (solo activo con el panel abierto)")]
@@ -58,6 +59,10 @@ namespace SurvivalEnTren.Items
         private GridItem _dragItem;
         private GridView _dragFrom;
         private bool _dragRotated;
+        private bool _carryMode;
+        private float _pressTime;
+        private Vector2 _pressPos;
+        private Rect _area;
         private GUIStyle _label, _small, _tip;
         private Texture2D _plate;
 
@@ -96,6 +101,7 @@ namespace SurvivalEnTren.Items
             _wasMovementLocked = motor.MovementLocked;
             motor.MovementLocked = true;
             interactor.enabled = false; // sin indicación ni E mientras se mira el inventario
+            if (carrier != null) carrier.ThrowLocked = true; // el clic izquierdo es del panel, no lanza lo que se lleva
             look.CursorFree = true;
             _pack = new GridView { Grid = backpack.Grid, Title = "MOCHILA", IsPlayerPack = true };
             _other = other != null ? new GridView { Grid = other, Title = otherTitle ?? "MUEBLE" } : null;
@@ -115,6 +121,7 @@ namespace SurvivalEnTren.Items
             Unbind(rotate, OnRotate); Unbind(act, OnAct); Unbind(actAll, OnActAll);
             motor.MovementLocked = _wasMovementLocked;
             interactor.enabled = true;
+            if (carrier != null) carrier.ThrowLocked = false;
             look.CursorFree = false;
         }
 
@@ -288,7 +295,7 @@ namespace SurvivalEnTren.Items
             if (!_open) return;
             EnsureStyles();
             Layout(out Rect area);
-            Event e = Event.current;
+            Vector2 mouse = MouseGui();
 
             GUI.color = new Color(1f, 1f, 1f, 0.9f);
             GUI.DrawTexture(area, _plate);
@@ -297,9 +304,8 @@ namespace SurvivalEnTren.Items
             DrawView(_pack);
             if (_other != null) DrawView(_other);
 
-            HandleMouse(e, area);
-            DrawDrag(e);
-            DrawFooter(area, e);
+            DrawDrag(mouse);
+            DrawFooter(area, mouse);
         }
 
         private void Layout(out Rect area)
@@ -407,7 +413,61 @@ namespace SurvivalEnTren.Items
             GUI.color = Color.white;
         }
 
-        // ---------------------------------------------------------------- Mouse
+        // ---------------------------------------------------------------- Mouse (por el Input System, no por la interfaz inmediata)
+
+        // El mouse en coordenadas de pantalla de dibujo (origen arriba a la izquierda).
+        private static Vector2 MouseGui()
+        {
+            Mouse mouse = Mouse.current;
+            if (mouse == null) return new Vector2(-1000f, -1000f);
+            Vector2 p = mouse.position.ReadValue();
+            return new Vector2(p.x, Screen.height - p.y);
+        }
+
+        /// <summary>Dónde está el centro de una casilla en coordenadas del mouse (origen abajo a la izquierda). Lo usan las pruebas.</summary>
+        public Vector2 CellCenterScreen(int gridIndex, int cx, int cy)
+        {
+            Layout(out _area);
+            GridView view = View(gridIndex);
+            return new Vector2(view.Origin.x + (cx + 0.5f) * Cell, Screen.height - (view.Origin.y + (cy + 0.5f) * Cell));
+        }
+
+        /// <summary>Hay una pieza agarrada con el mouse (arrastrándola o "en la mano" después de un clic).</summary>
+        public bool IsDragging => _dragItem != null;
+        public bool IsCarryingByClick => _dragItem != null && _carryMode;
+
+        private void Update()
+        {
+            if (!_open) return;
+            Layout(out _area);
+            HandleMouse(MouseGui());
+        }
+
+        // Cómo se maneja, sin Enter: se agarra una pieza con el clic izquierdo, se arrastra y se suelta donde da verde. También
+        // se puede hacer con dos clics (un clic la agarra, otro la deja). El clic derecho la devuelve a su lugar.
+        private void HandleMouse(Vector2 pos)
+        {
+            Mouse mouse = Mouse.current;
+            if (mouse == null) return;
+
+            if (_dragItem != null && mouse.rightButton.wasPressedThisFrame)
+            {
+                EndDrag(); // cancelar: vuelve a su lugar
+                return;
+            }
+
+            if (mouse.leftButton.wasPressedThisFrame)
+            {
+                if (_dragItem == null) TryStartDrag(pos);
+                else if (_carryMode) TryDropDragged(pos, keepOnFail: true);
+            }
+            else if (mouse.leftButton.wasReleasedThisFrame && _dragItem != null && !_carryMode)
+            {
+                bool clickWithoutMoving = Time.unscaledTime - _pressTime < 0.25f && (pos - _pressPos).sqrMagnitude < 25f;
+                if (clickWithoutMoving) _carryMode = true; // un clic suelto: la pieza queda "en la mano" hasta el próximo clic
+                else TryDropDragged(pos, keepOnFail: false);
+            }
+        }
 
         // La casilla bajo el mouse en una cuadrícula; false si el mouse no está sobre ella.
         private static bool CellUnder(GridView view, Vector2 mouse, out int cx, out int cy)
@@ -417,30 +477,30 @@ namespace SurvivalEnTren.Items
             return view.Origin.Contains(mouse);
         }
 
-        private void HandleMouse(Event e, Rect area)
+        private void TryStartDrag(Vector2 pos)
         {
-            if (e.type == EventType.MouseDown && e.button == 0 && _dragItem == null)
+            foreach (GridView view in new[] { _pack, _other })
             {
-                foreach (GridView view in new[] { _pack, _other })
-                {
-                    if (view == null || !CellUnder(view, e.mousePosition, out int cx, out int cy)) continue;
-                    GridItem piece = view.Grid.ItemAt(cx, cy);
-                    _cursorView = view == _pack ? 0 : 1;
-                    _cursorX = cx;
-                    _cursorY = cy;
-                    if (piece == null) break;
-                    _dragItem = piece;
-                    _dragFrom = view;
-                    _dragRotated = piece.Rotated;
-                    e.Use();
-                    break;
-                }
+                if (view == null || !CellUnder(view, pos, out int cx, out int cy)) continue;
+                GridItem piece = view.Grid.ItemAt(cx, cy);
+                _cursorView = view == _pack ? 0 : 1;
+                _cursorX = cx;
+                _cursorY = cy;
+                if (piece == null) return;
+                _dragItem = piece;
+                _dragFrom = view;
+                _dragRotated = piece.Rotated;
+                _carryMode = false;
+                _pressTime = Time.unscaledTime;
+                _pressPos = pos;
+                return;
             }
-            else if (e.type == EventType.MouseUp && e.button == 0 && _dragItem != null)
-            {
-                FinishDrag(e.mousePosition, area);
-                e.Use();
-            }
+        }
+
+        private void EndDrag()
+        {
+            _dragItem = null;
+            _carryMode = false;
         }
 
         // Dónde quedaría la esquina de la pieza arrastrada si se suelta en el mouse: centrada en la casilla de abajo.
@@ -449,11 +509,9 @@ namespace SurvivalEnTren.Items
             size = _dragRotated ? new Vector2Int(_dragItem.Item.SizeCells.y, _dragItem.Item.SizeCells.x) : _dragItem.Item.SizeCells;
             foreach (GridView candidate in new[] { _pack, _other })
             {
-                if (candidate == null) continue;
-                // Se acepta el mouse un poco afuera del borde si la pieza igual cabe adentro (centrada).
+                if (candidate == null || !candidate.Origin.Contains(mouse)) continue;
                 int cx = Mathf.FloorToInt((mouse.x - candidate.Origin.x) / Cell);
                 int cy = Mathf.FloorToInt((mouse.y - candidate.Origin.y) / Cell);
-                if (!candidate.Origin.Contains(mouse)) continue;
                 view = candidate;
                 x = Mathf.Clamp(cx - size.x / 2, 0, Mathf.Max(0, candidate.Grid.Width - size.x));
                 y = Mathf.Clamp(cy - size.y / 2, 0, Mathf.Max(0, candidate.Grid.Height - size.y));
@@ -463,25 +521,32 @@ namespace SurvivalEnTren.Items
             return false;
         }
 
-        private void FinishDrag(Vector2 mouse, Rect area)
+        // Suelta la pieza agarrada donde está el mouse: si entra, queda ahí; si no, vuelve a su lugar (o sigue en la mano si
+        // se agarró con un clic). Afuera del panel, desde la mochila, queda en el piso.
+        private bool TryDropDragged(Vector2 pos, bool keepOnFail)
         {
             GridItem piece = _dragItem;
             GridView from = _dragFrom;
             bool rotated = _dragRotated;
-            _dragItem = null;
-            if (DragTarget(mouse, out GridView target, out int x, out int y, out Vector2Int _))
+            if (DragTarget(pos, out GridView target, out int x, out int y, out Vector2Int _))
             {
-                if (TryMovePiece(piece, from.Grid, target.Grid, x, y, rotated)) return;
+                if (TryMovePiece(piece, from.Grid, target.Grid, x, y, rotated)) { EndDrag(); return true; }
                 Say("no entra ahí");
-                return;
+                if (!keepOnFail) EndDrag();
+                return false;
             }
-            if (!area.Contains(mouse)) DropToWorld(piece, from); // soltada afuera del panel: al piso
+            if (!_area.Contains(pos))
+            {
+                if (from.IsPlayerPack) { EndDrag(); DropToWorld(piece, from); return true; }
+                Say("del mueble no se tira al piso");
+            }
+            if (!keepOnFail) EndDrag();
+            return false;
         }
 
-        private void DrawDrag(Event e)
+        private void DrawDrag(Vector2 mouse)
         {
             if (_dragItem == null) return;
-            Vector2 mouse = e.mousePosition;
             Vector2Int size = _dragRotated ? new Vector2Int(_dragItem.Item.SizeCells.y, _dragItem.Item.SizeCells.x) : _dragItem.Item.SizeCells;
 
             // Sombra verde o roja de dónde quedaría.
@@ -499,12 +564,12 @@ namespace SurvivalEnTren.Items
             DrawPiece(r, _dragItem.Item, _dragRotated, 0.9f);
         }
 
-        private void DrawFooter(Rect area, Event e)
+        private void DrawFooter(Rect area, Vector2 mouse)
         {
             // Qué pieza se está mirando (mouse o cursor) y los controles.
             GridItem hover = null;
             foreach (GridView view in new[] { _pack, _other })
-                if (view != null && CellUnder(view, e.mousePosition, out int cx, out int cy)) hover = view.Grid.ItemAt(cx, cy);
+                if (view != null && CellUnder(view, mouse, out int cx, out int cy)) hover = view.Grid.ItemAt(cx, cy);
             hover ??= _dragItem ?? SelectedItem;
 
             float y = area.yMax - 74f;
@@ -522,10 +587,11 @@ namespace SurvivalEnTren.Items
             }
             _small.normal.textColor = new Color(1f, 1f, 1f, 0.55f);
             string keys = _other != null
-                ? "mouse: arrastrar (R gira)  ·  flechas + R + Enter (pasar al otro lado) + Supr (todo)  ·  Tab cerrar"
-                : "mouse: arrastrar (R gira; afuera = al piso)  ·  flechas + R + Enter (soltar) + Supr (todo)  ·  Tab cerrar";
+                ? "mouse: agarrá una pieza y soltala donde da verde (R gira; clic derecho cancela)  ·  teclado: flechas, R, Enter (pasar), Supr (todo)  ·  Tab cerrar"
+                : "mouse: agarrá una pieza y soltala donde da verde (R gira; afuera del panel = al piso; clic derecho cancela)  ·  teclado: flechas, R, Enter (soltar), Supr (todo)  ·  Tab cerrar";
             GUI.Label(new Rect(area.x + Pad, area.yMax - 40f, area.width - 2f * Pad, 36f), keys, _small);
         }
+
 
         private void EnsureStyles()
         {

@@ -380,6 +380,7 @@ namespace SurvivalEnTren.EditorTools
             SetReference(panel, "motor", motor);
             SetReference(panel, "look", motor.GetComponent<PlayerLook>());
             SetReference(panel, "interactor", motor.GetComponent<PlayerInteractor>());
+            SetReference(panel, "carrier", motor.GetComponent<PlayerCarrier>());
             SetReference(panel, "head", motor.transform.Find("Cabeza"));
             SetReference(panel, "toggle", FindActionReference("Player/ToggleBackpack"));
             SetReference(panel, "up", FindActionReference("Backpack/Up"));

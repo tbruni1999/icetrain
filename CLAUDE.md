@@ -55,3 +55,8 @@ Plan que se ejecutó:
 - Proyecto local: `E:\IceTrain\icetrain` (no usar la copia vieja en OneDrive).
 - Conexión con Unity: plugin oficial de Unity para Claude Code + Unity CLI (`unity status`, `unity command ...`). Probar teclado/mouse en Play requiere que Tomi enfoque la vista Game: las teclas simuladas no llegan si Unity no tiene el foco.
 - Siguiente: proponer el plan del M1 y esperar aprobación de Tomi antes de implementar.
+
+## Decisiones de Tomi pendientes de implementar (2026-10-13)
+- DECISIÓN (inventario): se mueve sin Enter, solo arrastrando con el mouse y soltando donde da verde. HECHO (M8, panel por Input System).
+- DECISIÓN (desmontaje): más adelante lo que se desarma (scrapea) se va a "farmear" pegándole a los objetos con la herramienta, no manteniendo E. Hoy el desmontaje es con E mantenido (M7); queda PENDIENTE para un milestone propio (herramienta en la mano, golpes, daño al objeto, rotura con materiales).
+- DECISIÓN (taller, M9): la sierra no acelera el desmontaje; si se fabrica es como herramienta que piden otras recetas de crafteo.
