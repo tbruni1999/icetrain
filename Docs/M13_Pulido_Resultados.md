@@ -36,7 +36,23 @@ Ver mediciones abajo. Cambio hecho: los dibujos de pantalla del juego (indicaci�
 
 ## Mediciones (Editor)
 
-RENDIMIENTO_PLACEHOLDER
+### Rendimiento (`m13_rendimiento.cs` y `m13_memoria_por_parte.cs`)
+
+Medido en el **Editor** (que suma su propio costo) y **sin el límite de 60 cuadros por segundo**: con el límite, todo da 16,7 ms porque es la espera del límite, no el costo. La meta del Anexo E.1 es 60 FPS: 16,7 ms por cuadro.
+
+| Situación | Tiempo por cuadro (CPU del hilo principal) | Peor cuadro | Memoria nueva por cuadro | Cambios de material | Triángulos |
+|---|---|---|---|---|---|
+| Tren quieto, adentro | **1,6 ms** | 8 ms | 8,9 KB | 37 | 97 mil |
+| Manejando a 38 km/h, adentro | **1,6 ms** | 10 ms | 8,9 KB | 35 | 81 mil |
+| Afuera, junto a la estación | **1,6 ms** | 9 ms | 8,9 KB | 38 | 119 mil |
+| Adentro del taller | **1,5 ms** | 9 ms | 8,9 KB | 24 | 20 mil |
+| Con la mochila abierta | **1,6 ms** | 10 ms | 10,0 KB | 69 | 79 mil |
+| Con el panel de pruebas (F1) visible | **1,8 ms** | 10 ms | **62,9 KB** | 34 | 80 mil |
+
+- **El juego usa alrededor de un 10 % del tiempo disponible** por cuadro en todas las situaciones del loop. Hay margen de sobra para el arte final, las tormentas y los lugares nuevos (el Anexo E.1 pide "conservar margen").
+- **Memoria nueva por cuadro:** con todo prendido bajó de **13,5 a 8,9 KB** al sacar el maquetado automático de los dibujos de pantalla. Apagando una parte por vez, ninguna del juego pesa más de 1,4 KB (la que más: las barras del HUD). El resto lo genera el propio Editor. El panel de pruebas sí genera mucho (63 KB, arma un texto largo en cada cuadro): por eso ahora **arranca oculto**.
+- **"Lotes de dibujo"** da 0 porque URP agrupa los dibujos de otra forma (SRP Batcher) y Unity no informa ese número; se informan los "cambios de material", que sí miden el costo de dibujo.
+- Los números finales tienen que salir de una **build** en la PC de referencia (Anexo E.1). Esto sirve para comparar y para saber dónde está el gasto.
 
 | Prueba | Resultado |
 |---|---|

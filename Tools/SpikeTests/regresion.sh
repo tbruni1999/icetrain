@@ -37,6 +37,10 @@ run m10_sonda_red SondaRed $M2
 run m10_slice Slice $M2
 run m11_lugares Lugares $M2
 run m11_loop Loop $M2
+run m12_guardado Guardado $M2
+run m13_sonido Sonido $M2
+run m13_dia_noche DiaNoche $M2
+run m13_menu_y_final MenuFinal $M2
 run parado_en_caja Caja $SP
 run recentrado Recentrado $SP
 echo "done" >> "$OUT"
