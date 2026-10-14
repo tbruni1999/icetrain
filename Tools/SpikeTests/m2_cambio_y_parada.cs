@@ -6,7 +6,8 @@
 
 var train = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Train.TrainMover>();
 var controls = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Train.TrainControls>();
-var lever = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Rail.SwitchLever>();
+SurvivalEnTren.Rail.SwitchLever lever = null;
+foreach (var l in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Rail.SwitchLever>()) if (l.Switch.gameObject.name == "Cambio_1") lever = l; // el cambio manual del M2 (hay otro, el de la bifurcación dañada del M10)
 var railSwitch = lever.Switch;
 var ride = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Spike.SpikeRideMetrics>();
 var motor = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Player.PlayerMotor>();

@@ -475,6 +475,8 @@ namespace SurvivalEnTren.EditorTools
             Vector3 palletSpot2 = train.transform.position + train.transform.forward * 26f + train.transform.right * 8.5f;
             BuildPallet(null, new Vector3(palletSpot2.x, 0f, palletSpot2.z), train.transform.eulerAngles.y - 15f, "salv_prueba_pallet_002",
                 LoadOrCreateRecipe("Pallet", "pallet", 3f, (LoadMaterials().Wood, 4)), backpackSettings, p); // la madera de la sierra y del estante
+            // Objetos desmontables junto a la bifurcación dañada (M10): con qué reunir el proyecto de vía hasta que haya mini-región (M11).
+            BuildSwitchSupplies(GameObject.Find("Cambio_2_Danado").GetComponent<RailSwitch>(), backpackSettings, p);
         }
 
         // Los cuatro materiales de la V1 (sección 9.1) como archivos de datos. Se crean una sola vez: si Tomi cambia
@@ -482,6 +484,8 @@ namespace SurvivalEnTren.EditorTools
         private sealed class MaterialSet
         {
             public ItemDefinition Wood, Metal, Cloth, Parts;
+            /// <summary>La pieza especial del M10 (aguja de cambio): no es un material, pero vive en el mismo lugar de datos.</summary>
+            public ItemDefinition SwitchPoint;
         }
 
 
@@ -496,6 +500,7 @@ namespace SurvivalEnTren.EditorTools
                 Metal = LoadOrCreateItem("Metal", "item_metal", "metal", "chapa", 3.5f, new Vector2Int(2, 2), new Color(0.55f, 0.57f, 0.6f), DrawSheetIcon),
                 Cloth = LoadOrCreateItem("Tela", "item_tela", "tela", "rollo de tela", 0.8f, new Vector2Int(1, 2), new Color(0.55f, 0.62f, 0.72f), DrawClothIcon),
                 Parts = LoadOrCreateItem("Componentes", "item_componentes", "componentes", "componente", 0.3f, new Vector2Int(1, 1), new Color(0.3f, 0.7f, 0.45f), DrawChipIcon),
+                SwitchPoint = LoadOrCreateItem("AgujaCambio", "item_aguja_cambio", "aguja de cambio", "aguja de cambio", 5f, new Vector2Int(1, 3), new Color(0.78f, 0.45f, 0.18f), DrawSwitchPointIcon),
             };
         }
 
@@ -596,6 +601,25 @@ namespace SurvivalEnTren.EditorTools
             FillDisc(t, t.width / 2, t.height - 22, 9, dark);
             FillDisc(t, t.width / 2, t.height - 22, 5, light);
             FillDisc(t, t.width / 2, t.height - 22, 2, dark);
+        }
+
+        // Aguja de cambio: una hoja de riel que se afina hacia la punta, sobre una base con dos bulones.
+        private static void DrawSwitchPointIcon(Texture2D t, Color c)
+        {
+            Color steel = new Color(0.62f, 0.64f, 0.66f);
+            Color dark = c * 0.55f; dark.a = 1f;
+            int mid = t.width / 2;
+            FillRect(t, 4, 6, t.width - 8, 22, dark);
+            FillRect(t, 7, 9, t.width - 14, 16, c);
+            FillDisc(t, 13, 17, 3, steel);
+            FillDisc(t, t.width - 14, 17, 3, steel);
+            for (int y = 30; y < t.height - 6; y++)
+            {
+                float k = (y - 30f) / (t.height - 36f);
+                int w = Mathf.RoundToInt(Mathf.Lerp(26f, 5f, k));
+                FillRect(t, mid - w / 2, y, w, 1, steel);
+            }
+            FillRect(t, mid - 1, 34, 2, t.height - 48, new Color(1f, 1f, 1f, 0.35f));
         }
 
         // Componente: un chip verde con patitas a los costados.
@@ -857,6 +881,7 @@ namespace SurvivalEnTren.EditorTools
             var annex = Group("Sala_Opcional", station);
             BoxMinMax("Escritorio", annex, new Vector3(-3.9f, 0f, -0.6f), new Vector3(-3.2f, 0.8f, 0.6f), p.Furniture);
             BuildBlueprintSheet(annex, new Vector3(-3.55f, 0.8f, 0.1f), Blueprints().ShelfProject);
+            PlaceBundle(annex, backpackSettings, materials.SwitchPoint, 1, new Vector3(-3.3f, 0.3f, 1.5f)); // la pieza especial del M10 (aguja de cambio)
 
             // Luz de emergencia tenue (sin energía, pero hay que poder ver adentro).
             var lamp = new GameObject("Luz_Emergencia").AddComponent<Light>();
@@ -2101,10 +2126,16 @@ namespace SurvivalEnTren.EditorTools
         }
 
         // Bifurcación dañada (M10, secciones 6.3 y 20.9): igual que el cambio del M2 pero al costado de la recta oeste y en mal
-        // estado. El mecanismo de la palanca está bajo un bloque de hielo (barreta, mantener E); sin hielo se ve la palanca
-        // rota, doblada contra el suelo. El estado vive en el RailSwitch (congelado → roto → reparado).
+        // estado. Tres capas que se resuelven en orden:
+        // 1) El mecanismo de la palanca está bajo un bloque de hielo (barreta, mantener E): estado CONGELADO.
+        // 2) Sin hielo se ve la palanca rota, doblada contra el suelo: estado ROTO. Una obra por fases (BuildSite) la repara:
+        //    fase 1, la palanca y su indicador (chapa x2, componente x1); fase 2, durmientes y placas en el cruce (madera x4,
+        //    chapa x3); fase 3, la aguja de cambio, la pieza especial (x1). Se ven como fantasmas y se vuelven sólidas.
+        // 3) Reparado: la obra apaga sus zonas y la palanca (una pieza de la obra) se usa como la del M2: estado REPARADO.
+        // El estado vive en el RailSwitch (congelado → roto → reparado). Los requisitos son PROPUESTA (placeholders de la 6.3).
         private static void BuildDamagedSwitch(RailSwitch damaged, Palette p)
         {
+            MaterialSet materials = LoadMaterials();
             Vector3 forward = new Vector3(0f, 0f, -1f);          // en la recta oeste el tren va hacia -z
             Vector3 left = Vector3.Cross(forward, Vector3.up);   // a la izquierda del sentido de marcha (adentro del óvalo)
             Vector3 basePoint = new Vector3(damaged.Point.x, 0f, damaged.Point.z) + left * 3.6f - forward * 6f;
@@ -2115,12 +2146,67 @@ namespace SurvivalEnTren.EditorTools
             BoxMinMax("Base", stand, new Vector3(-0.3f, 0f, -0.25f), new Vector3(0.3f, 0.3f, 0.25f), p.Track);
             Label("CAMBIO", stand, new Vector3(0f, 0.305f, -0.15f));
 
-            // La palanca rota: un muñón doblado que se ve cuando el hielo ya no la tapa.
+            // La palanca rota: un muñón doblado que se ve hasta que se repara la palanca.
             var broken = Group("Palanca_Rota", stand);
             broken.localPosition = new Vector3(0f, 0.3f, 0f);
             broken.localRotation = Quaternion.Euler(0f, 0f, 72f);
             BoxMinMax("Munon", broken, new Vector3(-0.03f, 0f, -0.03f), new Vector3(0.03f, 0.38f, 0.03f), p.Track, false);
             BoxMinMax("Punta", broken, new Vector3(-0.045f, 0.36f, -0.045f), new Vector3(0.045f, 0.42f, 0.045f), p.Post, false);
+
+            // Fase 1: la palanca y su indicador (las piezas que usa SwitchLever cuando está reparado).
+            var leverPivot = Group("Palanca_Eje", stand);
+            leverPivot.localPosition = new Vector3(0f, 0.3f, 0f);
+            BoxMinMax("Varilla", leverPivot, new Vector3(-0.03f, 0f, -0.03f), new Vector3(0.03f, 0.95f, 0.03f), p.Track);
+            BoxMinMax("Mango", leverPivot, new Vector3(-0.06f, 0.9f, -0.06f), new Vector3(0.06f, 1.02f, 0.06f), p.Fuel);
+            GameObject post = BoxMinMax("Poste_Indicador", stand, new Vector3(0.45f, 0f, -0.05f), new Vector3(0.55f, 1.9f, 0.05f), p.Post);
+            var indicator = Group("Indicador_Eje", stand);
+            indicator.localPosition = new Vector3(0.5f, 2.1f, 0f);
+            BoxMinMax("Cara_Directa", indicator, new Vector3(-0.3f, -0.2f, -0.015f), new Vector3(0.3f, 0.2f, 0.015f), p.Snow, false);
+            BoxMinMax("Cara_Desvio", indicator, new Vector3(-0.016f, -0.2f, -0.3f), new Vector3(0.016f, 0.2f, 0.3f), p.Fuel, false);
+            var phase1 = new List<GameObject> { leverPivot.gameObject, post, indicator.gameObject };
+
+            // Fase 2: durmientes nuevos entre los viejos del cruce y placas de unión sobre los rieles, en el arranque del desvío.
+            Material wood = Mat("Cama_Madera", new Color(0.55f, 0.4f, 0.24f));
+            var fork = Group("Cambio_2_Cruce", null);
+            fork.position = new Vector3(damaged.Point.x, RailTopHeight, damaged.Point.z);
+            var phase2 = new List<GameObject>();
+            foreach (float z in new[] { -1.2f, -3.6f, -6.0f, -8.4f })
+                phase2.Add(BoxMinMax($"Durmiente_Nuevo_{-z:0.0}", fork, new Vector3(-1.35f, -0.32f, z - 0.14f), new Vector3(1.35f, -0.13f, z + 0.14f), wood));
+            foreach (float x in new[] { -0.72f, 0.72f })
+                phase2.Add(BoxMinMax($"Placa_Union_{(x < 0 ? "A" : "B")}", fork, new Vector3(x - 0.07f, -0.17f, -2.7f), new Vector3(x + 0.07f, 0.03f, -2.1f), p.Track));
+
+            // Fase 3: la aguja de cambio (dos hojas dentro de los rieles) y la caja de maniobra que la mueve.
+            var phase3 = new List<GameObject>
+            {
+                BoxMinMax("Aguja_A", fork, new Vector3(-0.58f, -0.15f, -6.4f), new Vector3(-0.5f, 0.0f, -0.4f), p.Fuel),
+                BoxMinMax("Aguja_B", fork, new Vector3(0.5f, -0.15f, -6.4f), new Vector3(0.58f, 0.0f, -0.4f), p.Fuel),
+                BoxMinMax("Caja_Maniobra", fork, new Vector3(1.55f, -0.5f, -1.6f), new Vector3(2.15f, 0.1f, -0.9f), p.PostMarker),
+            };
+
+            BuildProject project = LoadOrCreateBuildProject("CambioOeste", "bifurcación oeste", new float[] { 0f, 0f, 0f, 0f },
+                ("palanca", new[] { (materials.Metal, 2), (materials.Parts, 1) }),
+                ("durmientes y riel", new[] { (materials.Wood, 4), (materials.Metal, 3) }),
+                ("aguja de cambio", new[] { (materials.SwitchPoint, 1) }));
+
+            // La obra y sus zonas de uso (para apuntar aunque haya piezas fantasma): una sobre la palanca y otra sobre el cruce.
+            var siteRoot = Group("Cambio_2_Obra", null);
+            var standZone = BoxMinMax("Zona_Palanca", siteRoot, basePoint + new Vector3(-1.3f, 0f, -1.2f), basePoint + new Vector3(1.3f, 2.5f, 1.2f), p.Furniture);
+            standZone.GetComponent<Collider>().isTrigger = true;
+            Object.DestroyImmediate(standZone.GetComponent<MeshRenderer>());
+            var forkZone = BoxMinMax("Zona_Cruce", siteRoot, fork.position + new Vector3(-2.3f, -0.4f, -8.9f), fork.position + new Vector3(2.4f, 1.0f, 0.4f), p.Furniture);
+            forkZone.GetComponent<Collider>().isTrigger = true;
+            Object.DestroyImmediate(forkZone.GetComponent<MeshRenderer>());
+            BuildSite site = NewBuildSite(siteRoot, project, "obra_cambio_oeste_001",
+                new List<GameObject[]> { phase1.ToArray(), phase2.ToArray(), phase3.ToArray() }, null);
+            var siteSo = new SerializedObject(site);
+            siteSo.FindProperty("zonesOffWhenComplete").boolValue = true; // terminada, se apunta directo a la palanca
+            siteSo.ApplyModifiedPropertiesWithoutUndo();
+
+            // La palanca (la misma que la del M2) usa las piezas de la fase 1; no se mueve hasta que el cambio esté reparado.
+            var lever = stand.gameObject.AddComponent<SwitchLever>();
+            SetReference(lever, "railSwitch", damaged);
+            SetReference(lever, "leverPivot", leverPivot);
+            SetReference(lever, "indicatorPivot", indicator);
 
             // Bloque de hielo grueso sobre todo el mecanismo (más grueso que cualquier zona de uso: se apunta primero al hielo).
             Material iceMat = Mat("Hielo", new Color(0.72f, 0.88f, 0.97f));
@@ -2140,6 +2226,25 @@ namespace SurvivalEnTren.EditorTools
             var link = stand.gameObject.AddComponent<DamagedSwitch>();
             SetReference(link, "railSwitch", damaged);
             SetReference(link, "ice", frozen);
+            SetReference(link, "repair", site);
+            SetReference(link, "brokenParts", broken.gameObject);
+        }
+
+        // Los objetos desmontables junto a la bifurcación: con qué reunir el proyecto de vía mientras no hay mini-región (el M11
+        // los reemplaza por lugares de verdad). Un pallet (madera), dos armarios (chapas), un tablero (componentes).
+        private static void BuildSwitchSupplies(RailSwitch damaged, BackpackSettings backpackSettings, Palette p)
+        {
+            MaterialSet materials = LoadMaterials();
+            Vector3 point = damaged.Point;
+            Vector3 interior = new Vector3(point.x + 8f, 0f, point.z); // hacia adentro del óvalo, pasando la palanca
+            BuildPallet(null, interior + new Vector3(0f, 0f, 12f), 20f, "salv_cambio_pallet_001",
+                LoadOrCreateRecipe("Pallet", "pallet", 3f, (materials.Wood, 4)), backpackSettings, p);
+            BuildLocker(null, interior + new Vector3(2f, 0f, 6f), 90f, "salv_cambio_armario_001",
+                LoadOrCreateRecipe("ArmarioMetalico", "armario metálico", 6f, (materials.Metal, 3)), backpackSettings, p);
+            BuildLocker(null, interior + new Vector3(2f, 0f, 9f), 90f, "salv_cambio_armario_002",
+                LoadOrCreateRecipe("ArmarioMetalico", "armario metálico", 6f, (materials.Metal, 3)), backpackSettings, p);
+            BuildPowerPanel(null, interior + new Vector3(0f, 0f, 2f), 90f, "salv_cambio_tablero_001",
+                LoadOrCreateRecipe("TableroElectrico", "tablero eléctrico", 5f, (materials.Parts, 2)), backpackSettings);
         }
 
         // Tope al final de la vía muerta: la cara de la placa coincide con el final de la vía; la placa

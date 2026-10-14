@@ -12,7 +12,8 @@ float[] SPEEDS_KMH = { 5f, 10f, 20f, 30f };
 var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
 var train = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Train.TrainMover>();
 var controls = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Train.TrainControls>();
-var lever = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Rail.SwitchLever>();
+SurvivalEnTren.Rail.SwitchLever lever = null;
+foreach (var l in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Rail.SwitchLever>()) if (l.Switch.gameObject.name == "Cambio_1") lever = l; // el cambio manual del M2 (hay otro, el de la bifurcación dañada del M10)
 var spur = UnityEngine.GameObject.Find("Tramo_Desvio_ViaMuerta").GetComponent<SurvivalEnTren.Rail.RailSegment>();
 var original = (SurvivalEnTren.Train.TrainDriveSettings)typeof(SurvivalEnTren.Train.TrainControls).GetField("settings", flags).GetValue(controls);
 var copy = UnityEngine.Object.Instantiate(original);

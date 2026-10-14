@@ -19,6 +19,8 @@ namespace SurvivalEnTren.Rail
         [SerializeField] private FrozenDoor ice;
         [Tooltip("La obra de reparación (opcional: sin obra, el cambio queda roto).")]
         [SerializeField] private BuildSite repair;
+        [Tooltip("La palanca rota (el muñón doblado): se ve hasta que la obra repara la palanca (fase 1).")]
+        [SerializeField] private GameObject brokenParts;
 
         public RailSwitch Switch => railSwitch;
 
@@ -28,6 +30,7 @@ namespace SurvivalEnTren.Rail
             if (repair != null) repair.Changed += OnRepairChanged;
             railSwitch.ConditionChanged += ApplyGate;
             ApplyGate();
+            ApplyBrokenParts();
         }
 
         private void OnDestroy()
@@ -44,7 +47,13 @@ namespace SurvivalEnTren.Rail
 
         private void OnRepairChanged()
         {
+            ApplyBrokenParts();
             if (repair.IsComplete && railSwitch.Condition == RailSwitchCondition.Broken) railSwitch.SetCondition(RailSwitchCondition.Repaired);
+        }
+
+        private void ApplyBrokenParts()
+        {
+            if (brokenParts != null && repair != null) brokenParts.SetActive(repair.Level < 1);
         }
 
         // La obra solo se puede empezar cuando el hielo ya no tapa el mecanismo.
