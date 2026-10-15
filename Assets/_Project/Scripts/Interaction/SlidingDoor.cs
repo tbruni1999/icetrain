@@ -5,6 +5,8 @@ namespace SurvivalEnTren.Interaction
 {
     /// <summary>
     /// Puerta corrediza (M3): E abre y cierra, la hoja se desliza animada y, cerrada, bloquea el paso.
+    /// - También sirve para una puerta con bisagra (las del vagón MR-04): la hoja gira "openEuler" grados sobre su pivote
+    ///   (la bisagra) en vez de correrse, o las dos cosas a la vez.
     /// - No se cierra si hay alguien o algo suelto en el hueco (no aplasta ni patea cosas).
     /// - El hueco tiene una zona de interacción (un collider "trigger" que no bloquea), para poder
     ///   cerrar la puerta abierta apuntando al hueco aunque la hoja quede afuera de la vista.
@@ -16,6 +18,8 @@ namespace SurvivalEnTren.Interaction
         [SerializeField] private Transform leaf;
         [Tooltip("Cuánto se corre la hoja al abrirse, en coordenadas locales de la puerta (metros).")]
         [SerializeField] private Vector3 openOffset = new Vector3(0f, 0f, -1.05f);
+        [Tooltip("Cuánto gira la hoja al abrirse sobre su pivote (la bisagra), en grados locales. Cero en una corrediza.")]
+        [SerializeField] private Vector3 openEuler;
         [Tooltip("Centro y medio tamaño del hueco (local), para no cerrar si hay alguien o algo adentro.")]
         [SerializeField] private Vector3 doorwayCenter;
         [SerializeField] private Vector3 doorwayHalfExtents = new Vector3(0.35f, 1f, 0.5f);
@@ -29,6 +33,7 @@ namespace SurvivalEnTren.Interaction
         private static readonly Collider[] Overlaps = new Collider[8];
 
         private Vector3 _leafClosedLocal;
+        private Quaternion _leafClosedRotation;
         private bool _open;
         private float _openness;
         private float _shakeTimeLeft;
@@ -49,6 +54,7 @@ namespace SurvivalEnTren.Interaction
         private void Awake()
         {
             _leafClosedLocal = leaf.localPosition;
+            _leafClosedRotation = leaf.localRotation;
             _open = startOpen;
             _openness = startOpen ? 1f : 0f;
             ApplyLeaf(0f);
@@ -99,6 +105,8 @@ namespace SurvivalEnTren.Interaction
             float eased = Mathf.SmoothStep(0f, 1f, _openness);
             Vector3 shakeOffset = openOffset.normalized * shake;
             leaf.localPosition = _leafClosedLocal + openOffset * eased + shakeOffset;
+            if (openEuler != Vector3.zero) // con bisagra: la sacudida es un giro chico (metros de sacudida a grados, en la punta de la hoja)
+                leaf.localRotation = _leafClosedRotation * Quaternion.Euler(openEuler * eased + openEuler.normalized * shake * 60f);
         }
 
         private void OnDrawGizmosSelected()

@@ -1,0 +1,37 @@
+Texturas escaneadas: licencia CC0 (dominio público). No requieren atribución; se listan por prolijidad.
+
+MT_PinturaVerde: Poly Haven · green_metal_rust · Rob Tuytel · https://polyhaven.com/a/green_metal_rust
+MT_PinturaVerdeBaja: Poly Haven · green_metal_rust · Rob Tuytel · https://polyhaven.com/a/green_metal_rust
+MT_PinturaCrema: Poly Haven · green_metal_rust · Rob Tuytel · https://polyhaven.com/a/green_metal_rust
+MT_PinturaOcre: Poly Haven · green_metal_rust · Rob Tuytel · https://polyhaven.com/a/green_metal_rust
+MT_PinturaRoja: Poly Haven · green_metal_rust · Rob Tuytel · https://polyhaven.com/a/green_metal_rust
+MT_PinturaAzulIndustrial: Poly Haven · green_metal_rust · Rob Tuytel · https://polyhaven.com/a/green_metal_rust
+MT_PinturaGrisMaquinaria: Poly Haven · green_metal_rust · Rob Tuytel · https://polyhaven.com/a/green_metal_rust
+MT_PinturaBlancoSucio: Poly Haven · green_metal_rust · Rob Tuytel · https://polyhaven.com/a/green_metal_rust
+MT_PinturaNegra: Poly Haven · green_metal_rust · Rob Tuytel · https://polyhaven.com/a/green_metal_rust
+MT_PinturaNaranjaSeguridad: Poly Haven · green_metal_rust · Rob Tuytel · https://polyhaven.com/a/green_metal_rust
+MT_AceroOxidado: Poly Haven · rusty_metal_05 · Amal Kumar · https://polyhaven.com/a/rusty_metal_05
+MT_ChapaCorrugada: Poly Haven · worn_corrugated_iron · Jenelle van Heerden, Dimitrios Savva · https://polyhaven.com/a/worn_corrugated_iron
+MT_ChapaCorrugadaVerde: Poly Haven · container_side · Dimitrios Savva · https://polyhaven.com/a/container_side
+MT_ChapaDiamante: Poly Haven · metal_plate · Rob Tuytel · https://polyhaven.com/a/metal_plate
+MT_Madera: Poly Haven · wood_table_worn · Dimitrios Savva, Rico Cilliers · https://polyhaven.com/a/wood_table_worn
+MT_TablasMadera: Poly Haven · wood_planks · Amal Kumar · https://polyhaven.com/a/wood_planks
+MT_MaderaIntemperie: Poly Haven · rough_wood · Rob Tuytel · https://polyhaven.com/a/rough_wood
+MT_TablasIntemperie: Poly Haven · wood_planks_grey · Rob Tuytel · https://polyhaven.com/a/wood_planks_grey
+MT_MaderaPintada: Poly Haven · green_rough_planks · Rob Tuytel · https://polyhaven.com/a/green_rough_planks
+MT_Terciado: Poly Haven · plywood · Rob Tuytel · https://polyhaven.com/a/plywood
+MT_Corteza: Poly Haven · bark_brown_02 · Rob Tuytel · https://polyhaven.com/a/bark_brown_02
+MT_Hormigon: Poly Haven · concrete_floor_worn_001 · Dimitrios Savva, Rico Cilliers · https://polyhaven.com/a/concrete_floor_worn_001
+MT_HormigonManchado: Poly Haven · concrete_floor_02 · Rob Tuytel · https://polyhaven.com/a/concrete_floor_02
+MT_Ladrillo: Poly Haven · red_brick_03 · Rob Tuytel · https://polyhaven.com/a/red_brick_03
+MT_Azulejo: ambientCG · Tiles002 · ambientCG · https://ambientcg.com/a/Tiles002
+MT_Balasto: Poly Haven · terrain_red_01 · Rob Tuytel · https://polyhaven.com/a/terrain_red_01
+MT_Nieve: Poly Haven · snow_02 · Rob Tuytel · https://polyhaven.com/a/snow_02
+MT_NieveCompacta: ambientCG · Snow006 · ambientCG · https://ambientcg.com/a/Snow006
+MT_NieveSucia: Poly Haven · snow_03 · Rob Tuytel · https://polyhaven.com/a/snow_03
+MT_NievePisada: Poly Haven · snow_01 · Rob Tuytel · https://polyhaven.com/a/snow_01
+MT_Lona: Poly Haven · hessian_380 · colormass, Rico Cilliers · https://polyhaven.com/a/hessian_380
+MT_LonaMarron: Poly Haven · hessian_380 · colormass, Rico Cilliers · https://polyhaven.com/a/hessian_380
+MT_TelaManta: Poly Haven · knitted_fleece · colormass, Rico Cilliers · https://polyhaven.com/a/knitted_fleece
+MT_TelaGris: Poly Haven · poly_wool_herringbone · colormass, Rico Cilliers · https://polyhaven.com/a/poly_wool_herringbone
+MT_Cuero: Poly Haven · brown_leather · Rob Tuytel · https://polyhaven.com/a/brown_leather

@@ -1,0 +1,913 @@
+[
+ {
+  "nombre": "pintura_verde",
+  "material": "MT_PinturaVerde",
+  "categoria": "pinturas",
+  "BaseColor": "MT_PinturaVerde_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Verde ferroviario principal. Pintura con óxido disperso y saltaduras.",
+  "escala_m": 1.0,
+  "fuente": "Poly Haven",
+  "asset": "green_metal_rust",
+  "autores": [
+   "Rob Tuytel"
+  ],
+  "url": "https://polyhaven.com/a/green_metal_rust",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "pintura_verde_baja",
+  "material": "MT_PinturaVerdeBaja",
+  "categoria": "pinturas",
+  "BaseColor": "MT_PinturaVerdeBaja_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Verde de partes bajas y sucias. Pintura con óxido disperso y saltaduras.",
+  "escala_m": 1.0,
+  "fuente": "Poly Haven",
+  "asset": "green_metal_rust",
+  "autores": [
+   "Rob Tuytel"
+  ],
+  "url": "https://polyhaven.com/a/green_metal_rust",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "pintura_crema",
+  "material": "MT_PinturaCrema",
+  "categoria": "pinturas",
+  "BaseColor": "MT_PinturaCrema_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Franjas y detalles. Pintura con óxido disperso y saltaduras.",
+  "escala_m": 1.0,
+  "fuente": "Poly Haven",
+  "asset": "green_metal_rust",
+  "autores": [
+   "Rob Tuytel"
+  ],
+  "url": "https://polyhaven.com/a/green_metal_rust",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "pintura_ocre",
+  "material": "MT_PinturaOcre",
+  "categoria": "pinturas",
+  "BaseColor": "MT_PinturaOcre_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Barandas, manijas, seguridad. Pintura con óxido disperso y saltaduras.",
+  "escala_m": 1.0,
+  "fuente": "Poly Haven",
+  "asset": "green_metal_rust",
+  "autores": [
+   "Rob Tuytel"
+  ],
+  "url": "https://polyhaven.com/a/green_metal_rust",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "pintura_roja",
+  "material": "MT_PinturaRoja",
+  "categoria": "pinturas",
+  "BaseColor": "MT_PinturaRoja_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Acento: emergencia, matafuegos, interactuables. Pintura con óxido disperso y saltaduras.",
+  "escala_m": 1.0,
+  "fuente": "Poly Haven",
+  "asset": "green_metal_rust",
+  "autores": [
+   "Rob Tuytel"
+  ],
+  "url": "https://polyhaven.com/a/green_metal_rust",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "pintura_azul_industrial",
+  "material": "MT_PinturaAzulIndustrial",
+  "categoria": "pinturas",
+  "BaseColor": "MT_PinturaAzulIndustrial_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Maquinaria, tanques. Pintura con óxido disperso y saltaduras.",
+  "escala_m": 1.0,
+  "fuente": "Poly Haven",
+  "asset": "green_metal_rust",
+  "autores": [
+   "Rob Tuytel"
+  ],
+  "url": "https://polyhaven.com/a/green_metal_rust",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "pintura_gris_maquinaria",
+  "material": "MT_PinturaGrisMaquinaria",
+  "categoria": "pinturas",
+  "BaseColor": "MT_PinturaGrisMaquinaria_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Motores, carcasas, gabinetes. Pintura con óxido disperso y saltaduras.",
+  "escala_m": 1.0,
+  "fuente": "Poly Haven",
+  "asset": "green_metal_rust",
+  "autores": [
+   "Rob Tuytel"
+  ],
+  "url": "https://polyhaven.com/a/green_metal_rust",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "pintura_blanco_sucio",
+  "material": "MT_PinturaBlancoSucio",
+  "categoria": "pinturas",
+  "BaseColor": "MT_PinturaBlancoSucio_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Señalética, interiores de servicio. Pintura con óxido disperso y saltaduras.",
+  "escala_m": 1.0,
+  "fuente": "Poly Haven",
+  "asset": "green_metal_rust",
+  "autores": [
+   "Rob Tuytel"
+  ],
+  "url": "https://polyhaven.com/a/green_metal_rust",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "pintura_negra",
+  "material": "MT_PinturaNegra",
+  "categoria": "pinturas",
+  "BaseColor": "MT_PinturaNegra_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Estructuras, rejas, faroles. Pintura con óxido disperso y saltaduras.",
+  "escala_m": 1.0,
+  "fuente": "Poly Haven",
+  "asset": "green_metal_rust",
+  "autores": [
+   "Rob Tuytel"
+  ],
+  "url": "https://polyhaven.com/a/green_metal_rust",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "pintura_naranja_seguridad",
+  "material": "MT_PinturaNaranjaSeguridad",
+  "categoria": "pinturas",
+  "BaseColor": "MT_PinturaNaranjaSeguridad_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Equipos de vía, señales de peligro. Pintura con óxido disperso y saltaduras.",
+  "escala_m": 1.0,
+  "fuente": "Poly Haven",
+  "asset": "green_metal_rust",
+  "autores": [
+   "Rob Tuytel"
+  ],
+  "url": "https://polyhaven.com/a/green_metal_rust",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "panel_interior",
+  "material": "MT_PanelInterior",
+  "categoria": "pinturas",
+  "BaseColor": "MT_PanelInterior_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Panel interior cálido con manchas de humedad.",
+  "escala_m": 1.0,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "franjas_seguridad",
+  "material": "MT_FranjasSeguridad",
+  "categoria": "pinturas",
+  "BaseColor": "MT_FranjasSeguridad_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Franjas diagonales amarillo/negro gastadas: bordes, quitanieves, peligros.",
+  "escala_m": 0.6,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "acero_oscuro",
+  "material": "MT_AceroOscuro",
+  "categoria": "metales",
+  "BaseColor": "MT_AceroOscuro_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Estructura, herrajes, chasis.",
+  "escala_m": 1.0,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "metal_gastado",
+  "material": "MT_MetalGastado",
+  "categoria": "metales",
+  "BaseColor": "MT_MetalGastado_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Metal desnudo pulido por uso: filos, puntas, pisadas.",
+  "escala_m": 1.0,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "hojalata",
+  "material": "MT_Hojalata",
+  "categoria": "metales",
+  "BaseColor": "MT_Hojalata_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Latas, chapa fina.",
+  "escala_m": 0.3,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "acero_galvanizado",
+  "material": "MT_AceroGalvanizado",
+  "categoria": "metales",
+  "BaseColor": "MT_AceroGalvanizado_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Caños, postes, chapa lisa galvanizada.",
+  "escala_m": 1.0,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "aluminio",
+  "material": "MT_Aluminio",
+  "categoria": "metales",
+  "BaseColor": "MT_Aluminio_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Aluminio cepillado: equipos, cajas de instrumentos.",
+  "escala_m": 0.5,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "hierro_fundido",
+  "material": "MT_HierroFundido",
+  "categoria": "metales",
+  "BaseColor": "MT_HierroFundido_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Estufas, tapas, ruedas, piezas pesadas.",
+  "escala_m": 0.5,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "acero_oxidado",
+  "material": "MT_AceroOxidado",
+  "categoria": "metales",
+  "BaseColor": "MT_AceroOxidado_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Óxido avanzado con restos de pintura verde: chatarra, abandono.",
+  "escala_m": 1.25,
+  "fuente": "Poly Haven",
+  "asset": "rusty_metal_05",
+  "autores": [
+   "Amal Kumar"
+  ],
+  "url": "https://polyhaven.com/a/rusty_metal_05",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "cobre",
+  "material": "MT_Cobre",
+  "categoria": "metales",
+  "BaseColor": "MT_Cobre_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Válvulas, caños, cables con pátina verde.",
+  "escala_m": 0.4,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "chapa_corrugada",
+  "material": "MT_ChapaCorrugada",
+  "categoria": "metales",
+  "BaseColor": "MT_ChapaCorrugada_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Chapa ondulada galvanizada con chorreaduras: galpones, techos, POIs.",
+  "escala_m": 1.8,
+  "fuente": "Poly Haven",
+  "asset": "worn_corrugated_iron",
+  "autores": [
+   "Jenelle van Heerden",
+   "Dimitrios Savva"
+  ],
+  "url": "https://polyhaven.com/a/worn_corrugated_iron",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "chapa_corrugada_verde",
+  "material": "MT_ChapaCorrugadaVerde",
+  "categoria": "metales",
+  "BaseColor": "MT_ChapaCorrugadaVerde_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Chapa ondulada pintada de verde ferroviario.",
+  "escala_m": 1.94,
+  "fuente": "Poly Haven",
+  "asset": "container_side",
+  "autores": [
+   "Dimitrios Savva"
+  ],
+  "url": "https://polyhaven.com/a/container_side",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "chapa_diamante",
+  "material": "MT_ChapaDiamante",
+  "categoria": "metales",
+  "BaseColor": "MT_ChapaDiamante_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Piso de chapa antideslizante con relieve: pisos, escalones, plataformas.",
+  "escala_m": 0.5,
+  "fuente": "Poly Haven",
+  "asset": "metal_plate",
+  "autores": [
+   "Rob Tuytel"
+  ],
+  "url": "https://polyhaven.com/a/metal_plate",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "rejilla",
+  "material": "MT_Rejilla",
+  "categoria": "metales",
+  "BaseColor": "MT_Rejilla_BaseColor.png",
+  "alfa": true,
+  "descripcion": "Rejilla de piso con recorte transparente (Alpha Clipping): escalones, pasarelas.",
+  "escala_m": 0.3,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "madera",
+  "material": "MT_Madera",
+  "categoria": "maderas",
+  "BaseColor": "MT_Madera_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Veta continua para piezas modeladas: mangos, tablas sueltas, muebles.",
+  "escala_m": 0.55,
+  "fuente": "Poly Haven",
+  "asset": "wood_table_worn",
+  "autores": [
+   "Dimitrios Savva",
+   "Rico Cilliers"
+  ],
+  "url": "https://polyhaven.com/a/wood_table_worn",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "tablas_madera",
+  "material": "MT_TablasMadera",
+  "categoria": "maderas",
+  "BaseColor": "MT_TablasMadera_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Tablas con juntas en la textura: pisos y paredes planas.",
+  "escala_m": 1.5,
+  "fuente": "Poly Haven",
+  "asset": "wood_planks",
+  "autores": [
+   "Amal Kumar"
+  ],
+  "url": "https://polyhaven.com/a/wood_planks",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "madera_intemperie",
+  "material": "MT_MaderaIntemperie",
+  "categoria": "maderas",
+  "BaseColor": "MT_MaderaIntemperie_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Madera gris erosionada por el clima: cercas, cajones viejos afuera.",
+  "escala_m": 0.5,
+  "fuente": "Poly Haven",
+  "asset": "rough_wood",
+  "autores": [
+   "Rob Tuytel"
+  ],
+  "url": "https://polyhaven.com/a/rough_wood",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "tablas_intemperie",
+  "material": "MT_TablasIntemperie",
+  "categoria": "maderas",
+  "BaseColor": "MT_TablasIntemperie_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Tablas grises erosionadas: galpones, andenes.",
+  "escala_m": 1.5,
+  "fuente": "Poly Haven",
+  "asset": "wood_planks_grey",
+  "autores": [
+   "Rob Tuytel"
+  ],
+  "url": "https://polyhaven.com/a/wood_planks_grey",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "madera_pintada",
+  "material": "MT_MaderaPintada",
+  "categoria": "maderas",
+  "BaseColor": "MT_MaderaPintada_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Tablas pintadas de verde, descascaradas.",
+  "escala_m": 1.5,
+  "fuente": "Poly Haven",
+  "asset": "green_rough_planks",
+  "autores": [
+   "Rob Tuytel"
+  ],
+  "url": "https://polyhaven.com/a/green_rough_planks",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "terciado",
+  "material": "MT_Terciado",
+  "categoria": "maderas",
+  "BaseColor": "MT_Terciado_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Terciado o fenólico: cajas, tapas, paneles.",
+  "escala_m": 0.5,
+  "fuente": "Poly Haven",
+  "asset": "plywood",
+  "autores": [
+   "Rob Tuytel"
+  ],
+  "url": "https://polyhaven.com/a/plywood",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "durmiente",
+  "material": "MT_Durmiente",
+  "categoria": "maderas",
+  "BaseColor": "MT_Durmiente_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Madera con creosota y grietas: durmientes, postes.",
+  "escala_m": 1.0,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "corteza",
+  "material": "MT_Corteza",
+  "categoria": "maderas",
+  "BaseColor": "MT_Corteza_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Corteza de árbol: leña, troncos.",
+  "escala_m": 1.0,
+  "fuente": "Poly Haven",
+  "asset": "bark_brown_02",
+  "autores": [
+   "Rob Tuytel"
+  ],
+  "url": "https://polyhaven.com/a/bark_brown_02",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "hormigon",
+  "material": "MT_Hormigon",
+  "categoria": "construccion",
+  "BaseColor": "MT_Hormigon_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Hormigón con poros: andenes, bases, muros.",
+  "escala_m": 3.0,
+  "fuente": "Poly Haven",
+  "asset": "concrete_floor_worn_001",
+  "autores": [
+   "Dimitrios Savva",
+   "Rico Cilliers"
+  ],
+  "url": "https://polyhaven.com/a/concrete_floor_worn_001",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "hormigon_manchado",
+  "material": "MT_HormigonManchado",
+  "categoria": "construccion",
+  "BaseColor": "MT_HormigonManchado_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Hormigón muy manchado: interiores abandonados, sótanos.",
+  "escala_m": 2.0,
+  "fuente": "Poly Haven",
+  "asset": "concrete_floor_02",
+  "autores": [
+   "Rob Tuytel"
+  ],
+  "url": "https://polyhaven.com/a/concrete_floor_02",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "ladrillo",
+  "material": "MT_Ladrillo",
+  "categoria": "construccion",
+  "BaseColor": "MT_Ladrillo_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Ladrillo con salitre: estaciones, depósitos.",
+  "escala_m": 1.0,
+  "fuente": "Poly Haven",
+  "asset": "red_brick_03",
+  "autores": [
+   "Rob Tuytel"
+  ],
+  "url": "https://polyhaven.com/a/red_brick_03",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "azulejo",
+  "material": "MT_Azulejo",
+  "categoria": "construccion",
+  "BaseColor": "MT_Azulejo_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Azulejo blanco sucio: baños, cocinas de estación.",
+  "escala_m": 0.6,
+  "fuente": "ambientCG",
+  "asset": "Tiles002",
+  "autores": [
+   "ambientCG"
+  ],
+  "url": "https://ambientcg.com/a/Tiles002",
+  "licencia": "CC0",
+  "tipo": "escaneada",
+  "escala_estimada": true
+ },
+ {
+  "nombre": "linoleo",
+  "material": "MT_Linoleo",
+  "categoria": "construccion",
+  "BaseColor": "MT_Linoleo_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Piso de linóleo gastado: oficinas, vagones de pasajeros.",
+  "escala_m": 1.0,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "balasto",
+  "material": "MT_Balasto",
+  "categoria": "suelos",
+  "BaseColor": "MT_Balasto_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Piedra partida de vía.",
+  "escala_m": 2.0,
+  "fuente": "Poly Haven",
+  "asset": "terrain_red_01",
+  "autores": [
+   "Rob Tuytel"
+  ],
+  "url": "https://polyhaven.com/a/terrain_red_01",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "tierra_congelada",
+  "material": "MT_TierraCongelada",
+  "categoria": "suelos",
+  "BaseColor": "MT_TierraCongelada_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Tierra helada con piedritas, escarcha y charcos de hielo.",
+  "escala_m": 2.0,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "nieve",
+  "material": "MT_Nieve",
+  "categoria": "nieve_hielo",
+  "BaseColor": "MT_Nieve_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Nieve recién caída (la que usan nieve_superior y monticulo).",
+  "escala_m": 2.0,
+  "fuente": "Poly Haven",
+  "asset": "snow_02",
+  "autores": [
+   "Rob Tuytel"
+  ],
+  "url": "https://polyhaven.com/a/snow_02",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "nieve_compacta",
+  "material": "MT_NieveCompacta",
+  "categoria": "nieve_hielo",
+  "BaseColor": "MT_NieveCompacta_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Nieve pegada por viento o movimiento (la que usa costra).",
+  "escala_m": 2.5,
+  "fuente": "ambientCG",
+  "asset": "Snow006",
+  "autores": [
+   "ambientCG"
+  ],
+  "url": "https://ambientcg.com/a/Snow006",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "nieve_sucia",
+  "material": "MT_NieveSucia",
+  "categoria": "nieve_hielo",
+  "BaseColor": "MT_NieveSucia_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Nieve con hollín y barro: junto a vías, motores, caminos.",
+  "escala_m": 2.0,
+  "fuente": "Poly Haven",
+  "asset": "snow_03",
+  "autores": [
+   "Rob Tuytel"
+  ],
+  "url": "https://polyhaven.com/a/snow_03",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "nieve_pisada",
+  "material": "MT_NievePisada",
+  "categoria": "nieve_hielo",
+  "BaseColor": "MT_NievePisada_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Nieve aplastada por pasos: caminos, entradas.",
+  "escala_m": 2.0,
+  "fuente": "Poly Haven",
+  "asset": "snow_01",
+  "autores": [
+   "Rob Tuytel"
+  ],
+  "url": "https://polyhaven.com/a/snow_01",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "hielo",
+  "material": "MT_Hielo",
+  "categoria": "nieve_hielo",
+  "BaseColor": "MT_Hielo_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Hielo con grietas y burbujas: charcos, superficies congeladas.",
+  "escala_m": 1.5,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "escarcha",
+  "material": "MT_Escarcha",
+  "categoria": "nieve_hielo",
+  "BaseColor": "MT_Escarcha_BaseColor.png",
+  "alfa": true,
+  "descripcion": "Escarcha con alfa para poner sobre vidrios y metales.",
+  "escala_m": 0.5,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "vidrio_sucio",
+  "material": "MT_VidrioSucio",
+  "categoria": "vidrios",
+  "BaseColor": "MT_VidrioSucio_BaseColor.png",
+  "alfa": true,
+  "descripcion": "Vidrio con manchas y polvo, transparente.",
+  "escala_m": 0.8,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "lona",
+  "material": "MT_Lona",
+  "categoria": "textiles",
+  "BaseColor": "MT_Lona_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Lona verde oliva: carpas, coberturas, bolsos.",
+  "escala_m": 0.27,
+  "fuente": "Poly Haven",
+  "asset": "hessian_380",
+  "autores": [
+   "colormass",
+   "Rico Cilliers"
+  ],
+  "url": "https://polyhaven.com/a/hessian_380",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "lona_marron",
+  "material": "MT_LonaMarron",
+  "categoria": "textiles",
+  "BaseColor": "MT_LonaMarron_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Lona marrón: sacos, cubiertas.",
+  "escala_m": 0.27,
+  "fuente": "Poly Haven",
+  "asset": "hessian_380",
+  "autores": [
+   "colormass",
+   "Rico Cilliers"
+  ],
+  "url": "https://polyhaven.com/a/hessian_380",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "tela_manta",
+  "material": "MT_TelaManta",
+  "categoria": "textiles",
+  "BaseColor": "MT_TelaManta_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Manta de lana verde.",
+  "escala_m": 0.27,
+  "fuente": "Poly Haven",
+  "asset": "knitted_fleece",
+  "autores": [
+   "colormass",
+   "Rico Cilliers"
+  ],
+  "url": "https://polyhaven.com/a/knitted_fleece",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "tela_gris",
+  "material": "MT_TelaGris",
+  "categoria": "textiles",
+  "BaseColor": "MT_TelaGris_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Manta o abrigo gris.",
+  "escala_m": 0.27,
+  "fuente": "Poly Haven",
+  "asset": "poly_wool_herringbone",
+  "autores": [
+   "colormass",
+   "Rico Cilliers"
+  ],
+  "url": "https://polyhaven.com/a/poly_wool_herringbone",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "colchon",
+  "material": "MT_Colchon",
+  "categoria": "textiles",
+  "BaseColor": "MT_Colchon_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Colchón rayado con manchas.",
+  "escala_m": 1.0,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "cuero",
+  "material": "MT_Cuero",
+  "categoria": "textiles",
+  "BaseColor": "MT_Cuero_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Cuero gastado: asientos, correas, bolsos.",
+  "escala_m": 0.4,
+  "fuente": "Poly Haven",
+  "asset": "brown_leather",
+  "autores": [
+   "Rob Tuytel"
+  ],
+  "url": "https://polyhaven.com/a/brown_leather",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "goma",
+  "material": "MT_Goma",
+  "categoria": "textiles",
+  "BaseColor": "MT_Goma_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Goma negra: agarres, juntas, mangueras.",
+  "escala_m": 0.4,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "cuerda",
+  "material": "MT_Cuerda",
+  "categoria": "textiles",
+  "BaseColor": "MT_Cuerda_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Cuerda de cáñamo (usar sobre tubos).",
+  "escala_m": 0.1,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "carton",
+  "material": "MT_Carton",
+  "categoria": "varios",
+  "BaseColor": "MT_Carton_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Cartón corrugado con manchas de agua.",
+  "escala_m": 0.6,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "papel_etiqueta",
+  "material": "MT_PapelEtiqueta",
+  "categoria": "varios",
+  "BaseColor": "MT_PapelEtiqueta_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Papel envejecido: etiquetas, mapas, notas.",
+  "escala_m": 0.3,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "plastico_bidon",
+  "material": "MT_PlasticoBidon",
+  "categoria": "varios",
+  "BaseColor": "MT_PlasticoBidon_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Plástico duro verde oliva: bidones, cajas.",
+  "escala_m": 0.5,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "plastico_rojo",
+  "material": "MT_PlasticoRojo",
+  "categoria": "varios",
+  "BaseColor": "MT_PlasticoRojo_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Plástico rojo gastado: botiquines, termos.",
+  "escala_m": 0.5,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "plastico_negro",
+  "material": "MT_PlasticoNegro",
+  "categoria": "varios",
+  "BaseColor": "MT_PlasticoNegro_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Plástico negro: linternas, radios, carcasas.",
+  "escala_m": 0.5,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "decal_chorreadura_oxido",
+  "material": "MT_DecalChorreaduraOxido",
+  "categoria": "decals",
+  "BaseColor": "MT_DecalChorreaduraOxido_BaseColor.png",
+  "alfa": true,
+  "descripcion": "Chorreaduras de óxido hacia abajo (Decal Projector).",
+  "escala_m": 1.0,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "decal_mancha_grasa",
+  "material": "MT_DecalManchaGrasa",
+  "categoria": "decals",
+  "BaseColor": "MT_DecalManchaGrasa_BaseColor.png",
+  "alfa": true,
+  "descripcion": "Mancha de grasa o aceite en pisos.",
+  "escala_m": 0.6,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "decal_salpicadura_nieve",
+  "material": "MT_DecalSalpicaduraNieve",
+  "categoria": "decals",
+  "BaseColor": "MT_DecalSalpicaduraNieve_BaseColor.png",
+  "alfa": true,
+  "descripcion": "Nieve salpicada en la parte baja de vehículos y paredes.",
+  "escala_m": 1.5,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ },
+ {
+  "nombre": "decal_escarcha_borde",
+  "material": "MT_DecalEscarchaBorde",
+  "categoria": "decals",
+  "BaseColor": "MT_DecalEscarchaBorde_BaseColor.png",
+  "alfa": true,
+  "descripcion": "Escarcha en los bordes de una ventana.",
+  "escala_m": 1.0,
+  "tipo": "procedural",
+  "fuente": "texturas.py"
+ }
+]

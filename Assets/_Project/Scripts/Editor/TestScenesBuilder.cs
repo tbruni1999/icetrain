@@ -33,7 +33,7 @@ namespace SurvivalEnTren.EditorTools
     /// - "Survival en tren > M2 > Construir escena de conducción": con los controles reales de la cabina.
     /// Las escenas y el prefab se regeneran enteros cada vez: no editarlos a mano, cambiar este script.
     /// </summary>
-    public static class TestScenesBuilder
+    public static partial class TestScenesBuilder
     {
         private enum Kind { Spike, Driving }
 
@@ -361,16 +361,8 @@ namespace SurvivalEnTren.EditorTools
             var food = new GameObject("Comida_Tren").transform;
             void Ration(string name, Vector3 local)
             {
-                var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                go.name = name;
-                go.transform.SetParent(food, false);
-                go.transform.localScale = new Vector3(0.18f, 0.1f, 0.12f);
+                GameObject go = NewRation(name, food, p.Food);
                 go.transform.SetPositionAndRotation(train.transform.TransformPoint(local), train.transform.rotation);
-                go.GetComponent<MeshRenderer>().sharedMaterial = p.Food;
-                var body = go.AddComponent<Rigidbody>();
-                body.mass = 0.4f;
-                body.interpolation = RigidbodyInterpolation.Interpolate;
-                go.AddComponent<FoodItem>();
             }
             float topShelf = FloorTop + 1.33f + 0.03f + 0.06f;
             Ration("Racion_1", new Vector3(InnerHalfWidth - 0.2f, topShelf, -2.2f));
@@ -659,9 +651,12 @@ namespace SurvivalEnTren.EditorTools
             var box = go.AddComponent<BoxCollider>();
             box.center = new Vector3(0f, 0.23f, 0f);
             box.size = new Vector3(0.3f, 0.46f, 0.16f);
-            BoxMinMax("Cuerpo", go.transform, new Vector3(-0.15f, 0f, -0.08f), new Vector3(0.15f, 0.4f, 0.08f), material, false);
-            BoxMinMax("Asa", go.transform, new Vector3(-0.08f, 0.4f, -0.03f), new Vector3(0.04f, 0.46f, 0.03f), material, false);
-            BoxMinMax("Pico", go.transform, new Vector3(0.06f, 0.4f, -0.025f), new Vector3(0.13f, 0.45f, 0.025f), p.Fuel, false);
+            if (!JerrycanArt(go.transform, name == "Bidon" ? "Bidon_Combustible_Verde" : "Bidon_Combustible_Rojo")) // el fabricado, verde
+            {
+                BoxMinMax("Cuerpo", go.transform, new Vector3(-0.15f, 0f, -0.08f), new Vector3(0.15f, 0.4f, 0.08f), material, false);
+                BoxMinMax("Asa", go.transform, new Vector3(-0.08f, 0.4f, -0.03f), new Vector3(0.04f, 0.46f, 0.03f), material, false);
+                BoxMinMax("Pico", go.transform, new Vector3(0.06f, 0.4f, -0.025f), new Vector3(0.13f, 0.45f, 0.025f), p.Fuel, false);
+            }
             var body = go.AddComponent<Rigidbody>();
             body.interpolation = RigidbodyInterpolation.Interpolate;
             var carryable = go.AddComponent<Carryable>();
@@ -882,10 +877,15 @@ namespace SurvivalEnTren.EditorTools
             BoxMinMax("Mesa", station, new Vector3(0.4f, 0f, -2.95f), new Vector3(2.6f, 0.85f, -2.3f), p.Furniture);
             var pump = Group("Bomba_Manual", station);
             pump.localPosition = new Vector3(1.2f, 0.85f, -2.62f);
-            BoxMinMax("Cuerpo", pump, new Vector3(-0.08f, 0f, -0.08f), new Vector3(0.08f, 0.32f, 0.08f), p.Track, false);
-            BoxMinMax("Palanca", pump, new Vector3(-0.22f, 0.3f, -0.02f), new Vector3(0.1f, 0.34f, 0.02f), p.Fuel, false);
-            BoxMinMax("Manguera", pump, new Vector3(0.08f, 0.02f, -0.02f), new Vector3(0.3f, 0.06f, 0.02f), p.Track, false);
-            var pumpZone = BoxMinMax("Zona_Uso", pump, new Vector3(-0.3f, 0f, -0.3f), new Vector3(0.35f, 0.6f, 0.3f), p.Track);
+            bool pumpArt = PumpArt(pump); // el arte: acostada sobre la mesa
+            if (!pumpArt)
+            {
+                BoxMinMax("Cuerpo", pump, new Vector3(-0.08f, 0f, -0.08f), new Vector3(0.08f, 0.32f, 0.08f), p.Track, false);
+                BoxMinMax("Palanca", pump, new Vector3(-0.22f, 0.3f, -0.02f), new Vector3(0.1f, 0.34f, 0.02f), p.Fuel, false);
+                BoxMinMax("Manguera", pump, new Vector3(0.08f, 0.02f, -0.02f), new Vector3(0.3f, 0.06f, 0.02f), p.Track, false);
+            }
+            float pumpHalf = pumpArt ? 0.55f : 0.32f;
+            var pumpZone = BoxMinMax("Zona_Uso", pump, new Vector3(-pumpHalf, 0f, -0.3f), new Vector3(pumpHalf, 0.6f, 0.3f), p.Track);
             pumpZone.GetComponent<Collider>().isTrigger = true;
             Object.DestroyImmediate(pumpZone.GetComponent<MeshRenderer>());
             var pumpPickup = new SerializedObject(pump.gameObject.AddComponent<GearPickup>());
@@ -893,16 +893,8 @@ namespace SurvivalEnTren.EditorTools
             pumpPickup.FindProperty("displayName").stringValue = "bomba manual";
             pumpPickup.ApplyModifiedPropertiesWithoutUndo();
 
-            var ration = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            ration.name = "Racion_Estacion";
-            ration.transform.SetParent(station, false);
+            GameObject ration = NewRation("Racion_Estacion", station, p.Food);
             ration.transform.localPosition = new Vector3(2.1f, 0.9f, -2.62f);
-            ration.transform.localScale = new Vector3(0.18f, 0.1f, 0.12f);
-            ration.GetComponent<MeshRenderer>().sharedMaterial = p.Food;
-            var rationBody = ration.AddComponent<Rigidbody>();
-            rationBody.mass = 0.4f;
-            rationBody.interpolation = RigidbodyInterpolation.Interpolate;
-            ration.AddComponent<FoodItem>();
 
             // Material con lógica de lugar (sección 15, regla de loot; sección 9): objetos que se desmontan con la
             // barreta (un pallet del taller, un armario metálico, un colchón viejo, un tablero eléctrico) y unos
@@ -1102,16 +1094,8 @@ namespace SurvivalEnTren.EditorTools
 
         private static void BuildRation(Transform parent, string name, Vector3 localPosition, Palette p)
         {
-            var ration = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            ration.name = name;
-            ration.transform.SetParent(parent, false);
+            GameObject ration = NewRation(name, parent, p.Food);
             ration.transform.localPosition = localPosition;
-            ration.transform.localScale = new Vector3(0.18f, 0.1f, 0.12f);
-            ration.GetComponent<MeshRenderer>().sharedMaterial = p.Food;
-            var body = ration.AddComponent<Rigidbody>();
-            body.mass = 0.4f;
-            body.interpolation = RigidbodyInterpolation.Interpolate;
-            ration.AddComponent<FoodItem>();
         }
 
         // Taller ferroviario abandonado (M11), junto a la masa metálica (sección 15, "taller mecánico" y "estación ferroviaria":
@@ -1873,6 +1857,8 @@ namespace SurvivalEnTren.EditorTools
 
             AddInteriorLight(interior, new Vector3(0f, RoofBottom - 0.3f, 4f));
             AddInteriorLight(interior, new Vector3(0f, RoofBottom - 0.3f, -2.5f));
+
+            ApplyTrainArt(root); // lo que se ve: el vagón MR-04 (TestScenesBuilder.Art.cs); lo gris queda como colisión
 
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
             Object.DestroyImmediate(root);
