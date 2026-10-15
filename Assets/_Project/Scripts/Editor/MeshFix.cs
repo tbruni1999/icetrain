@@ -10,7 +10,7 @@ namespace SurvivalEnTren.EditorTools
     /// <summary>
     /// Arreglo de mallas del arte (producción P4, pedido de Tomi: "mega pulido de los assets, que la malla quede impecable").
     /// "Survival en tren > Arte > Arreglar mallas" hace una copia corregida de cada malla de cada modelo de Assets/_Project/Art en
-    /// Art/Generado/Mallas/&lt;modelo&gt;/ (los FBX originales no se tocan) y el armado de las escenas usa las copias:
+    /// Art/Generado/Mallas/&lt;modelo&gt;/ (los FBX no se tocan) y el armado de las escenas usa las copias:
     /// - saca los triángulos sin área y los repetidos que se pisan (parpadean);
     /// - da vuelta los triángulos que miran al revés de sus normales (se veían oscuros o desaparecían);
     /// - rehace la textura de los triángulos con la textura aplastada (rayas): proyección de caja a tamaño real, con el tamaño de
@@ -59,9 +59,9 @@ namespace SurvivalEnTren.EditorTools
             MeshAudit.Run();
             var report = new StringBuilder(File.ReadAllText("Docs/Revision_Mallas.md"));
             report.AppendLine();
-            report.AppendLine("## Lo que se arregló (copias en Art/Generado/Mallas; los FBX originales no se tocan)");
+            report.AppendLine("## Lo que se arregló (copias en Art/Generado/Mallas; los FBX no se tocan)");
             report.AppendLine();
-            report.AppendLine($"\"Survival en tren > Arte > Arreglar mallas\" ({System.DateTime.Now:yyyy-MM-dd HH:mm}): {meshes} mallas revisadas. La tabla de arriba es de los FBX originales; esta, lo que se corrigió en las copias que usa el juego.");
+            report.AppendLine($"\"Survival en tren > Arte > Arreglar mallas\" ({System.DateTime.Now:yyyy-MM-dd HH:mm}): {meshes} mallas revisadas. La tabla de arriba es de los FBX tal como se importan; esta, lo que se corrigió en las copias que usa el juego.");
             report.AppendLine();
             report.AppendLine("| Modelo | Malla | Triángulos sin área quitados | Repetidos quitados | Dados vuelta | Textura rehecha (triángulos) | Vértices soldados |");
             report.AppendLine("|---|---|---|---|---|---|---|");

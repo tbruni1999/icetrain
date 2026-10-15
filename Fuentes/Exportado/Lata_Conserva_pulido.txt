@@ -1,0 +1,4 @@
+objeto | vértices antes → después | bordes abiertos antes → después | caras sin área quitadas
+Lata_Conserva_LOD0 | 729 → 729 | 0 → 0 | 0
+Lata_Conserva_LOD1 | 357 → 357 | 0 → 0 | 0
+Lata_Conserva_LOD2 | 147 → 147 | 0 → 0 | 0

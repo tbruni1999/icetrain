@@ -1,0 +1,4 @@
+objeto | vértices antes → después | bordes abiertos antes → después | caras sin área quitadas
+Bidon_Combustible_Rojo_LOD0 | 298 → 298 | 0 → 0 | 0
+Bidon_Combustible_Rojo_LOD1 | 238 → 238 | 0 → 0 | 0
+Bidon_Combustible_Rojo_LOD2 | 56 → 48 | 0 → 0 | 0

@@ -1,0 +1,4 @@
+objeto | vértices antes → después | bordes abiertos antes → después | caras sin área quitadas
+Bomba_Lanza_LOD0 | 883 → 883 | 0 → 0 | 0
+Bomba_Lanza_LOD1 | 613 → 613 | 0 → 0 | 0
+Bomba_Lanza_LOD2 | 187 → 187 | 2 → 2 | 0

@@ -1,6 +1,6 @@
 # Revisión de mallas del arte
 
-Generado por "Survival en tren > Arte > Revisar mallas" (2026-10-15 01:14). Una fila por malla.
+Generado por "Survival en tren > Arte > Revisar mallas" (2026-10-15 10:29). Una fila por malla.
 
 - **Degenerados**: triángulos sin área (sobran). **Caras repetidas**: dos triángulos en el mismo lugar (parpadean).
 - **Vértices repetidos**: misma posición, normal y UV (se pueden soldar). **Bordes abiertos**: agujeros o piezas planas/sueltas (en una pieza cerrada tendrían que ser 0). **No-manifold**: bordes de más de dos caras.
@@ -48,7 +48,7 @@ Generado por "Survival en tren > Arte > Revisar mallas" (2026-10-15 01:14). Una 
 | RedBlanca_MR04_v03_invierno | Faldones_LOD0 | 2816 | 2464 | 0 | 72 | 0 | 0 | 322 | 0 | 0 | sí / sí / sí | 3,72 × 0,24 × 15,90 |
 | RedBlanca_MR04_v03_invierno | Interior_LOD0 | 3060 | 5880 | 0 | 0 | 16 | 0 | 22 | 0 | 120 | sí / sí / sí | 3,20 × 2,60 × 18,80 |
 | RedBlanca_MR04_v03_invierno | Muebles_LOD0 | 2048 | 4129 | 0 | 0 | 183 | 0 | 0 | 0 | 28 | sí / sí / sí | 3,51 × 1,80 × 6,93 |
-| RedBlanca_MR04_v03_invierno | Nieve_Costra_LOD0 | 13497 | 13412 | 0 | 0 | 2977 | 9 | 34 | 57 | 0 | sí / sí / sí | 3,72 × 1,78 × 18,93 |
+| RedBlanca_MR04_v03_invierno | Nieve_Costra_LOD0 | 13497 | 13444 | 0 | 0 | 2918 | 9 | 34 | 45 | 0 | sí / sí / sí | 3,72 × 1,78 × 18,93 |
 | RedBlanca_MR04_v03_invierno | Nieve_LOD0 | 5944 | 4106 | 0 | 0 | 0 | 0 | 112 | 0 | 0 | sí / sí / sí | 3,47 × 1,78 × 18,96 |
 | RedBlanca_MR04_v03_invierno | Palanca_Freno | 100 | 148 | 0 | 4 | 0 | 0 | 15 | 0 | 0 | sí / sí / sí | 0,05 × 0,37 × 0,05 |
 | RedBlanca_MR04_v03_invierno | Palanca_Potencia | 100 | 156 | 0 | 4 | 8 | 0 | 15 | 0 | 0 | sí / sí / sí | 0,05 × 0,37 × 0,05 |
@@ -64,9 +64,9 @@ Generado por "Survival en tren > Arte > Revisar mallas" (2026-10-15 01:14). Una 
 | RedBlanca_MR04_v03_invierno | Vidrio_Radar | 12 | 24 | 0 | 0 | 0 | 0 | 0 | 0 | 8 | sí / sí / sí | 0,01 × 0,44 × 0,54 |
 | RedBlanca_MR04_v03_invierno | Vidrios_LOD0 | 120 | 240 | 0 | 0 | 0 | 0 | 0 | 0 | 80 | sí / sí / sí | 3,31 × 1,00 × 13,95 |
 
-## Lo que se arregló (copias en Art/Generado/Mallas; los FBX originales no se tocan)
+## Lo que se arregló (copias en Art/Generado/Mallas; los FBX no se tocan)
 
-"Survival en tren > Arte > Arreglar mallas" (2026-10-15 01:14): 58 mallas revisadas. La tabla de arriba es de los FBX originales; esta, lo que se corrigió en las copias que usa el juego.
+"Survival en tren > Arte > Arreglar mallas" (2026-10-15 10:29): 58 mallas revisadas. La tabla de arriba es de los FBX tal como se importan; esta, lo que se corrigió en las copias que usa el juego.
 
 | Modelo | Malla | Triángulos sin área quitados | Repetidos quitados | Dados vuelta | Textura rehecha (triángulos) | Vértices soldados |
 |---|---|---|---|---|---|---|
@@ -105,7 +105,7 @@ Generado por "Survival en tren > Arte > Revisar mallas" (2026-10-15 01:14). Una 
 | RedBlanca_MR04_v03_invierno | Faldones_LOD0 | 0 | 72 | 0 | 0 | 0 |
 | RedBlanca_MR04_v03_invierno | Interior_LOD0 | 0 | 0 | 0 | 120 | 216 |
 | RedBlanca_MR04_v03_invierno | Muebles_LOD0 | 0 | 0 | 0 | 28 | 36 |
-| RedBlanca_MR04_v03_invierno | Nieve_Costra_LOD0 | 0 | 0 | 56 | 0 | 107 |
+| RedBlanca_MR04_v03_invierno | Nieve_Costra_LOD0 | 0 | 0 | 44 | 0 | 98 |
 | RedBlanca_MR04_v03_invierno | Palanca_Freno | 0 | 5 | 0 | 0 | 0 |
 | RedBlanca_MR04_v03_invierno | Palanca_Potencia | 0 | 5 | 0 | 0 | 0 |
 | RedBlanca_MR04_v03_invierno | Palanca_Reversor | 0 | 5 | 0 | 0 | 0 |
@@ -113,29 +113,3 @@ Generado por "Survival en tren > Arte > Revisar mallas" (2026-10-15 01:14). Una 
 | RedBlanca_MR04_v03_invierno | Puerta_Izquierda | 0 | 0 | 0 | 8 | 8 |
 | RedBlanca_MR04_v03_invierno | Vidrio_Radar | 0 | 0 | 0 | 8 | 8 |
 | RedBlanca_MR04_v03_invierno | Vidrios_LOD0 | 0 | 0 | 0 | 80 | 80 |
-
-## Pulido en Blender (Blender 5.2.2 LTS, portable, de blender.org; autorizado por Tomi)
-
-`Fuentes/Scripts_Pulido/pulir.py` abre cada `.blend` y exporta un FBX pulido a `Fuentes/Exportado/` (los `.blend` y FBX originales no se tocan; el `.blend` pulido se guarda aparte). Hallazgo: **en el vagón cada cara era una pieza suelta** (cada una con sus propios vértices), por eso aparecían miles de bordes "abiertos" y uniones por donde se colaba la luz. El pulido:
-
-- **suelda los vértices en el mismo lugar** (0,1 mm): las piezas quedan cerradas y continuas;
-- saca caras sin área y vértices sueltos;
-- **sombreado por ángulo (30°)**: los cantos marcados quedan duros y lo curvo (ruedas, tanques, caños) se ve liso en vez de facetado;
-- no da vuelta normales en automático (el interior del vagón mira hacia adentro a propósito; lo que estaba al revés lo arregla "Arreglar mallas" en Unity).
-
-| Vagón: pieza | Vértices antes → después | Bordes abiertos antes → después |
-|---|---|---|
-| Carrocería | 38.504 → 12.416 | 38.396 → 0 |
-| Interior | 5.864 → 1.652 | 5.864 → 0 |
-| Chasis | 4.894 → 1.479 | 4.894 → 0 |
-| Muebles | 3.948 → 1.130 | 3.960 → 0 |
-| Bogies | 3.648 → 1.088 | 3.648 → 0 |
-| Cabina | 3.308 → 1.036 | 3.308 → 0 |
-| Nieve del techo | 4.106 → 2.994 | 1.736 → 0 |
-| Puertas (cada una) | 1.104 → 308 | 1.098 → 0 |
-| Quitanieves | 786 → 786 | 69 → 69 (chapas abiertas por diseño) |
-| Costra de nieve | 6.777 → 6.777 | 9 → 9 |
-
-Las otras piezas, igual: cerradas y con un tercio de los vértices. Los **props** ya venían bien cerrados en Blender (0 bordes abiertos; 2 en el LOD2 de la bomba de lanza): lo que la revisión de Unity marcaba en ellos son cortes del exportado, que corrige "Arreglar mallas".
-
-**Para el chat de arte:** el quitanieves tiene 69 bordes abiertos y la costra de nieve 9; si son agujeros y no chapas abiertas, conviene cerrarlos en el `.blend`. Y conviene exportar el vagón ya soldado (como el `.blend` pulido de `Fuentes/Exportado/`).

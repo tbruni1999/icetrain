@@ -1,0 +1,5 @@
+# Los .blend pulidos se rehacen con Fuentes/Scripts_Pulido/pulir.py (no se suben: ocupan cupo de Git LFS).
+*_pulido.blend
+*.blend1
+# Los FBX pulidos son los que están en Assets/_Project/Art (copias idénticas).
+*_pulido.fbx

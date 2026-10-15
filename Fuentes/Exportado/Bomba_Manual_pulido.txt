@@ -1,0 +1,7 @@
+objeto | vértices antes → después | bordes abiertos antes → después | caras sin área quitadas
+Bomba_Manual_LOD0 | 254 → 254 | 0 → 0 | 0
+Bomba_Manual_LOD1 | 184 → 184 | 0 → 0 | 0
+Bomba_Manual_LOD2 | 52 → 52 | 0 → 0 | 0
+Bomba_Manual_Palanca_LOD0 | 60 → 60 | 0 → 0 | 0
+Bomba_Manual_Palanca_LOD1 | 60 → 60 | 0 → 0 | 0
+Bomba_Manual_Palanca_LOD2 | 13 → 13 | 0 → 0 | 0

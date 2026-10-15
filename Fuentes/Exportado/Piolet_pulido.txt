@@ -1,0 +1,4 @@
+objeto | vértices antes → después | bordes abiertos antes → después | caras sin área quitadas
+Piolet_LOD0 | 266 → 266 | 0 → 0 | 0
+Piolet_LOD1 | 192 → 192 | 0 → 0 | 0
+Piolet_LOD2 | 56 → 56 | 0 → 0 | 0
