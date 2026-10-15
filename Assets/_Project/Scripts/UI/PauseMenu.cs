@@ -18,7 +18,7 @@ namespace SurvivalEnTren.UI
     {
         private static readonly Color Amber = new Color(1f, 0.72f, 0.2f);
         private const float W = 420f;
-        private const float H = 380f;
+        private const float H = 480f;
 
         [SerializeField] private InputActionReference toggle;
         [SerializeField] private SaveSystem saver;
@@ -29,16 +29,20 @@ namespace SurvivalEnTren.UI
         [SerializeField] private InventoryPanel inventory;
         [SerializeField] private WorkbenchPanel workbench;
 
-        private static readonly string[] Options = { "Seguir", "Guardar partida   (F5)", "Cargar partida   (F9)", "Controles", "Salir" };
+        private static readonly string[] Options = { "Seguir", "Guardar partida   (F5)", "Cargar partida   (F9)", "Controles", "Opciones", "Salir al menú", "Salir del juego" };
+        private const string MenuScene = "Menu_Principal";
         private bool _open;
         private bool _help;
         private int _selected;
         private float _timeScaleBefore = 1f;
         private bool _wasMovementLocked;
-        private GUIStyle _title, _item, _small;
+        private GUIStyle _title, _item, _small, _value;
+        private OptionsPanel _panel;
+        private GameOptions _options;
 
         public bool IsOpen => _open;
         public bool ShowingHelp => _help;
+        public bool ShowingOptions => _panel != null && _panel.IsOpen;
 
         private void OnEnable()
         {
@@ -55,6 +59,7 @@ namespace SurvivalEnTren.UI
         {
             if (!_open) Open();
             else if (_help) _help = false;
+            else if (_panel.IsOpen) _panel.Close();
             else Close();
         }
 
@@ -80,6 +85,7 @@ namespace SurvivalEnTren.UI
             if (!_open) return;
             _open = false;
             _help = false;
+            _panel.Close();
             Time.timeScale = _timeScaleBefore;
             motor.MovementLocked = _wasMovementLocked;
             interactor.enabled = true;
@@ -99,7 +105,13 @@ namespace SurvivalEnTren.UI
                     saver.Load();
                     break;
                 case 3: _help = true; break;
-                case 4:
+                case 4: _panel.Open(_options, o => o.ApplyToGame(look)); break;
+                case 5:
+                    if (!Application.CanStreamedLevelBeLoaded(MenuScene)) break; // sin el menú en la lista de escenas (las pruebas)
+                    Close();
+                    UnityEngine.SceneManagement.SceneManager.LoadScene(MenuScene);
+                    break;
+                case 6:
                     Close();
 #if UNITY_EDITOR
                     UnityEditor.EditorApplication.isPlaying = false;
@@ -134,6 +146,7 @@ namespace SurvivalEnTren.UI
         private void Update()
         {
             if (!_open) return;
+            if (_panel.IsOpen) { _panel.HandleInput(MenuMouse()); return; }
             Keyboard keyboard = Keyboard.current;
             if (keyboard != null && !_help)
             {
@@ -152,7 +165,18 @@ namespace SurvivalEnTren.UI
         }
 
         // Dibuja con GUI.* (sin el maquetado automático de GUILayout): menos memoria nueva por cuadro (M13).
-        private void Awake() => useGUILayout = false;
+        private void Awake()
+        {
+            useGUILayout = false;
+            _panel = new OptionsPanel(OptionRect);
+        }
+
+        // Las opciones del jugador (P3): sensibilidad, volumen y calidad, desde el archivo de opciones.
+        private void Start()
+        {
+            _options = GameOptions.Load();
+            _options.ApplyToGame(look);
+        }
 
         private void OnGUI()
         {
@@ -172,9 +196,14 @@ namespace SurvivalEnTren.UI
             GUI.DrawTexture(new Rect(0f, 0f, W, H), Texture2D.whiteTexture);
             GUI.color = Color.white;
             _title.normal.textColor = Color.white;
-            GUI.Label(new Rect(0f, 20f, W, 40f), _help ? "CONTROLES" : "PAUSA", _title);
+            GUI.Label(new Rect(0f, 20f, W, 40f), _help ? "CONTROLES" : _panel.IsOpen ? "OPCIONES" : "PAUSA", _title);
 
-            if (_help)
+            if (_panel.IsOpen)
+            {
+                _value ??= new GUIStyle(GUI.skin.label) { fontSize = 16, alignment = TextAnchor.MiddleCenter };
+                _panel.Draw(MenuMouse(), _item, _value);
+            }
+            else if (_help)
             {
                 _small.normal.textColor = new Color(1f, 1f, 1f, 0.85f);
                 GUI.Label(new Rect(30f, 70f, W - 60f, H - 90f),

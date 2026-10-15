@@ -254,6 +254,7 @@ namespace SurvivalEnTren.EditorTools
                 BuildPortableProbe(motor, train, palette);
                 BuildSaveSystem(motor, train);
                 BuildPresentation(motor, train, unknownRoute);
+                StylePlaces(train); // producción P2: los lugares con los materiales de la librería (TestScenesBuilder.Places.cs)
                 BuildAtmosphere(motor, train); // producción P1: post-proceso, cielo, nieve, escarcha y relieve (TestScenesBuilder.Atmosphere.cs)
                 var overlaySo = new SerializedObject(overlay);
                 overlaySo.FindProperty("startVisible").boolValue = false; // la escena de juego arranca sin el panel de pruebas (F1 lo muestra)
@@ -1037,6 +1038,15 @@ namespace SurvivalEnTren.EditorTools
             SetReference(pause, "carrier", motor.GetComponent<PlayerCarrier>());
             SetReference(pause, "inventory", motor.GetComponent<InventoryPanel>());
             SetReference(pause, "workbench", motor.GetComponent<WorkbenchPanel>());
+
+            // El despertar (sección 20.1, P3): solo con "Nueva partida" desde el menú principal. Y la medición de rendimiento de la
+            // build (solo con "-medicion" en la línea de comandos).
+            var intro = motor.gameObject.AddComponent<WakeUpIntro>();
+            SetReference(intro, "motor", motor);
+            SetReference(intro, "look", motor.GetComponent<PlayerLook>());
+            SetReference(intro, "fader", motor.GetComponent<ScreenFader>());
+            SetReference(intro, "bed", train.GetComponentInChildren<Bed>());
+            new GameObject("Medicion").AddComponent<Benchmark>();
 
             // El final de la slice: la primera vez que el tren entra a la ruta desconocida.
             var ending = new GameObject("Final_Slice").AddComponent<SliceEnding>();
@@ -2555,7 +2565,7 @@ namespace SurvivalEnTren.EditorTools
             var segment = go.AddComponent<RailSegment>();
             segment.SetPoints(points);
             go.AddComponent<MeshFilter>();
-            go.AddComponent<MeshRenderer>().sharedMaterials = new[] { p.Ballast, p.Track };
+            go.AddComponent<MeshRenderer>().sharedMaterials = new[] { p.Ballast, p.Track, p.Track }; // balasto, durmientes, rieles
             go.AddComponent<MeshCollider>();
             go.AddComponent<RailSegmentVisual>().Rebuild();
             return segment;

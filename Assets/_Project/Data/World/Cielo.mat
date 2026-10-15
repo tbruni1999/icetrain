@@ -32,7 +32,7 @@ Material:
     - _HorizonPower: 0.8
     - _SunDisk: 2
     - _SunGlow: 0.35
-    - _SunSize: 0.03
+    - _SunSize: 0.6
     - _SunSizeConvergence: 6
     m_Colors:
     - _GroundColor: {r: 0.72, g: 0.75, b: 0.8, a: 1}

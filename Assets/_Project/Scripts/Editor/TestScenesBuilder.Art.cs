@@ -189,6 +189,44 @@ namespace SurvivalEnTren.EditorTools
             foreach (Transform c in starterShelf) if (c.name.StartsWith("Lateral_") || c.name.StartsWith("Repisa_")) Hide(c);
             Hide(G("Interior/Zona_SalaMaquinas"));
 
+            // El casco gris sella el tren (pedido de Tomi, 2026-10-15: "las sombras se ven recontra mal"): sin dibujarse, solo hace
+            // sombra. El modelo tiene uniones finas entre techo y paredes por donde el sol se colaba en dientes de sierra; las cajas
+            // grises son gruesas y cerradas, con los mismos huecos de ventanas y puertas: la luz entra y sale solo por ahí.
+            foreach (string shell in new[] { "Exterior/Piso", "Exterior/Techo", "Exterior/Pared_Derecha", "Exterior/Pared_Izquierda", "Exterior/Pared_Frente", "Exterior/Pared_Fondo" })
+                foreach (Renderer r in G(shell).GetComponentsInChildren<Renderer>(true))
+                {
+                    r.enabled = true;
+                    r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
+                }
+
+            // Luces de adentro (guía de arte: cálidas, puntuales; la estufa, el único punto naranja). Las dos del techo hacen sombra:
+            // la luz cálida sale a la nieve solo por las ventanas. Una luz chica sobre el pupitre (la cabina quedaba muy oscura) y el
+            // resplandor de la estufa, que se apaga si la calefacción se queda sin combustible (StoveGlow).
+            foreach (Light interiorLight in G("Interior").GetComponentsInChildren<Light>(true))
+            {
+                interiorLight.shadows = LightShadows.Soft;
+                interiorLight.shadowStrength = 0.85f;
+                interiorLight.shadowNearPlane = 0.1f;
+            }
+            var cabLight = new GameObject("Luz_Cabina").AddComponent<Light>();
+            cabLight.transform.SetParent(G("Interior/Zona_Cabina"), false);
+            cabLight.transform.localPosition = new Vector3(0f, RoofBottom - 0.25f, 8.2f);
+            cabLight.type = LightType.Point;
+            cabLight.color = new Color(1f, 0.78f, 0.52f);
+            cabLight.range = 4f;
+            cabLight.intensity = 1.1f;
+            cabLight.shadows = LightShadows.None;
+            var stoveLight = new GameObject("Luz_Estufa").AddComponent<Light>();
+            stoveLight.transform.SetParent(G("Interior/Zona_Descanso"), false);
+            stoveLight.transform.localPosition = new Vector3(-InnerHalfWidth + 0.75f, FloorTop + 0.45f, 4.05f); // frente a la reja de la estufa
+            stoveLight.type = LightType.Point;
+            stoveLight.color = new Color(1f, 0.55f, 0.2f);
+            stoveLight.range = 2.6f;
+            stoveLight.intensity = 1.2f;
+            stoveLight.shadows = LightShadows.None;
+            var glow = stoveLight.gameObject.AddComponent<StoveGlow>();
+            SetReference(glow, "stoveLight", stoveLight);
+
             // Lo que el juego ya tiene por su cuenta: la cama y el estante reforzado (se arman por fases), el bidón (es un objeto
             // que se lleva) y la pantalla de la sonda (la dibuja el juego).
             foreach (string name in new[] { "Cama_Base", "Cama_Colchon", "Cama_Relleno", "Estante_Estructura", "Estante_Soportes", "Estante_Tablas", "Bidon", "Vidrio_Radar" })

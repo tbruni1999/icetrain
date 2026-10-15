@@ -39,6 +39,8 @@ namespace SurvivalEnTren.World
         public Vector3 Wind { get; private set; }
         public int AliveFlakes => _snow != null ? _snow.particleCount : 0;
         public int AliveDrift => _drift != null ? _drift.particleCount : 0;
+        /// <summary>Cuánta nieve, respecto de lo que dicen los datos (la calidad gráfica de las opciones: 1, 0,6 o 0,35).</summary>
+        public float DensityScale { get; set; } = 1f;
 
         private void Awake()
         {
@@ -166,7 +168,7 @@ namespace SurvivalEnTren.World
             snowVelocity.y = -settings.FallSpeed;
             snowVelocity.z = Wind.z;
             var snowEmission = _snow.emission;
-            snowEmission.rateOverTime = settings.FlakesPerSecond * Intensity;
+            snowEmission.rateOverTime = settings.FlakesPerSecond * Intensity * DensityScale;
 
             // Las rachas a ras del suelo: más con más viento.
             float ground = eye.y - 1.65f;
@@ -176,7 +178,7 @@ namespace SurvivalEnTren.World
             driftVelocity.y = 0f;
             driftVelocity.z = Wind.z * 1.4f;
             var driftEmission = _drift.emission;
-            driftEmission.rateOverTime = settings.DriftPerSecond * Mathf.Clamp01(Wind.magnitude / Mathf.Max(0.1f, settings.WindSpeed)) * Intensity;
+            driftEmission.rateOverTime = settings.DriftPerSecond * Mathf.Clamp01(Wind.magnitude / Mathf.Max(0.1f, settings.WindSpeed)) * Intensity * DensityScale;
         }
 
         public void OnOriginShifted(Vector3 delta)

@@ -10,7 +10,7 @@ Shader "SurvivalEnTren/CieloNiebla"
         _HorizonPower ("Suavidad del degradé", Range(0.2, 4)) = 0.8
         _Exposure ("Exposición", Range(0, 8)) = 1.3
         _SunColor ("Color del sol", Color) = (1, 0.95, 0.85, 1)
-        _SunSize ("Tamaño del sol", Range(0.001, 0.2)) = 0.03
+        _SunSize ("Tamaño del sol (radio, en grados)", Range(0.1, 5)) = 0.6
         _SunGlow ("Halo del sol", Range(0, 2)) = 0.35
     }
     SubShader
@@ -56,9 +56,10 @@ Shader "SurvivalEnTren/CieloNiebla"
                 half3 color = lerp(unity_FogColor.rgb, zenith, t);
                 // El sol: un disco chico y un halo, del color de la luz principal (de noche, la luna tenue).
                 Light sun = GetMainLight();
-                half facing = saturate(dot(dir, sun.direction));
-                half disc = smoothstep(1 - _SunSize, 1 - _SunSize * 0.6h, facing);
-                half glow = pow(facing, 64) * _SunGlow;
+                float facing = saturate(dot(dir, (float3)sun.direction)); // en float: cerca de 1 la precisión importa (el sol es chico)
+                float radius = radians(_SunSize);
+                float disc = smoothstep(cos(radius * 1.6), cos(radius), facing);
+                float glow = pow(facing, 900.0) * _SunGlow + pow(facing, 60.0) * _SunGlow * 0.15;
                 color += _SunColor.rgb * sun.color * (disc + glow) * saturate(dir.y * 8 + 0.2);
                 return half4(color, 1);
             }

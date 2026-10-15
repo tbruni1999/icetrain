@@ -27,6 +27,9 @@ namespace SurvivalEnTren.Player
         /// <summary>Cuánto mira hacia abajo (positivo) o arriba (negativo), en grados.</summary>
         public float Pitch => _pitch;
 
+        /// <summary>Cuántas veces la sensibilidad de base (las opciones del jugador, P3).</summary>
+        public float SensitivityScale { get; set; } = 1f;
+
         /// <summary>Pone la inclinación de la mirada (al cargar una partida).</summary>
         public void SetPitch(float degrees) => _pitch = degrees;
 
@@ -64,7 +67,7 @@ namespace SurvivalEnTren.Player
             if (Cursor.lockState != CursorLockMode.Locked) return;
 
             PlayerMotorSettings settings = motor.Settings;
-            Vector2 delta = look.action.ReadValue<Vector2>() * settings.MouseSensitivityDegreesPerPixel;
+            Vector2 delta = look.action.ReadValue<Vector2>() * settings.MouseSensitivityDegreesPerPixel * SensitivityScale;
             motor.AddYaw(delta.x);
             _pitch = Mathf.Clamp(_pitch - delta.y, -settings.MaxPitchDegrees, settings.MaxPitchDegrees);
         }

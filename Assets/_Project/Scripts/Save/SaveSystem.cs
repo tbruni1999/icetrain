@@ -256,6 +256,30 @@ namespace SurvivalEnTren.Save
 
         // ---------------------------------------------------------------- Cargar
 
+        /// <summary>¿Hay una partida guardada? (Para el menú principal, que no tiene un SaveSystem en su escena.)</summary>
+        public static bool SaveExists(string file = "partida.json") => File.Exists(Path.Combine(Application.persistentDataPath, "saves", file));
+
+        /// <summary>Desde el menú principal (P3): abre la escena de la partida guardada y le aplica lo guardado, como F9.</summary>
+        public static bool LoadFromMenu(string fallbackScene, string file = "partida.json")
+        {
+            string path = Path.Combine(Application.persistentDataPath, "saves", file);
+            if (!File.Exists(path)) return false;
+            SaveGame data;
+            try
+            {
+                data = JsonUtility.FromJson<SaveGame>(File.ReadAllText(path));
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[Guardado] No se pudo leer {path}: {e.Message}");
+                return false;
+            }
+            if (data == null || data.version > SaveGame.CurrentVersion) return false;
+            _pendingLoad = data;
+            SceneManager.LoadScene(string.IsNullOrEmpty(data.scene) ? fallbackScene : data.scene);
+            return true;
+        }
+
         /// <summary>Carga la partida: recarga la escena y aplica lo guardado. Devuelve false si no hay partida.</summary>
         public bool Load()
         {
