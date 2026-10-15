@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using SurvivalEnTren.Player;
+using SurvivalEnTren.Train;
 using SurvivalEnTren.Survival;
 using SurvivalEnTren.World;
 using UnityEditor;
@@ -154,6 +156,119 @@ namespace SurvivalEnTren.EditorTools
             zones.arraySize = 1;
             zones.GetArrayElementAtIndex(0).objectReferenceValue = noSnowBox;
             weatherSo.ApplyModifiedPropertiesWithoutUndo();
+
+            BuildWindowFrost(train, atmosphere);
+        }
+
+        // 4) Escarcha en las ventanas del tren (WindowFrost): dos capas del lado de adentro de cada vidrio del arte (el borde y la
+        // pareja), con las texturas de escarcha de la librería. Los vidrios se encuentran en la malla del arte (Vidrios_LOD0): los
+        // planos de vidrio de más de 20 cm de lado.
+        private static void BuildWindowFrost(GameObject train, AtmosphereSettings atmosphere)
+        {
+            Transform glass = train.transform.Find("Arte_MR04/Vidrios_LOD0");
+            Material edgeSource = LibraryMaterial("MT_DecalEscarchaBorde");
+            Material fullSource = LibraryMaterial("MT_Escarcha");
+            if (glass == null || edgeSource == null || fullSource == null) return;
+
+            // Copias propias que se dibujan después del vidrio (el vidrio también es transparente).
+            Material FrostMaterial(Material source, string name)
+            {
+                string path = $"{WeatherMaterialsFolder}/{name}.mat";
+                var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+                if (material == null) { material = new Material(source) { name = name }; AssetDatabase.CreateAsset(material, path); }
+                else material.CopyPropertiesFromMaterial(source);
+                material.renderQueue = (int)RenderQueue.Transparent + 10;
+                EditorUtility.SetDirty(material);
+                return material;
+            }
+            Material edgeMaterial = FrostMaterial(edgeSource, "Escarcha_Ventana_Borde");
+            Material fullMaterial = FrostMaterial(fullSource, "Escarcha_Ventana");
+
+            var group = Group("Escarcha_Ventanas", train.transform);
+            var edges = new List<Renderer>();
+            var fulls = new List<Renderer>();
+            foreach (Pane pane in FindPanes(glass.GetComponent<MeshFilter>().sharedMesh, train.transform.worldToLocalMatrix * glass.localToWorldMatrix))
+            {
+                // Hacia adentro del tren (el eje del tren): el lado de donde se mira la escarcha.
+                Vector3 inward = Vector3.Dot(pane.Normal, -new Vector3(pane.Center.x, 0f, pane.Center.z)) > 0f ? pane.Normal : -pane.Normal;
+                foreach (bool full in new[] { false, true })
+                {
+                    var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                    quad.name = full ? "Escarcha" : "Escarcha_Borde";
+                    Object.DestroyImmediate(quad.GetComponent<Collider>());
+                    quad.transform.SetParent(group, false);
+                    quad.transform.localPosition = pane.Center + inward * (full ? 0.006f : 0.008f);
+                    quad.transform.localRotation = Quaternion.LookRotation(-inward, Vector3.up); // el frente del Quad mira hacia -z
+                    quad.transform.localScale = new Vector3(pane.Width, pane.Height, 1f);
+                    var renderer = quad.GetComponent<MeshRenderer>();
+                    renderer.sharedMaterial = full ? fullMaterial : edgeMaterial;
+                    renderer.shadowCastingMode = ShadowCastingMode.Off;
+                    (full ? fulls : edges).Add(renderer);
+                }
+            }
+
+            var frost = train.AddComponent<WindowFrost>();
+            SetReference(frost, "settings", atmosphere);
+            SetReference(frost, "climate", train.GetComponent<TrainInteriorClimate>());
+            SetReference(frost, "clock", Object.FindAnyObjectByType<GameClock>());
+            var so = new SerializedObject(frost);
+            void Fill(string field, List<Renderer> list)
+            {
+                SerializedProperty array = so.FindProperty(field);
+                array.arraySize = list.Count;
+                for (int i = 0; i < list.Count; i++) array.GetArrayElementAtIndex(i).objectReferenceValue = list[i];
+            }
+            Fill("edgeLayers", edges);
+            Fill("fullLayers", fulls);
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private struct Pane
+        {
+            public Vector3 Center, Normal;
+            public float Width, Height;
+        }
+
+        // Los vidrios planos de una malla (en las coordenadas que da "toSpace"): los triángulos que miran derecho a un costado
+        // (x) o al frente (z), agrupados por plano y por rectángulos que se tocan. Los dos lados del mismo vidrio cuentan una vez.
+        private static List<Pane> FindPanes(Mesh mesh, Matrix4x4 toSpace)
+        {
+            Vector3[] vertices = mesh.vertices;
+            int[] triangles = mesh.triangles;
+            var groups = new List<(int axis, float plane, Bounds box)>();
+            for (int i = 0; i < triangles.Length; i += 3)
+            {
+                Vector3 a = toSpace.MultiplyPoint3x4(vertices[triangles[i]]);
+                Vector3 b = toSpace.MultiplyPoint3x4(vertices[triangles[i + 1]]);
+                Vector3 c = toSpace.MultiplyPoint3x4(vertices[triangles[i + 2]]);
+                Vector3 n = Vector3.Cross(b - a, c - a);
+                if (n.sqrMagnitude < 1e-8f) continue;
+                n.Normalize();
+                int axis = Mathf.Abs(n.x) > 0.95f ? 0 : Mathf.Abs(n.z) > 0.95f ? 2 : -1;
+                if (axis < 0) continue;
+                float plane = Mathf.Round(a[axis] * 100f) / 100f;
+                var box = new Bounds(a, Vector3.zero);
+                box.Encapsulate(b);
+                box.Encapsulate(c);
+                box.Expand(0.02f);
+                int found = -1;
+                for (int g = 0; g < groups.Count; g++)
+                    if (groups[g].axis == axis && Mathf.Abs(groups[g].plane - plane) < 0.02f && groups[g].box.Intersects(box)) { found = g; break; }
+                if (found < 0) groups.Add((axis, plane, box));
+                else { Bounds merged = groups[found].box; merged.Encapsulate(box); groups[found] = (axis, plane, merged); }
+            }
+
+            var panes = new List<Pane>();
+            foreach (var (axis, plane, box) in groups)
+            {
+                Vector3 size = box.size - Vector3.one * 0.04f; // sin el margen de 2 cm de cada lado
+                float width = axis == 0 ? size.z : size.x;
+                if (width < 0.2f || size.y < 0.2f) continue; // los cantos de 0 cm de los vidrios no son vidrios
+                Vector3 center = box.center;
+                center[axis] = plane;
+                panes.Add(new Pane { Center = center, Normal = axis == 0 ? Vector3.right : Vector3.forward, Width = width, Height = size.y });
+            }
+            return panes;
         }
 
         private static void EnsureAmbientOcclusion()
