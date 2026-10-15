@@ -254,6 +254,7 @@ namespace SurvivalEnTren.EditorTools
                 BuildPortableProbe(motor, train, palette);
                 BuildSaveSystem(motor, train);
                 BuildPresentation(motor, train, unknownRoute);
+                BuildAtmosphere(motor); // producción P1: post-proceso, cielo, nieve, escarcha y relieve (TestScenesBuilder.Atmosphere.cs)
                 var overlaySo = new SerializedObject(overlay);
                 overlaySo.FindProperty("startVisible").boolValue = false; // la escena de juego arranca sin el panel de pruebas (F1 lo muestra)
                 overlaySo.ApplyModifiedPropertiesWithoutUndo();

@@ -12,6 +12,8 @@ namespace SurvivalEnTren.Survival
     /// - Vida baja: pulso rojizo muy sutil en los bordes.
     /// - Hambre: sin efecto visual (sección 18.2: "feedback corporal, no alarmas"; el audio es M13).
     /// Usa un Volume de postproceso de URP (viñeta y ajustes de color) de la escena.
+    /// - Se suma a la atmósfera (P1): la viñeta, el color y la temperatura de base salen del perfil "baseline" (el del
+    ///   post-proceso del ambiente) y el cuerpo agrega lo suyo encima, en vez de pisarlo.
     /// Corre después de que PlayerLook ubica la cámara (orden 100), para sumarle el temblor.
     /// </summary>
     [DefaultExecutionOrder(100)]
@@ -24,6 +26,8 @@ namespace SurvivalEnTren.Survival
         [SerializeField] private Transform head;
         [SerializeField] private Volume volume;
         [SerializeField] private Material breathMaterial;
+        [Tooltip("Opcional: el perfil del post-proceso del ambiente. Su viñeta, saturación, exposición y temperatura son la base.")]
+        [SerializeField] private VolumeProfile baseline;
 
         [Header("Frío")]
         [Tooltip("Por debajo de este calor del cuerpo empieza la escarcha en los bordes.")]
@@ -49,6 +53,7 @@ namespace SurvivalEnTren.Survival
         private float _breathTimer;
         private float _blinkTimer;
         private float _blink;
+        private float _baseVignette, _baseSaturation, _baseExposure, _baseTemperature;
 
         /// <summary>Intensidad actual de la escarcha (0-1), para pruebas.</summary>
         public float Frost { get; private set; }
@@ -64,6 +69,28 @@ namespace SurvivalEnTren.Survival
             profile.TryGet(out _vignette);
             profile.TryGet(out _color);
             profile.TryGet(out _white);
+            if (baseline != null)
+            {
+                // El perfil del cuerpo pisa todos los valores de sus componentes (viñeta, color, balance de blancos): se le copian
+                // los del ambiente, y los que el cuerpo mueve cada cuadro se guardan como base para sumarles el efecto.
+                foreach (VolumeComponent baseComponent in baseline.components)
+                {
+                    if (!profile.TryGet(baseComponent.GetType(), out VolumeComponent mine)) continue;
+                    for (int i = 0; i < baseComponent.parameters.Count; i++)
+                    {
+                        if (!baseComponent.parameters[i].overrideState) continue;
+                        mine.parameters[i].SetValue(baseComponent.parameters[i]);
+                        mine.parameters[i].overrideState = true;
+                    }
+                }
+                if (baseline.TryGet(out Vignette v) && v.intensity.overrideState) _baseVignette = v.intensity.value;
+                if (baseline.TryGet(out ColorAdjustments c))
+                {
+                    if (c.saturation.overrideState) _baseSaturation = c.saturation.value;
+                    if (c.postExposure.overrideState) _baseExposure = c.postExposure.value;
+                }
+                if (baseline.TryGet(out WhiteBalance w) && w.temperature.overrideState) _baseTemperature = w.temperature.value;
+            }
             _breath = CreateBreath();
             _frostTexture = CreateFrostTexture(256);
         }
@@ -132,6 +159,7 @@ namespace SurvivalEnTren.Survival
             float intensity = Frost * 0.55f;
             if (Tiredness * 0.4f > intensity) { color = Color.black; intensity = Tiredness * 0.4f; }
             if (hurtPulse * 0.4f > intensity) { color = HurtColor; intensity = hurtPulse * 0.4f; }
+            if (_baseVignette > intensity) { color = Color.black; intensity = _baseVignette; } // la viñeta leve del ambiente
             if (_vignette != null)
             {
                 _vignette.color.Override(color);
@@ -140,10 +168,10 @@ namespace SurvivalEnTren.Survival
             }
             if (_color != null)
             {
-                _color.saturation.Override(-35f * Frost - 25f * Tiredness);
-                _color.postExposure.Override(-1.5f * _blink * Tiredness);
+                _color.saturation.Override(_baseSaturation - 35f * Frost - 25f * Tiredness);
+                _color.postExposure.Override(_baseExposure - 1.5f * _blink * Tiredness);
             }
-            if (_white != null) _white.temperature.Override(-25f * Frost);
+            if (_white != null) _white.temperature.Override(_baseTemperature - 25f * Frost);
 
             // Temblor de frío: un poco de ruido en la rotación de la cámara.
             if (Shiver > 0f)
