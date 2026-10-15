@@ -107,6 +107,13 @@ namespace SurvivalEnTren.EditorTools
             var go = (GameObject)PrefabUtility.InstantiatePrefab(asset);
             PrefabUtility.UnpackPrefabInstance(go, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
             go.transform.SetParent(parent, false);
+            // Las mallas arregladas (P4: Survival en tren > Arte > Arreglar mallas), si están; si no, las del FBX.
+            string model = System.IO.Path.GetFileNameWithoutExtension(path);
+            foreach (MeshFilter filter in go.GetComponentsInChildren<MeshFilter>(true))
+            {
+                Mesh fixedMesh = MeshFix.FixedFor(model, filter.sharedMesh);
+                if (fixedMesh != null) filter.sharedMesh = fixedMesh;
+            }
             return go;
         }
 

@@ -52,6 +52,9 @@ namespace SurvivalEnTren.EditorTools
         [System.Serializable] private class CatalogList { public CatalogEntry[] items; }
         private static Dictionary<string, float> _textureMeters;
 
+        /// <summary>Tamaño real de la textura de un material de la librería, en metros (para MeshFix).</summary>
+        internal static float TextureMetersFor(string material) => TextureMeters(material);
+
         // Tamaño real de la textura de un material de la librería, en metros (1 si no está en el catálogo).
         private static float TextureMeters(string material)
         {
