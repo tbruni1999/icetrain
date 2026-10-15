@@ -22,7 +22,8 @@ var clock = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Survival.GameC
 var cc = motor.GetComponent<UnityEngine.CharacterController>();
 var port = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Train.FuelPort>();
 var rack = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Equipment.SuitRack>();
-var frozen = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Poi.FrozenDoor>();
+SurvivalEnTren.Poi.FrozenDoor frozen = null; // la puerta de la estación (desde el M10 también hay hielo en la palanca de la bifurcación)
+foreach (var d in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Poi.FrozenDoor>()) if (d.StableId == "door_prueba_estacion_001") frozen = d;
 var stationDoor = frozen.transform.parent.GetComponentInChildren<SurvivalEnTren.Interaction.SlidingDoor>();
 var stationCenter = frozen.transform.parent.parent.position; // el marcador de la señal: centro de la estación
 var can1 = UnityEngine.GameObject.Find("Bidon_1").GetComponent<SurvivalEnTren.Train.FuelCan>();

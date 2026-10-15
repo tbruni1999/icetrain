@@ -24,7 +24,8 @@ var clock = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Survival.GameC
 var cc = motor.GetComponent<UnityEngine.CharacterController>();
 var port = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Train.FuelPort>();
 var rack = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Equipment.SuitRack>();
-var frozen = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Poi.FrozenDoor>();
+SurvivalEnTren.Poi.FrozenDoor frozen = null; // la puerta de la estación (desde el M10 también hay hielo en la palanca de la bifurcación)
+foreach (var d in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Poi.FrozenDoor>()) if (d.StableId == "door_prueba_estacion_001") frozen = d;
 var stationDoor = frozen.transform.parent.GetComponentInChildren<SurvivalEnTren.Interaction.SlidingDoor>();
 var stationCenter = frozen.transform.parent.parent.position; // el marcador de la señal: centro de la estación
 var can1 = UnityEngine.GameObject.Find("Bidon_1").GetComponent<SurvivalEnTren.Train.FuelCan>();
@@ -88,7 +89,13 @@ bool wasHolding = false;
 void CheckDrop(string where)
 {
     bool holding = carrier.Holding == canCarry;
-    if (wasHolding && !holding) log.Append($" [SE SOLTÓ EL BIDÓN en {where}: jugador {motor.transform.position}, bidón {canCarry.transform.position}]");
+    if (wasHolding && !holding)
+    {
+        string near = "";
+        foreach (var c in UnityEngine.Physics.OverlapSphere(canCarry.transform.position, 0.8f, ~0, UnityEngine.QueryTriggerInteraction.Ignore))
+            if (!c.transform.IsChildOf(canCarry.transform) && c.gameObject != motor.gameObject) near += (c.transform.parent != null ? c.transform.parent.name + "/" : "") + c.name + " ";
+        log.Append($" [SE SOLTÓ EL BIDÓN en {where}: jugador {motor.transform.position}, bidón {canCarry.transform.position}, toca: {near}]");
+    }
     wasHolding = holding;
 }
 // Un paso de caminar: se gira yawDelta grados (como con el mouse) y se mantiene W apretada.

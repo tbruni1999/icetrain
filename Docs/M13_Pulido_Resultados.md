@@ -60,7 +60,25 @@ Medido en el **Editor** (que suma su propio costo) y **sin el límite de 60 cuad
 | `m13_dia_noche.cs` | 6:00 noche (luz de luna 0,12, niebla oscura 0,09, cielo 0,05); **7:30 amanecer** (sol en el horizonte, 0,50 de luz del día); 9:00 día (sol a 14°, luz 1,00, niebla 0,81, cielo 1,30); **12:45 mediodía (sol a 32°)**; 16:00 día; **18:00 atardecer**; 19:30, 22:00 y 2:00 noche. En todas las horas **la luz viene de arriba**; las 2 luces del interior del tren siguen prendidas |
 | `m13_menu_y_final.cs` (teclado y mouse virtuales) | **Escape:** pausa abierta, tiempo detenido, cursor libre, no se camina. **↓ + Enter:** "PARTIDA GUARDADA" y el menú sigue abierto. **Controles** se ven; Escape vuelve al menú; Escape cierra (el tiempo corre, el cursor vuelve a la mira). **Mouse:** clic en "Seguir" cierra. **Final:** no estaba mostrado; apareció a los 32 s con el tren en la ruta desconocida a 120 m; duró 11 s y el juego siguió (tren a 30 km/h) |
 
-REGRESION_PLACEHOLDER
+
+### Regresión completa final (35 pruebas, con el M11, el M12 y el M13 en la escena)
+
+Se corrieron todas las pruebas del M1 al M13, una por una, cada una con la escena recién puesta en Play (`Tools/SpikeTests/regresion.sh`, unas 2 h). **Todas dan lo mismo que en su milestone:**
+
+- **Tren y jugador (M1 a M3):** parada a +0,15 m del cartel; temblor del jugador pasando el cambio 0,03 mm; tope a 10 km/h: 23 cm, 2,6 g, rebote 1,8 km/h; puertas y llevar cosas igual (temblor en la mano 0,2 mm). Parado sobre una caja a 60 km/h: corrimiento 0,00 cm. Re-centrado del origen: 6 veces, costo máx. 0,65 ms, temblor del jugador 0,03 mm, deriva 0,02 cm, temblor de las cajas 1,1 mm.
+- **Supervivencia (M4):** adentro 13,7 °C; con las dos puertas abiertas baja a −20 °C y al cerrarlas vuelve a 13,7 °C en 2 h; caída de 6 m: vida 100 → 38.
+- **Sonda (M5):** la portátil lleva al objetivo caminando un 96 % de la línea recta; la interferencia junto a la masa metálica, igual.
+- **Combustible (M6):** gasto exacto (1,5 / 5,5 / 9,5 L/h); la expedición, idéntica: 4,88 h de juego, bombea 20 L y carga 19,7 L.
+- **Inventario, obras y taller (M7 a M9):** cuentas exactas, sin duplicar ni perder; ciclo completo de obras en 4 viajes; el taller fabrica la sierra y el bidón.
+- **Bifurcación (M10):** de cero a la ruta desconocida en 227 s reales (3,8 h de juego).
+- **Mini-región (M11):** el loop en tres viajes, 263 s reales (4,4 h de juego), combustible 48,8 → 17,2 L, 16,7 ms por cuadro en los tres viajes.
+- **Guardado (M12):** guardar y cargar da IGUAL en las tres comparaciones; cargar dos veces no duplica nada.
+- **Pulido (M13):** sonido, día y noche, menú de pausa y final, igual que en sus pruebas.
+
+Ajustes de las pruebas (no del juego):
+- Las dos expediciones (`m6_expedicion` y `m7_expedicion`) buscaban "el hielo" de la escena. Desde el M10 hay dos (la puerta de la estación y la palanca de la bifurcación) y a veces agarraban el de la palanca: la del M7 se cortaba al arrancar. Ahora eligen el de la estación por su ID; corridas solas, dan lo mismo que en el M10.
+- En la corrida larga, el jugador automático de `m6_expedicion` soltó una vez el bidón en el camino de vuelta (ya había pasado una vez en el M7). Corrida otra vez, salió completa. Es del caminante automático, que gira de golpe con el bidón a la cadera, no del juego. Si vuelve a pasar, la prueba ahora anota contra qué se trabó.
+- Los valores del arranque son un poco más bajos (tanque 48,8 L en vez de 50) porque el lanzador ahora espera a que Unity conteste antes de empezar, y en esa espera corren unos minutos de juego.
 
 ## Cómo probarlo vos en Unity (paso a paso)
 
