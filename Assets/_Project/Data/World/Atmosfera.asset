@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe0f234c738121840aae7fadaa117038, type: 3}
+  m_Name: Atmosfera
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalEnTren.World.AtmosphereSettings
+  flakesPerSecond: 1100
+  areaRadius: 14
+  spawnHeight: 10
+  fallSpeed: 1.4
+  flakeSizeMin: 0.05
+  flakeSizeMax: 0.11
+  intensityVariation: 0.5
+  variationHours: 3
+  windDirectionDegrees: 70
+  windSpeed: 3.5
+  gustStrength: 0.5
+  gustsPerMinute: 6
+  driftPerSecond: 90
+  frostFullBelowC: -2
+  frostClearAboveC: 12
+  frostMinimum: 0.25
+  frostResponseMinutes: 40
