@@ -6,6 +6,7 @@ cd "$(dirname "$0")/../.."
 OUT="${1:-/tmp/regresion.txt}"
 M2=Assets/_Project/Scenes/Pruebas/M2_Conduccion.unity
 SP=Assets/_Project/Scenes/Spike/Spike_TrenEstable.unity
+MENU=Assets/_Project/Scenes/Menu_Principal.unity
 : > "$OUT"
 run() { echo "=== $1" >> "$OUT"; timeout 900 bash Tools/SpikeTests/run_test.sh "$1" "$2" "$3" >> "$OUT" 2>&1; }
 run m2_cambio_y_parada M2 $M2
@@ -41,6 +42,9 @@ run m12_guardado Guardado $M2
 run m13_sonido Sonido $M2
 run m13_dia_noche DiaNoche $M2
 run m13_menu_y_final MenuFinal $M2
+run p1_nieve Nieve $M2
+run p1_escarcha Escarcha $M2
+run p3_inicio Inicio $MENU
 run parado_en_caja Caja $SP
 run recentrado Recentrado $SP
 echo "done" >> "$OUT"
