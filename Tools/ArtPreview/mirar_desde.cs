@@ -1,8 +1,8 @@
 // Vista previa del arte en el juego (no es una prueba): pone al jugador en un punto del tren (coordenadas locales del tren)
 // mirando a otro punto, para sacar una captura con capture_game_view. Editar PUNTO y MIRA antes de correrla.
 //   unity command eval_file --file "Tools/ArtPreview/mirar_desde.cs" --timeout 60
-var PUNTO = new UnityEngine.Vector3(0.4f, 1.05f, -3.5f);
-var MIRA = new UnityEngine.Vector3(-1.2f, 1.4f, -7.2f);
+var PUNTO = new UnityEngine.Vector3(0.3f, 1.05f, 8.0f);
+var MIRA = new UnityEngine.Vector3(-0.9f, 2.4f, 6.3f);
 var train = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Train.TrainMover>();
 var body = train.GetComponent<UnityEngine.Rigidbody>();
 var motor = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Player.PlayerMotor>();

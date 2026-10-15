@@ -20,6 +20,83 @@ namespace SurvivalEnTren.EditorTools
         private const string WagonArtPath = "Assets/_Project/Art/Tren/MR04/RedBlanca_MR04_v03_invierno.fbx";
         private const string PropsArtFolder = "Assets/_Project/Art/Props";
         private const string LibraryMaterialsFolder = "Assets/_Project/Art/Libreria/Materiales";
+        private const string GeneratedArtFolder = "Assets/_Project/Art/Tren/MR04/Generado";
+        private const float ConsoleRaise = 0.6f;     // cuánto se sube la consola de la sonda (la pantalla queda a 1,5 m del piso)
+        private const float ConsoleShiftZ = -0.9f;   // cuánto se corre hacia atrás (de z 7,2 a 6,3: a la pared lisa entre ventanas)
+
+        // Separa una malla en dos según el centro de cada triángulo (en coordenadas de la malla): [0] lo que queda, [1] lo que
+        // cumple "take". Se guardan en Art/Tren/MR04/Generado (se rehacen cada vez que se arma la escena). Conserva materiales
+        // (una submalla por material) y los dos canales de UV.
+        private static Mesh[] SplitMesh(Mesh source, string restName, string partName, System.Func<Vector3, bool> take)
+        {
+            Vector3[] vertices = source.vertices;
+            Vector3[] normals = source.normals;
+            Vector4[] tangents = source.tangents;
+            var uv0 = new System.Collections.Generic.List<Vector2>();
+            var uv1 = new System.Collections.Generic.List<Vector2>();
+            source.GetUVs(0, uv0);
+            source.GetUVs(1, uv1);
+
+            Mesh Build(string name, bool wanted)
+            {
+                var map = new System.Collections.Generic.Dictionary<int, int>();
+                var v = new System.Collections.Generic.List<Vector3>();
+                var n = new System.Collections.Generic.List<Vector3>();
+                var t = new System.Collections.Generic.List<Vector4>();
+                var u0 = new System.Collections.Generic.List<Vector2>();
+                var u1 = new System.Collections.Generic.List<Vector2>();
+                var subs = new System.Collections.Generic.List<int>[source.subMeshCount];
+                for (int sm = 0; sm < source.subMeshCount; sm++)
+                {
+                    subs[sm] = new System.Collections.Generic.List<int>();
+                    int[] tris = source.GetTriangles(sm);
+                    for (int i = 0; i < tris.Length; i += 3)
+                    {
+                        Vector3 center = (vertices[tris[i]] + vertices[tris[i + 1]] + vertices[tris[i + 2]]) / 3f;
+                        if (take(center) != wanted) continue;
+                        for (int k = 0; k < 3; k++)
+                        {
+                            int old = tris[i + k];
+                            if (!map.TryGetValue(old, out int index))
+                            {
+                                index = v.Count;
+                                map[old] = index;
+                                v.Add(vertices[old]);
+                                if (normals.Length > 0) n.Add(normals[old]);
+                                if (tangents.Length > 0) t.Add(tangents[old]);
+                                if (uv0.Count > 0) u0.Add(uv0[old]);
+                                if (uv1.Count > 0) u1.Add(uv1[old]);
+                            }
+                            subs[sm].Add(index);
+                        }
+                    }
+                }
+                var mesh = new Mesh { name = name };
+                mesh.indexFormat = v.Count > 65000 ? UnityEngine.Rendering.IndexFormat.UInt32 : UnityEngine.Rendering.IndexFormat.UInt16;
+                mesh.SetVertices(v);
+                if (n.Count > 0) mesh.SetNormals(n);
+                if (t.Count > 0) mesh.SetTangents(t);
+                if (u0.Count > 0) mesh.SetUVs(0, u0);
+                if (u1.Count > 0) mesh.SetUVs(1, u1);
+                mesh.subMeshCount = source.subMeshCount;
+                for (int sm = 0; sm < source.subMeshCount; sm++) mesh.SetTriangles(subs[sm], sm);
+                mesh.RecalculateBounds();
+
+                if (!AssetDatabase.IsValidFolder(GeneratedArtFolder)) AssetDatabase.CreateFolder("Assets/_Project/Art/Tren/MR04", "Generado");
+                string path = $"{GeneratedArtFolder}/{name}.asset";
+                Mesh existing = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+                if (existing == null) { AssetDatabase.CreateAsset(mesh, path); return mesh; }
+                EditorUtility.CopySerialized(mesh, existing);
+                existing.name = name;
+                Object.DestroyImmediate(mesh);
+                EditorUtility.SetDirty(existing);
+                return existing;
+            }
+
+            Mesh[] result = { Build(restName, false), Build(partName, true) };
+            AssetDatabase.SaveAssets();
+            return result;
+        }
 
         private static Material LibraryMaterial(string name) => AssetDatabase.LoadAssetAtPath<Material>($"{LibraryMaterialsFolder}/{name}.mat");
 
@@ -191,9 +268,41 @@ namespace SurvivalEnTren.EditorTools
                 doorSo.ApplyModifiedPropertiesWithoutUndo();
             }
 
-            // La pantalla de la sonda (la dibuja el juego) va donde el arte puso el vidrio del radar: vertical, mirando al pasillo.
+            // La consola de la sonda (pedido de Tomi, 2026-10-14: "poco visible, no queda a la altura de la vista" y "debería estar
+            // más sobre la pared y no tanto sobre la ventana"). En el modelo viene pegada a la malla de la cabina, en el borde de la
+            // ventana (z 6,8 a 7,6) y con la pantalla a 0,9 m del piso. Se separa de la cabina, se corre a la pared lisa entre dos
+            // ventanas (z 5,9 a 6,7) y se sube sobre una base de acero: la pantalla queda a 1,5 m del piso (los ojos, a 1,65 m).
+            Vector3 consoleMove = new Vector3(0f, ConsoleRaise, ConsoleShiftZ);
+            Transform cabin = A("Cabina_LOD0");
+            Mesh[] parts = SplitMesh(cabin.GetComponent<MeshFilter>().sharedMesh, "Cabina", "Consola_Sonda",
+                c => -c.x >= -1.7f && -c.x <= -0.8f && -c.z >= 6.5f && -c.z <= 7.9f); // el FBX está girado 180°: x y z al revés
+            cabin.GetComponent<MeshFilter>().sharedMesh = parts[0];
+            var consoleArt = new GameObject("Arte_Consola_Sonda");
+            consoleArt.transform.SetParent(console, false);
+            consoleArt.transform.SetPositionAndRotation(cabin.position + root.transform.TransformVector(consoleMove), cabin.rotation);
+            consoleArt.AddComponent<MeshFilter>().sharedMesh = parts[1];
+            consoleArt.AddComponent<MeshRenderer>().sharedMaterials = cabin.GetComponent<MeshRenderer>().sharedMaterials;
+            Bounds consoleBox = BoundsIn(console, consoleArt);
+
+            // La base: cuatro patas de acero y una repisa abajo, debajo de la consola.
+            Material steel = LibraryMaterial("MT_AceroOscuro");
+            float baseTop = consoleBox.min.y;
+            foreach (float x in new[] { consoleBox.min.x + 0.02f, consoleBox.max.x - 0.06f })
+                foreach (float z in new[] { consoleBox.min.z + 0.02f, consoleBox.max.z - 0.06f })
+                    BoxMinMax("Base_Pata", console, new Vector3(x, FloorTop, z), new Vector3(x + 0.04f, baseTop, z + 0.04f), steel, false);
+            BoxMinMax("Base_Repisa", console, new Vector3(consoleBox.min.x + 0.02f, FloorTop + 0.12f, consoleBox.min.z + 0.02f),
+                new Vector3(consoleBox.max.x - 0.02f, FloorTop + 0.15f, consoleBox.max.z - 0.02f), steel, false);
+            BoxMinMax("Base_Marco", console, new Vector3(consoleBox.min.x + 0.02f, baseTop - 0.04f, consoleBox.min.z + 0.02f),
+                new Vector3(consoleBox.max.x - 0.02f, baseTop, consoleBox.max.z - 0.02f), steel, false);
+
+            // Lo sólido de la consola (y lo que se apunta para fijar objetivo) va con ella: de piso a la parte de arriba.
+            Transform furniture = console.Find("Mueble");
+            furniture.localPosition = new Vector3(consoleBox.center.x, (FloorTop + consoleBox.max.y) * 0.5f, consoleBox.center.z);
+            furniture.localScale = new Vector3(consoleBox.size.x, consoleBox.max.y - FloorTop, consoleBox.size.z);
+
+            // La pantalla de la sonda (la dibuja el juego) va donde quedó el vidrio del radar: vertical, mirando al pasillo.
             Transform screen = console.Find("Pantalla");
-            screen.position = root.transform.TransformPoint(new Vector3(-0.935f, 1.9f, 7.2f));
+            screen.position = root.transform.TransformPoint(new Vector3(-0.935f, 1.9f, 7.2f) + consoleMove);
             screen.localRotation = Quaternion.LookRotation(Vector3.left);
 
             // La sierra fabricada: se ve la del arte (colgada entre el banco y el estante), cuando el jugador la tiene.

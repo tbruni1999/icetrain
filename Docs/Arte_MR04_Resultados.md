@@ -29,6 +29,7 @@ Menú **Survival en tren > Arte > Crear materiales y conectar modelos** (`Script
 - **Ruedas:** los cuatro ejes giran según la velocidad (componente nuevo `TrainWheels`).
 - **Puertas:** las del arte son **con bisagra** (las del juego eran corredizas). Ahora la puerta abre 100° hacia afuera girando sobre la bisagra; todo lo demás es igual (E abre y cierra, no cierra si hay alguien en el hueco, el frío entra con la puerta abierta). Si Tomi las prefiere corredizas, es un valor de la puerta (`openEuler` / `openOffset`).
 - **La pantalla de la sonda** (la dibuja el juego) quedó dentro del monitor del arte.
+- **La consola de la sonda, movida (pedido de Tomi):** en el modelo estaba en el borde de la ventana de la cabina y con la pantalla a 0,9 m del piso, poco visible. Ahora se separa de la malla de la cabina, se corre 90 cm hacia atrás a la pared lisa entre dos ventanas (z 5,9 a 6,7) y se sube 60 cm sobre una base de acero: **la pantalla queda a 1,5 m del piso**, a la altura de la vista (los ojos del jugador están a 1,65 m). La malla separada se guarda en `Art/Tren/MR04/Generado/` y se rehace cada vez que se arma la escena. **Para el chat de arte:** conviene mover la consola así en el .blend, para que la próxima entrega ya venga en su lugar.
 - **La sierra fabricada** que aparece colgada es la del arte (entre el banco y el estante).
 - **Lo que el juego arma por fases** (la cama y el estante reforzado) sigue siendo del juego, ahora con los materiales de la librería (madera, colchón, manta, acero). El arte los trae terminados, en una pieza por fase; el juego muestra el avance pieza por pieza (M8: "2 de 4 tablones"). Ver pendientes.
 - Nada de luz horneada ni de objetos Static (la guía los pide, pero el tren se mueve). Las dos luces del techo ya estaban donde el arte puso sus marcas.
@@ -78,6 +79,8 @@ Ajuste: las puertas y la sierra del arte se llamaban igual que las del juego ("P
 ![Interior](Capturas_Arte/2_interior.png)
 ![Fondo del tren: bidones, perchero y puertas](Capturas_Arte/3_fondo_bidones.png)
 ![Afuera: la puerta derecha abierta con bisagra](Capturas_Arte/4_exterior_puerta.png)
+![La consola de la sonda en la pared, a la altura de la vista](Capturas_Arte/5_radar_en_la_pared.png)
+![La consola de frente](Capturas_Arte/6_radar_de_frente.png)
 
 ## Cómo probarlo vos en Unity (paso a paso)
 
