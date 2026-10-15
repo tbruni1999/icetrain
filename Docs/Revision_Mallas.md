@@ -113,3 +113,29 @@ Generado por "Survival en tren > Arte > Revisar mallas" (2026-10-15 01:14). Una 
 | RedBlanca_MR04_v03_invierno | Puerta_Izquierda | 0 | 0 | 0 | 8 | 8 |
 | RedBlanca_MR04_v03_invierno | Vidrio_Radar | 0 | 0 | 0 | 8 | 8 |
 | RedBlanca_MR04_v03_invierno | Vidrios_LOD0 | 0 | 0 | 0 | 80 | 80 |
+
+## Pulido en Blender (Blender 5.2.2 LTS, portable, de blender.org; autorizado por Tomi)
+
+`Fuentes/Scripts_Pulido/pulir.py` abre cada `.blend` y exporta un FBX pulido a `Fuentes/Exportado/` (los `.blend` y FBX originales no se tocan; el `.blend` pulido se guarda aparte). Hallazgo: **en el vagón cada cara era una pieza suelta** (cada una con sus propios vértices), por eso aparecían miles de bordes "abiertos" y uniones por donde se colaba la luz. El pulido:
+
+- **suelda los vértices en el mismo lugar** (0,1 mm): las piezas quedan cerradas y continuas;
+- saca caras sin área y vértices sueltos;
+- **sombreado por ángulo (30°)**: los cantos marcados quedan duros y lo curvo (ruedas, tanques, caños) se ve liso en vez de facetado;
+- no da vuelta normales en automático (el interior del vagón mira hacia adentro a propósito; lo que estaba al revés lo arregla "Arreglar mallas" en Unity).
+
+| Vagón: pieza | Vértices antes → después | Bordes abiertos antes → después |
+|---|---|---|
+| Carrocería | 38.504 → 12.416 | 38.396 → 0 |
+| Interior | 5.864 → 1.652 | 5.864 → 0 |
+| Chasis | 4.894 → 1.479 | 4.894 → 0 |
+| Muebles | 3.948 → 1.130 | 3.960 → 0 |
+| Bogies | 3.648 → 1.088 | 3.648 → 0 |
+| Cabina | 3.308 → 1.036 | 3.308 → 0 |
+| Nieve del techo | 4.106 → 2.994 | 1.736 → 0 |
+| Puertas (cada una) | 1.104 → 308 | 1.098 → 0 |
+| Quitanieves | 786 → 786 | 69 → 69 (chapas abiertas por diseño) |
+| Costra de nieve | 6.777 → 6.777 | 9 → 9 |
+
+Las otras piezas, igual: cerradas y con un tercio de los vértices. Los **props** ya venían bien cerrados en Blender (0 bordes abiertos; 2 en el LOD2 de la bomba de lanza): lo que la revisión de Unity marcaba en ellos son cortes del exportado, que corrige "Arreglar mallas".
+
+**Para el chat de arte:** el quitanieves tiene 69 bordes abiertos y la costra de nieve 9; si son agujeros y no chapas abiertas, conviene cerrarlos en el `.blend`. Y conviene exportar el vagón ya soldado (como el `.blend` pulido de `Fuentes/Exportado/`).
