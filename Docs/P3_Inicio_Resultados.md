@@ -33,7 +33,24 @@ Parte del plan de la noche. Que el juego arranque como un juego: un menú princi
 
 La meta del Anexo E.1 es 16,7 ms por cuadro (60 FPS a 1080p): el juego usa entre un 13 y un 21 % de ese tiempo, con el arte, la atmósfera, el terreno y las sombras nuevas. Esta PC es potente; la de referencia (todavía sin definir) puede dar números más altos.
 
-REGRESION_PRODUCCION_PLACEHOLDER
+### Regresión completa de producción (39 pruebas, 2026-10-15)
+
+Las 35 pruebas del M1 al M13 más las 4 de producción (nieve, escarcha, inicio del juego y rendimiento), una por una, cada una con su escena recién puesta en Play (`Tools/SpikeTests/regresion.sh`, unas 2 h 30), con el arte, la atmósfera, el terreno, los lugares vestidos y el menú en el juego. Las 39 devolvieron resultado y **dan lo mismo que en el M13**, salvo una prueba que hubo que ajustar (abajo):
+
+- **Tren y jugador (M1 a M3):** parada a +0,15 m del cartel; temblor del jugador pasando el cambio 0,03 mm; tope a 10 km/h: 23 cm, 2,6 g, rebote 1,8 km/h; puertas y llevar cosas igual (temblor en la mano 0,2 mm). Parado sobre una caja a 60 km/h: corrimiento 0,00 cm. Re-centrado del origen: 6 veces, costo máx. 0,66 ms, temblor del jugador 0,03 mm, deriva 0,02 cm.
+- **Supervivencia (M4):** adentro 13,7 °C; con las dos puertas abiertas baja a −20 °C y al cerrarlas vuelve a 13,7 °C en 2 h; caída de 6 m: vida 100 → 38.
+- **Sonda (M5):** la portátil lleva al objetivo caminando un 96 % de la línea recta (después del ajuste); la interferencia junto a la masa metálica, igual.
+- **Combustible (M6):** gasto exacto (1,5 / 5,5 / 9,5 L/h); la expedición, idéntica: 4,88 h de juego.
+- **Inventario, obras y taller (M7 a M9):** cuentas exactas, sin duplicar ni perder; obras en 4 viajes; el taller fabrica la sierra y el bidón.
+- **Bifurcación (M10):** de cero a la ruta desconocida en 227 s reales (3,8 h de juego).
+- **Mini-región (M11):** el loop en tres viajes, 263 s reales (4,4 h de juego), combustible 48,8 → 17,3 L, 16,7 ms por cuadro.
+- **Guardado (M12):** guardar y cargar da IGUAL en las tres comparaciones.
+- **Pulido (M13):** sonido, día y noche, menú de pausa y final, igual.
+- **Producción:** nieve (0 copos adentro del tren a 31 km/h; al re-centrar el mundo los copos no saltan: 0,0 cm); escarcha (0,25 con calefacción, 0,98 después de 3 h sin ella, y vuelve a bajar); inicio (menú → nueva partida con el despertar de 7 s → guardar → salir al menú → continuar, todo bien).
+
+**Ajuste de una prueba (no del juego):** la de la sonda portátil (`m5_sonda_portatil`) fallaba: el caminante automático "se moría" a mitad de camino y despertaba en el tren. Causa: la prueba empuja al jugador en horizontal por fuera del motor; en las bajadas de las dunas nuevas eso lo despegaba del piso a cada paso y el motor sumaba velocidad de caída (hasta 33 m/s), como si cayera de un edificio. A un jugador real no le puede pasar: en el juego solo el motor mueve al jugador, y empuja hacia abajo para seguir el piso. Ahora la prueba camina con el mismo empuje hacia abajo que el motor (2 m/s), igual que `m10_sonda_red`, y anota los desmayos (deben ser 0). Corrida sola: 96 % de la línea recta, 0 desmayos.
+
+**Rendimiento en el Editor** (`m13_rendimiento`): 3,4 a 4,0 ms por cuadro (antes de producción, 1,6 ms); en la build, 2,1 a 3,5 ms (tabla de P3). La meta es 16,7 ms. Adentro del tren la prueba cuenta 1,2 millones de triángulos, pero lo que se ve son 235 mil: medido apagando cosas, las dos luces del techo dibujan el tren 6 veces cada una para su sombra (630 mil) y el sol 4 veces más por sus cascadas (345 mil). Si en una PC más débil hiciera falta, lo primero es apagar la sombra de una de las dos luces del techo.
 
 ## Cómo probarlo vos en Unity
 1. Abrí `Assets/_Project/Scenes/Menu_Principal` y dale Play.

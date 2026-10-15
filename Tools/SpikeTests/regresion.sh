@@ -47,4 +47,5 @@ run p1_escarcha Escarcha $M2
 run p3_inicio Inicio $MENU
 run parado_en_caja Caja $SP
 run recentrado Recentrado $SP
+run m13_rendimiento Rendimiento $M2
 echo "done" >> "$OUT"

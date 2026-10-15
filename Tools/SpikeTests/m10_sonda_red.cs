@@ -60,7 +60,7 @@ System.Collections.IEnumerator Walk(System.Func<float> needleDeg, UnityEngine.Te
         t += dt;
         motor.AddYaw(UnityEngine.Mathf.Clamp(needleDeg(), -120f * dt, 120f * dt));
         var before = motor.transform.position;
-        cc.Move(motor.transform.forward * 5f * dt);
+        cc.Move(motor.transform.forward * 5f * dt + UnityEngine.Vector3.down * 2f * dt); // pegado al piso como el motor (dunas, P1)
         var local = toLocal.Invoke(motor, new object[] { motor.transform.position });
         tm.GetField("_currentLocal", flags).SetValue(motor, local);
         tm.GetField("_previousLocal", flags).SetValue(motor, local);

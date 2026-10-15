@@ -15,6 +15,7 @@ var motor = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Player.PlayerM
 var who = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Interaction.PlayerInteractor>();
 var carrier = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Interaction.PlayerCarrier>();
 var cc = motor.GetComponent<UnityEngine.CharacterController>();
+var respawn = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Survival.SurvivalRespawn>();
 var tm = typeof(SurvivalEnTren.Player.PlayerMotor);
 var toLocal = tm.GetMethod("ToReferenceLocal", flags);
 UnityEngine.QualitySettings.vSyncCount = 0;
@@ -40,7 +41,9 @@ System.Collections.IEnumerator Walk(System.Func<float> needle, UnityEngine.TextM
         t += dt;
         motor.AddYaw(UnityEngine.Mathf.Clamp(needle(), -120f * dt, 120f * dt)); // gira como con el mouse, sin teletransportar la vista
         var before = motor.transform.position;
-        cc.Move(motor.transform.forward * 5f * dt); // trotar
+        // Trotar pegado al piso: el mismo empuje hacia abajo que usa el motor (2 m/s). Sin él, en las bajadas de las dunas
+        // (producción P1) el paso de la prueba despega al jugador y el motor acumula velocidad de caída hasta "matarlo".
+        cc.Move(motor.transform.forward * 5f * dt + UnityEngine.Vector3.down * 2f * dt);
         // Que el suavizado del motor no deshaga el paso (en la referencia actual: el mundo o lo que pisa).
         var local = toLocal.Invoke(motor, new object[] { motor.transform.position });
         tm.GetField("_currentLocal", flags).SetValue(motor, local);
@@ -69,7 +72,7 @@ System.Collections.IEnumerator Run()
     float straight = Flat(target.transform.position, motor.transform.position);
     yield return Walk(() => probe.TargetNeedleDegrees, targetText, "OBJ.  ~10 M", r);
     float miss = Flat(target.transform.position, motor.transform.position);
-    log.Append($" IDA: {r[0]:0} s, caminó {r[1]:0} m para {straight:0} m en línea recta ({r[1] / straight * 100f:0}%), terminó a {miss:0.0} m de la señal, texto \"{targetText.text}\".");
+    log.Append($" IDA: {r[0]:0} s, caminó {r[1]:0} m para {straight:0} m en línea recta ({r[1] / straight * 100f:0}%), terminó a {miss:0.0} m de la señal, texto \"{targetText.text}\", desmayos {respawn.KnockoutCount} (debe ser 0).");
 
     // 2) Volver al tren solo con la aguja blanca.
     straight = Flat(train.transform.position, motor.transform.position);
