@@ -1,14 +1,9 @@
 fileFormatVersion: 2
-guid: 94e6798d5f8da16448d5822166f4e599
+guid: 8c3f93bdf7e05b04cb6c8730bc6f896b
 ModelImporter:
   serializedVersion: 24600
   internalIDToNameTable: []
   externalObjects:
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: MT_Cuero
-    second: {fileID: 2100000, guid: 2ebcfc0200f7fa04e9aedfa6a2d906fa, type: 2}
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
@@ -19,11 +14,6 @@ ModelImporter:
       assembly: UnityEngine.CoreModule
       name: MT_LonaMarron
     second: {fileID: 2100000, guid: 5934b16dc0068f0408950f90903eeada, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: MT_PlasticoNegro
-    second: {fileID: 2100000, guid: 8889ce54fcbc0dc48b478938ba9e1c7e, type: 2}
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
@@ -115,7 +105,7 @@ ModelImporter:
     normalSmoothingSource: 0
     calculateBlendshapeNormalsDeltaFromImportedNormals: 0
   referencedClips: []
-  importAnimation: 0
+  importAnimation: 1
   humanDescription:
     serializedVersion: 3
     human: []
@@ -134,7 +124,7 @@ ModelImporter:
     skeletonHasParents: 1
   lastHumanDescriptionAvatarSource: {instanceID: 0}
   autoGenerateAvatarMappingIfUnspecified: 1
-  animationType: 0
+  animationType: 2
   humanoidOversampling: 1
   avatarSetup: 0
   addHumanoidExtraRootOnlyWhenUsingAvatar: 1

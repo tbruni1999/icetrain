@@ -118,7 +118,6 @@ namespace SurvivalEnTren.EditorTools
         }
 
         private const string ToolsArtFolder = "Assets/_Project/Art/Herramientas";
-        private const string ArmsArtPath = "Assets/_Project/Art/Manos/Manos.fbx";
 
         // El modelo de una herramienta (Art/Herramientas/<nombre>.fbx) dentro de su pivote (el puño). False si no está.
         private static bool ArtTool(Transform pivot, string name)
@@ -133,68 +132,119 @@ namespace SurvivalEnTren.EditorTools
             return true;
         }
 
-        // Una pieza de Manos.fbx (por nombre), suelta, como hija de "parent". Null si el modelo no está.
-        private static Transform ArmPiece(string name, Transform parent, bool mirrored)
-        {
-            var model = AssetDatabase.LoadAssetAtPath<GameObject>(ArmsArtPath);
-            if (model == null) return null;
-            var instance = (GameObject)PrefabUtility.InstantiatePrefab(model);
-            PrefabUtility.UnpackPrefabInstance(instance, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
-            Transform piece = instance.transform.Find(name);
-            if (piece != null)
-            {
-                piece.SetParent(parent, false);
-                piece.localPosition = Vector3.zero;
-                piece.localRotation = Quaternion.identity;
-                piece.localScale = mirrored ? new Vector3(-1f, 1f, 1f) : Vector3.one;
-                foreach (Renderer r in piece.GetComponentsInChildren<Renderer>(true))
-                {
-                    r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                    r.receiveShadows = false;
-                }
-                piece.gameObject.SetActive(false);
-            }
-            Object.DestroyImmediate(instance);
-            return piece;
-        }
+        // Los brazos (2026-10-16): el rig que pasó Tomi ("fps arms", CC0) vestido por Fuentes/Scripts_Manos/brazos_rig.py.
+        private const string ArmsRigPath = "Assets/_Project/Art/Manos/BrazosFPS.fbx";
+        // Las poses de los dedos: cada una en su cuadro de la animación "Poses" del modelo (ver brazos_rig.py).
+        private static readonly (string name, int frame)[] ArmPoses = { ("Reposo", 1), ("Puno", 11), ("Puno_Grueso", 21), ("Abierta", 31) };
 
-        // Los dos brazos (piezas de Manos.fbx: con el traje y sin él) y el FirstPersonArms que los acomoda.
+        // Los dos brazos (el rig con la ropa de las dos variantes del traje) y el FirstPersonArms que los acomoda. Las poses de
+        // los dedos se leen de las animaciones de un cuadro del modelo y quedan guardadas en el componente.
         private static void BuildArms(Transform head, Transform hands, ToolBelt belt, Transform[] toolModels, PlayerMotor motor)
         {
-            if (AssetDatabase.LoadAssetAtPath<GameObject>(ArmsArtPath) == null) return;
+            var model = AssetDatabase.LoadAssetAtPath<GameObject>(ArmsRigPath);
+            if (model == null) return;
+            var rig = (GameObject)PrefabUtility.InstantiatePrefab(model, hands);
+            PrefabUtility.UnpackPrefabInstance(rig, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
+            rig.name = "Brazos_Rig";
+            // Los ojos del rig (donde estaba su cámara en Blender) en los ojos del jugador.
+            rig.transform.localPosition = new Vector3(0f, -0.119f, 0f);
+            rig.transform.localRotation = Quaternion.identity;
+            int layer = LayerMask.NameToLayer(HandsLayerName);
+            foreach (Transform t in rig.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = layer;
+            foreach (SkinnedMeshRenderer r in rig.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                r.receiveShadows = false;
+                r.updateWhenOffscreen = true;               // los huesos se mueven lejos del reposo: que no se corte por la caja vieja
+                r.skinnedMotionVectors = false;
+                r.enabled = false;
+            }
+
+            // La animación con las poses de los dedos.
+            AnimationClip posesClip = null;
+            foreach (Object a in AssetDatabase.LoadAllAssetsAtPath(ArmsRigPath))
+                if (a is AnimationClip clip && !clip.name.StartsWith("__preview")) posesClip = clip;
+
             var arms = head.gameObject.AddComponent<FirstPersonArms>();
             SetReference(arms, "belt", belt);
             SetReference(arms, "carrier", motor.GetComponent<SurvivalEnTren.Interaction.PlayerCarrier>());
             SetReference(arms, "gear", motor.GetComponent<PlayerGear>());
             SetReference(arms, "head", head);
+            SetReference(arms, "rigRoot", rig.transform);
             var so = new SerializedObject(arms);
             var models = so.FindProperty("toolModels");
             models.arraySize = toolModels.Length;
             for (int i = 0; i < toolModels.Length; i++) models.GetArrayElementAtIndex(i).objectReferenceValue = toolModels[i];
-            string[] variants = { "Campera", "Buzo" };
-            string[] gloves = { "Grueso", "Trabajo" };
+
+            var fingers = new System.Collections.Generic.Dictionary<string, Transform[]>();
             foreach (bool left in new[] { false, true })
             {
-                var root = Group(left ? "Brazo_Izquierdo" : "Brazo_Derecho", hands);
-                var shoulder = Group("Hombro", root);
-                shoulder.localPosition = new Vector3(left ? -0.38f : 0.38f, -0.62f, -0.18f); // abajo y atrás: la manga no tapa la vista
+                string s = left ? "L" : "R";
+                Transform Bone(string n) => FindChildDeep(rig.transform, n + "." + s);
                 SerializedProperty side = so.FindProperty(left ? "left" : "right");
-                side.FindPropertyRelative("shoulder").objectReferenceValue = shoulder;
                 side.FindPropertyRelative("isLeft").boolValue = left;
-                side.FindPropertyRelative("mirrored").boolValue = left; // la mano del modelo es derecha: la izquierda es la espejada
-                foreach (string list in new[] { "upper", "fore", "fist", "open" })
+                side.FindPropertyRelative("root").objectReferenceValue = Bone("clavicle");
+                side.FindPropertyRelative("upperArm").objectReferenceValue = Bone("upper_arm");
+                side.FindPropertyRelative("forearm").objectReferenceValue = Bone("forearm");
+                Transform hand = Bone("hand");
+                side.FindPropertyRelative("hand").objectReferenceValue = hand;
+                side.FindPropertyRelative("grip").objectReferenceValue = Bone("agarre");
+                side.FindPropertyRelative("gripThumb").objectReferenceValue = Bone("agarre_pulgar");
+                side.FindPropertyRelative("palm").objectReferenceValue = Bone("palma");
+                side.FindPropertyRelative("middleKnuckle").objectReferenceValue = Bone("f_middle.01");
+                var shoulder = Group(left ? "Hombro_Izquierdo" : "Hombro_Derecho", hands);
+                shoulder.localPosition = new Vector3(left ? -0.38f : 0.38f, -0.62f, -0.18f); // abajo y atrás: la manga no tapa la vista
+                side.FindPropertyRelative("shoulder").objectReferenceValue = shoulder;
+                string[] sleeveNames = { "Manga_Campera_", "Manga_Buzo_" };
+                string[] gloveNames = { "Guante_Grueso_", "Guante_Trabajo_" };
+                SerializedProperty sleeves = side.FindPropertyRelative("sleeves"), gloves = side.FindPropertyRelative("gloves");
+                sleeves.arraySize = 2; gloves.arraySize = 2;
+                for (int v = 0; v < 2; v++)
                 {
-                    SerializedProperty parts = side.FindPropertyRelative(list);
-                    parts.arraySize = 2;
-                    for (int v = 0; v < 2; v++)
-                    {
-                        string piece = list == "upper" ? $"Brazo_{variants[v]}" : list == "fore" ? $"Antebrazo_{variants[v]}"
-                            : list == "fist" ? $"Mano_{gloves[v]}_Puno" : $"Mano_{gloves[v]}_Abierta";
-                        parts.GetArrayElementAtIndex(v).objectReferenceValue = ArmPiece(piece, root, left);
-                    }
+                    sleeves.GetArrayElementAtIndex(v).objectReferenceValue = FindChildDeep(rig.transform, sleeveNames[v] + s)?.GetComponent<Renderer>();
+                    gloves.GetArrayElementAtIndex(v).objectReferenceValue = FindChildDeep(rig.transform, gloveNames[v] + s)?.GetComponent<Renderer>();
+                }
+                // Los huesos de los dedos: todo lo que cuelga de la mano, menos los huesos de agarre.
+                var list = new System.Collections.Generic.List<Transform>();
+                foreach (Transform t in hand.GetComponentsInChildren<Transform>(true))
+                    if (t != hand && !t.name.StartsWith("agarre") && !t.name.StartsWith("palma")) list.Add(t);
+                fingers[s] = list.ToArray();
+                SerializedProperty fb = side.FindPropertyRelative("fingerBones");
+                fb.arraySize = list.Count;
+                for (int i = 0; i < list.Count; i++) fb.GetArrayElementAtIndex(i).objectReferenceValue = list[i];
+            }
+
+            SerializedProperty posesProp = so.FindProperty("poses");
+            posesProp.arraySize = 0;
+            if (posesClip == null) Debug.LogWarning("[Manos] El rig no trae la animación de las poses de los dedos.");
+            foreach ((string p, int frame) in ArmPoses)
+            {
+                if (posesClip == null) break;
+                posesClip.SampleAnimation(rig, (frame - 1) / posesClip.frameRate);
+                int k = posesProp.arraySize;
+                posesProp.arraySize = k + 1;
+                SerializedProperty pose = posesProp.GetArrayElementAtIndex(k);
+                pose.FindPropertyRelative("name").stringValue = p;
+                foreach (string s in new[] { "R", "L" })
+                {
+                    SerializedProperty rots = pose.FindPropertyRelative(s == "R" ? "right" : "left");
+                    rots.arraySize = fingers[s].Length;
+                    for (int i = 0; i < fingers[s].Length; i++) rots.GetArrayElementAtIndex(i).quaternionValue = fingers[s][i].localRotation;
                 }
             }
+            if (posesClip != null) posesClip.SampleAnimation(rig, 0f); // el rig queda en reposo (cuadro 1)
             so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static Transform FindChildDeep(Transform root, string name)
+        {
+            if (root.name == name) return root;
+            foreach (Transform child in root)
+            {
+                Transform found = FindChildDeep(child, name);
+                if (found != null) return found;
+            }
+            return null;
         }
     }
 }

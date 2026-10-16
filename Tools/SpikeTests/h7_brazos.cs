@@ -1,6 +1,6 @@
 // Prueba de los brazos en primera persona y del golpe con peso (pedido de Tomi del 2026-10-16). Con las manos libres no se ven;
 // con la barreta (con una mano desde el 2026-10-16) y el martillo, una mano en el mango, con el mango derecho en el puño y la
-// muñeca apenas doblada; el balanceo va al ritmo de los pasos (caminando y corriendo); cargando una caja, las dos abiertas; según el traje cambian
+// muñeca apenas doblada (el rig de Tomi, vestido según el traje); el balanceo va al ritmo de los pasos (caminando y corriendo); cargando una caja, las dos abiertas; según el traje cambian
 // las mangas y los guantes; la cámara principal no dibuja las manos (las dibuja la suya, encima); un golpe contra la pared empuja
 // la vista y vuelve; las manos se balancean al caminar y se quedan un poco atrás al girar.
 // Cómo correrla: escena M2_Conduccion recién puesta en Play (esperar ~12 s),
@@ -24,37 +24,26 @@ var wait = new UnityEngine.WaitForFixedUpdate();
 UnityEngine.Application.runInBackground = true;
 System.Collections.IEnumerator Frames(int n) { for (int i = 0; i < n; i++) yield return wait; }
 int handsLayer = UnityEngine.LayerMask.NameToLayer("Manos");
-int ActiveHands() { int n = 0; foreach (var t in rig.Root.GetComponentsInChildren<UnityEngine.Transform>()) if (t.name.StartsWith("Mano_") && t.parent.name.StartsWith("Brazo_")) n++; return n; }
-string ActiveSleeves() { var s = new System.Collections.Generic.SortedSet<string>(); foreach (var t in rig.Root.GetComponentsInChildren<UnityEngine.Transform>()) if (t.parent.name.StartsWith("Brazo_") && (t.name.StartsWith("Antebrazo_") || t.name.StartsWith("Mano_"))) s.Add(t.name); return string.Join(",", s); }
-float GripGap(string grip)
+// Los brazos son el rig de Tomi ("Brazos_Rig"): se cuenta la ropa que se ve (un guante por mano a la vista).
+var rigRoot = rig.Root.Find("Brazos_Rig");
+UnityEngine.Transform Bone(string n) { foreach (var t in rigRoot.GetComponentsInChildren<UnityEngine.Transform>(true)) if (t.name == n) return t; return null; }
+int ActiveHands() { int n = 0; foreach (var r in rigRoot.GetComponentsInChildren<UnityEngine.SkinnedMeshRenderer>(true)) if (r.enabled && r.name.StartsWith("Guante_")) n++; return n; }
+string ActiveSleeves() { var s = new System.Collections.Generic.SortedSet<string>(); foreach (var r in rigRoot.GetComponentsInChildren<UnityEngine.SkinnedMeshRenderer>(true)) if (r.enabled && r.name.EndsWith("_R")) s.Add(r.name); return string.Join(",", s); }
+UnityEngine.Transform ToolGrip()
 {
     var model = rig.Root.Find(belt.Selected == 0 ? "Mano_Barreta" : "Mano_Martillo");
-    UnityEngine.Transform g = null;
-    foreach (var t in model.GetComponentsInChildren<UnityEngine.Transform>()) if (t.name == grip) g = t;
-    float best = 99f;
-    foreach (var t in rig.Root.GetComponentsInChildren<UnityEngine.Transform>())
-        if (t.name.StartsWith("Agarre") && t.parent.name.StartsWith("Mano_") && t.parent.parent.name.StartsWith("Brazo_")) best = UnityEngine.Mathf.Min(best, UnityEngine.Vector3.Distance(t.position, g.position));
-    return best * 100f;
+    foreach (var t in model.GetComponentsInChildren<UnityEngine.Transform>()) if (t.name == "Agarre_Derecha") return t;
+    return null;
 }
+float GripGap(string grip) => UnityEngine.Vector3.Distance(Bone("agarre.R").position, ToolGrip().position) * 100f;
 // El agarre derecho (Tomi, 2026-10-16: "sigue agarrando re chueca la barreta"): el mango tiene que cruzar el puño por su túnel
-// (la línea Agarre -> Agarre_Pulgar de la mano, en la misma dirección que el mango de la herramienta) y la muñeca, apenas doblada.
+// (la línea agarre -> agarre_pulgar de la mano, en la misma dirección que el mango de la herramienta) y la muñeca, apenas doblada
+// (el ángulo entre el antebrazo y el eje de la mano, de la muñeca al nudillo del dedo mayor).
 string Straight()
 {
-    var model = rig.Root.Find(belt.Selected == 0 ? "Mano_Barreta" : "Mano_Martillo");
-    UnityEngine.Transform toolGrip = null, hand = null, fore = null, ag = null, pu = null;
-    foreach (var t in model.GetComponentsInChildren<UnityEngine.Transform>()) if (t.name == "Agarre_Derecha") toolGrip = t;
-    foreach (var t in rig.Root.Find("Brazo_Derecho").GetComponentsInChildren<UnityEngine.Transform>())
-    {
-        if (t.name.Contains("_Puno")) hand = t;
-        if (t.name.StartsWith("Antebrazo_")) fore = t;
-    }
-    foreach (UnityEngine.Transform c in hand)
-    {
-        if (c.name == "Agarre" || c.name.StartsWith("Agarre.")) ag = c;
-        if (c.name.StartsWith("Agarre_Pulgar")) pu = c;
-    }
-    float handle = UnityEngine.Vector3.Angle(pu.position - ag.position, toolGrip.up);
-    float wrist = UnityEngine.Vector3.Angle(fore.up, hand.up);
+    float handle = UnityEngine.Vector3.Angle(Bone("agarre_pulgar.R").position - Bone("agarre.R").position, ToolGrip().up);
+    var hand = Bone("hand.R");
+    float wrist = UnityEngine.Vector3.Angle(hand.position - Bone("forearm.R").position, Bone("f_middle.01.R").position - hand.position);
     return $"el mango cruza el puño desviado {handle:0.0}° (0 = derecho), la muñeca doblada {wrist:0}°";
 }
 
@@ -148,9 +137,8 @@ System.Collections.IEnumerator Run()
     yield return Frames(40);
     var b = box.GetComponent<UnityEngine.Renderer>().bounds;
     float handToBox = 99f;
-    foreach (var t in rig.Root.GetComponentsInChildren<UnityEngine.Transform>())
-        if (t.name.StartsWith("Agarre") && t.parent.name.Contains("Abierta") && t.parent.parent.name.StartsWith("Brazo_"))
-            handToBox = UnityEngine.Mathf.Min(handToBox, UnityEngine.Mathf.Sqrt(b.SqrDistance(t.position)));
+    foreach (string palm in new[] { "palma.R", "palma.L" })
+        handToBox = UnityEngine.Mathf.Min(handToBox, UnityEngine.Mathf.Sqrt(b.SqrDistance(Bone(palm).position)));
     log.Append($" CAJA: pose \"{arms.Pose}\", manos {ActiveHands()} ({ActiveSleeves()}); la caja a {UnityEngine.Vector3.Distance(head.position, b.center):0.00} m de los ojos; la palma más cerca a {handToBox * 100f:0.0} cm de la caja.");
     carrier.Drop(false);
     yield return Frames(5);

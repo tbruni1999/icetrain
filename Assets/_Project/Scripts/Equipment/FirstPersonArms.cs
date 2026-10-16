@@ -5,35 +5,56 @@ using UnityEngine;
 namespace SurvivalEnTren.Equipment
 {
     /// <summary>
-    /// Los brazos en primera persona (pedido de Tomi del 2026-10-16: "tal vez se podría llegar a ver el brazo"). Son piezas
-    /// rígidas (brazo, antebrazo y mano) que se acomodan solas cada cuadro, sin animaciones:
-    /// - Con una herramienta: puño cerrado, fijo al mango (el vacío "Agarre_Derecha" de la herramienta dice dónde está el
-    ///   mango, hacia dónde va y hacia dónde miran los nudillos) y el antebrazo en línea con la mano, como en los juegos en
-    ///   primera persona (Tomi, 2026-10-16: "sigue agarrando re chueca la barreta"). Todas se agarran con una mano.
-    /// - Cargando una caja o un kit: las dos manos abiertas a los costados; un bidón: la mano derecha en la manija.
+    /// Los brazos en primera persona (pedido de Tomi del 2026-10-16: "tal vez se podría llegar a ver el brazo"), con el rig que
+    /// pasó Tomi ("fps arms", CC0, vestido en Fuentes/Scripts_Manos/brazos_rig.py). Cada cuadro se acomodan los huesos, sin
+    /// animaciones hechas a mano:
+    /// - Con una herramienta: puño cerrado, fijo al mango (el vacío "Agarre_Derecha" de la herramienta dice dónde está el mango,
+    ///   hacia dónde va y hacia dónde miran los nudillos; la mano trae sus huesos "agarre" y "agarre_pulgar" sobre su mango) y el
+    ///   antebrazo en línea con la mano, con la muñeca apenas doblada hacia el meñique (Tomi: "sigue agarrando re chueca").
+    /// - Cargando una caja o un kit: las dos manos abiertas contra los costados; un bidón: la mano derecha en la manija. Cargando,
+    ///   el codo se calcula desde el hombro (IK de dos huesos).
     /// - Con las manos libres no se ven (decisión de Tomi).
-    /// - Cargando: el codo se calcula para que el brazo llegue desde el hombro (IK de dos huesos).
-    /// - Según el traje (decisión de Tomi): con el traje, campera de trabajo y guante grueso; sin el traje, buzo y guante de
-    ///   trabajo.
-    /// La mano del modelo es una derecha: la izquierda es la misma espejada.
+    /// - Según el traje (decisión de Tomi): con el traje, manga de campera y guante grueso; sin el traje, buzo y guante de trabajo.
+    /// Los dedos toman las poses del modelo ("Puno", "Puno_Grueso", "Abierta"), guardadas al armar la escena.
     /// </summary>
     [DefaultExecutionOrder(60)] // después de ViewmodelRig (50), PlayerLook y de que ToolBelt ponga la herramienta en su lugar
     public class FirstPersonArms : MonoBehaviour
     {
-        /// <summary>Las piezas de un brazo: una por variante (0 = con el traje, 1 = sin el traje).</summary>
+        /// <summary>Los huesos y la ropa de un brazo del rig.</summary>
         [Serializable]
         public class ArmSide
         {
-            [Tooltip("El hombro (hijo de la raíz de las manos): desde acá sale el brazo.")]
-            public Transform shoulder;
-            [Tooltip("Es el brazo izquierdo (el codo va para el otro lado).")]
             public bool isLeft;
-            [Tooltip("Las piezas están espejadas (el modelo de la mano es una mano derecha: la izquierda es la espejada).")]
-            public bool mirrored;
-            public Transform[] upper = new Transform[2];
-            public Transform[] fore = new Transform[2];
-            public Transform[] fist = new Transform[2];
-            public Transform[] open = new Transform[2];
+            [Tooltip("La raíz del brazo (la clavícula): se corre para que el brazo llegue al codo.")]
+            public Transform root;
+            public Transform upperArm, forearm, hand;
+            [Tooltip("Huesos de la mano (no deforman): el centro del mango en el puño, un punto sobre el mango hacia el pulgar y el centro de la palma.")]
+            public Transform grip, gripThumb, palm;
+            [Tooltip("El nudillo del dedo mayor: de la muñeca hacia acá va el eje de la mano.")]
+            public Transform middleKnuckle;
+            [Tooltip("Hacia dónde está el hombro (hijo de la raíz de las manos): de ahí sale el brazo.")]
+            public Transform shoulder;
+            [Tooltip("La ropa de cada variante: 0 = con el traje, 1 = sin el traje.")]
+            public Renderer[] sleeves = new Renderer[2];
+            public Renderer[] gloves = new Renderer[2];
+            [Tooltip("Los huesos de los dedos (los que cambian con las poses).")]
+            public Transform[] fingerBones = Array.Empty<Transform>();
+
+            // Medidas del reposo (se toman al arrancar).
+            [NonSerialized] public float upperLength, foreLength;
+            [NonSerialized] public Quaternion upperRest, foreRelHand, foreRelUpper;
+            [NonSerialized] public Vector3 upperAlong, foreAlong;
+            [NonSerialized] public Vector3 handleLocal, knuckleLocal, gripOffset, palmOffset, palmNormal, wristAxis, foreInHand;
+            [NonSerialized] public bool visible = true;
+        }
+
+        /// <summary>Una pose de los dedos: la rotación de cada hueso de los dedos, de cada mano.</summary>
+        [Serializable]
+        public class FingerPose
+        {
+            public string name;
+            public Quaternion[] right = Array.Empty<Quaternion>();
+            public Quaternion[] left = Array.Empty<Quaternion>();
         }
 
         [SerializeField] private ToolBelt belt;
@@ -41,38 +62,67 @@ namespace SurvivalEnTren.Equipment
         [SerializeField] private PlayerGear gear;
         [Tooltip("La cabeza (la cámara): para orientar las manos al cargar.")]
         [SerializeField] private Transform head;
+        [Tooltip("La raíz del rig: las medidas de reposo se toman respecto de ella.")]
+        [SerializeField] private Transform rigRoot;
         [Tooltip("Los modelos de cada casilla de la barra (los mismos de ToolBelt): de ahí salen los agarres.")]
         [SerializeField] private Transform[] toolModels = Array.Empty<Transform>();
         [SerializeField] private ArmSide right = new ArmSide();
         [SerializeField] private ArmSide left = new ArmSide { isLeft = true };
-        [Header("Medidas (las del modelo)")]
-        [SerializeField, Range(0.1f, 0.5f)] private float upperLength = 0.29f;
-        [SerializeField, Range(0.1f, 0.5f)] private float foreLength = 0.26f;
-        [Tooltip("Hacia dónde se va el codo, respecto de la cabeza (afuera y abajo), del brazo derecho.")]
+        [SerializeField] private FingerPose[] poses = Array.Empty<FingerPose>();
+        [Tooltip("Hacia dónde se va el codo cargando, respecto de la cabeza (afuera y abajo), del brazo derecho.")]
         [SerializeField] private Vector3 elbowPole = new Vector3(0.7f, -1f, -0.3f);
-        [Tooltip("Hacia dónde apunta el largo de cada pieza en su modelo (el FBX deja el largo en Y).")]
-        [SerializeField] private Vector3 lengthAxis = Vector3.up;
-        [Tooltip("La mano del modelo es una derecha. Solo se usa si el puño no trae el vacío Agarre_Pulgar (con ese vacío, la dirección del mango sale del modelo).")]
-        [SerializeField] private bool rightHandModel = true;
         [Tooltip("Cuánto se dobla la muñeca hacia el meñique al agarrar una herramienta (como al sostener un martillo): con 0, el antebrazo sigue derecho a la mano.")]
         [SerializeField, Range(0f, 40f)] private float wristDeviation = 20f;
+        [Tooltip("Cuánto sigue el antebrazo el giro de la mano (el resto lo toma el codo): reparte la torsión para que la tela no se retuerza.")]
+        [SerializeField, Range(0f, 1f)] private float forearmTwist = 0.6f;
+        [Tooltip("Qué tan rápido cambian los dedos de una pose a otra.")]
+        [SerializeField, Range(1f, 60f)] private float fingerBlendSpeed = 18f;
 
         private int _variant = -1;
         private string _pose = "";
+        private bool _measured;
 
         /// <summary>Qué hacen las manos ahora ("", "herramienta", "herramienta dos manos", "caja", "bidón"): para las pruebas.</summary>
         public string Pose => _pose;
         public bool Visible => _pose.Length > 0;
         public int Variant => _variant;
 
+        private void Awake() => Measure();
+
+        // Medidas del reposo, en el rig tal como viene (los huesos del brazo en su lugar y la mano abierta).
+        private void Measure()
+        {
+            if (_measured || rigRoot == null) return;
+            foreach (ArmSide s in new[] { right, left })
+            {
+                if (s.hand == null) continue;
+                s.upperLength = Vector3.Distance(s.upperArm.position, s.forearm.position);
+                s.foreLength = Vector3.Distance(s.forearm.position, s.hand.position);
+                s.upperRest = Quaternion.Inverse(rigRoot.rotation) * s.upperArm.rotation;
+                s.upperAlong = Quaternion.Inverse(s.upperArm.rotation) * (s.forearm.position - s.upperArm.position).normalized;
+                s.foreAlong = Quaternion.Inverse(s.forearm.rotation) * (s.hand.position - s.forearm.position).normalized;
+                s.foreRelHand = Quaternion.Inverse(s.hand.rotation) * s.forearm.rotation;
+                s.foreRelUpper = Quaternion.Inverse(s.upperArm.rotation) * s.forearm.rotation;
+                Quaternion inv = Quaternion.Inverse(s.hand.rotation);
+                s.wristAxis = (inv * (s.middleKnuckle.position - s.hand.position)).normalized;
+                s.foreInHand = (inv * (s.hand.position - s.forearm.position)).normalized;
+                s.handleLocal = (inv * (s.gripThumb.position - s.grip.position)).normalized;
+                s.knuckleLocal = Vector3.ProjectOnPlane(s.wristAxis, s.handleLocal).normalized;
+                s.gripOffset = inv * (s.grip.position - s.hand.position);
+                s.palmOffset = inv * (s.palm.position - s.hand.position);
+                s.palmNormal = Vector3.ProjectOnPlane(s.palmOffset, s.wristAxis).normalized;
+            }
+            _measured = true;
+        }
+
         private void LateUpdate()
         {
+            Measure();
             int variant = gear != null && gear.SuitWorn ? 0 : 1;
             if (variant != _variant)
             {
                 _variant = variant;
-                ShowVariant(right);
-                ShowVariant(left);
+                HideAll(right); HideAll(left);      // la próxima vez se muestra la ropa del traje que corresponde
             }
 
             _pose = "";
@@ -82,7 +132,7 @@ namespace SurvivalEnTren.Equipment
                      toolModels[belt.Selected].gameObject.activeInHierarchy)
                 PoseTool(toolModels[belt.Selected], belt.Settings.Slots[belt.Selected].twoHanded);
 
-            if (_pose.Length == 0) { Hide(right); Hide(left); }
+            if (_pose.Length == 0) { SetVisible(right, false); SetVisible(left, false); }
         }
 
         // ---------------------------------------------------------------- Poses
@@ -96,7 +146,7 @@ namespace SurvivalEnTren.Equipment
             PlaceFist(right, gripR.position, gripR.up, gripR.forward, true);
             Transform gripL = twoHanded ? FindDeep(tool, "Agarre_Izquierda") : null;
             if (gripL != null) PlaceFist(left, gripL.position, gripL.up, gripL.forward, true);
-            else Hide(left);
+            else SetVisible(left, false);
             _pose = gripL != null ? "herramienta dos manos" : "herramienta";
         }
 
@@ -111,7 +161,7 @@ namespace SurvivalEnTren.Equipment
                 // atrás, el pulgar hacia el jugador, los nudillos hacia el centro y el dorso hacia arriba.
                 Vector3 top = new Vector3(b.center.x, b.max.y - 0.02f, b.center.z);
                 PlaceFist(right, top, -forward, -headRight, false);
-                Hide(left);
+                SetVisible(left, false);
                 _pose = "bidón";
                 return;
             }
@@ -125,125 +175,110 @@ namespace SurvivalEnTren.Equipment
         }
 
         // Un puño cerrado alrededor de un mango: el centro del mango en "grip", el mango hacia "handleDir" (del lado del pulgar)
-        // y los nudillos hacia "knuckleDir". La mano del modelo trae dos vacíos sobre su mango ("Agarre" y "Agarre_Pulgar"):
-        // de ahí sale cómo cruza el mango la palma (en diagonal, como en una mano de verdad). Con "rigidForearm" el antebrazo
-        // sigue a la mano (la muñeca no se quiebra); si no, el codo se calcula desde el hombro.
-        private void PlaceFist(ArmSide side, Vector3 grip, Vector3 handleDir, Vector3 knuckleDir, bool rigidForearm)
+        // y los nudillos hacia "knuckleDir". Con "rigidForearm" el antebrazo sigue a la mano; si no, el codo sale del hombro.
+        private void PlaceFist(ArmSide s, Vector3 grip, Vector3 handleDir, Vector3 knuckleDir, bool rigidForearm)
         {
-            Transform hand = ShowHand(side, true);
-            if (hand == null) return;
-            Transform anchor = FindGrip(hand, "Agarre");
-            Transform thumb = FindGrip(hand, "Agarre_Pulgar");
-            float mirror = side.mirrored ? -1f : 1f;
-            Vector3 scale = hand.localScale;
-            // El mango y los nudillos en el modelo (en las medidas de la mano ya espejada, si es la izquierda).
-            Vector3 handleModel = anchor != null && thumb != null
-                ? Vector3.Scale(thumb.localPosition - anchor.localPosition, scale).normalized
-                : new Vector3((rightHandModel ? 1f : -1f) * mirror, 0f, 0f);
-            Vector3 knuckleModel = Vector3.ProjectOnPlane(Vector3.up, handleModel).normalized;
-            Vector3 handle = handleDir.normalized;
-            Vector3 knuckles = Vector3.ProjectOnPlane(knuckleDir, handle);
-            if (knuckles.sqrMagnitude < 1e-6f) knuckles = Vector3.ProjectOnPlane(head.forward, handle);
-            Quaternion rot = Quaternion.LookRotation(knuckles.normalized, handle) *
-                             Quaternion.Inverse(Quaternion.LookRotation(knuckleModel, handleModel));
-            Vector3 wrist = PutHand(hand, anchor, grip, rot);
-            // La muñeca apenas doblada hacia el meñique: el antebrazo se inclina hacia el lado del pulgar.
-            Vector3 thumbSide = Vector3.ProjectOnPlane(handleModel, Vector3.up).normalized;
-            float dev = wristDeviation * Mathf.Deg2Rad;
-            Vector3 forearmModel = Vector3.up * Mathf.Cos(dev) + thumbSide * Mathf.Sin(dev);
-            if (rigidForearm) ArmInLine(side, wrist, rot, rot * forearmModel);
-            else ArmIK(side, wrist, rot);
+            if (s.hand == null) return;
+            ApplyFingers(s, _variant == 0 ? "Puno_Grueso" : "Puno", SetVisible(s, true));
+            Vector3 h = handleDir.normalized;
+            Vector3 k = Vector3.ProjectOnPlane(knuckleDir, h);
+            if (k.sqrMagnitude < 1e-6f) k = Vector3.ProjectOnPlane(head.forward, h);
+            Quaternion rot = Quaternion.LookRotation(k.normalized, h) * Quaternion.Inverse(Quaternion.LookRotation(s.knuckleLocal, s.handleLocal));
+            Vector3 wrist = grip - rot * s.gripOffset;
+            Vector3 along;
+            if (rigidForearm)
+            {
+                // La muñeca apenas doblada hacia el meñique: el antebrazo se inclina hacia el lado del pulgar.
+                Vector3 thumbSide = Vector3.ProjectOnPlane(s.handleLocal, s.foreInHand).normalized;
+                float dev = wristDeviation * Mathf.Deg2Rad;
+                along = rot * (s.foreInHand * Mathf.Cos(dev) + thumbSide * Mathf.Sin(dev));
+            }
+            else along = (wrist - ElbowIK(s, wrist)).normalized;
+            PlaceChain(s, wrist, along, rot);
         }
 
-        // Una mano abierta: el centro de la palma en "grip", la palma mirando hacia "palmDir" y los dedos hacia adelante.
-        private void PlaceOpen(ArmSide side, Vector3 grip, Vector3 palmDir)
+        // Una mano abierta: el centro de la palma en "palmPoint", la palma mirando hacia "palmDir" y los dedos hacia adelante.
+        private void PlaceOpen(ArmSide s, Vector3 palmPoint, Vector3 palmDir)
         {
-            Transform hand = ShowHand(side, false);
-            if (hand == null) return;
+            if (s.hand == null) return;
+            ApplyFingers(s, "Abierta", SetVisible(s, true));
             Vector3 fingers = Vector3.ProjectOnPlane(head.forward, palmDir).normalized;
-            Quaternion rot = Quaternion.LookRotation(-palmDir, fingers);    // en el modelo: los dedos +Y, el dorso +Z
-            Vector3 wrist = PutHand(hand, FindGrip(hand, "Agarre"), grip, rot);
-            ArmIK(side, wrist, rot);
+            Quaternion rot = Quaternion.LookRotation(fingers, palmDir) * Quaternion.Inverse(Quaternion.LookRotation(s.wristAxis, s.palmNormal));
+            Vector3 wrist = palmPoint - rot * s.palmOffset;
+            PlaceChain(s, wrist, (wrist - ElbowIK(s, wrist)).normalized, rot);
         }
 
-        private Transform ShowHand(ArmSide side, bool fist)
+        // El codo con IK de dos huesos desde el hombro, hacia afuera y abajo.
+        private Vector3 ElbowIK(ArmSide s, Vector3 wrist)
         {
-            int v = Mathf.Clamp(_variant, 0, 1);
-            Transform hand = fist ? side.fist[v] : side.open[v];
-            Transform other = fist ? side.open[v] : side.fist[v];
-            if (hand == null) return null;
-            if (other != null && other.gameObject.activeSelf) other.gameObject.SetActive(false);
-            if (!hand.gameObject.activeSelf) hand.gameObject.SetActive(true);
-            return hand;
-        }
-
-        // Pone la mano para que su vacío de agarre caiga en "grip". Devuelve dónde quedó la muñeca (el origen de la mano).
-        private static Vector3 PutHand(Transform hand, Transform anchor, Vector3 grip, Quaternion rot)
-        {
-            Vector3 gripLocal = anchor != null ? Vector3.Scale(anchor.localPosition, hand.localScale) : Vector3.zero;
-            Vector3 wrist = grip - rot * gripLocal;
-            hand.SetPositionAndRotation(wrist, rot);
-            return wrist;
-        }
-
-        // El antebrazo sigue a la mano (hacia "along", casi el eje de la muñeca del modelo, +Y); el brazo va del codo hacia el
-        // hombro.
-        private void ArmInLine(ArmSide side, Vector3 wrist, Quaternion rot, Vector3 along)
-        {
-            int v = Mathf.Clamp(_variant, 0, 1);
-            Vector3 back = rot * Vector3.forward;
-            Vector3 elbow = wrist - along * foreLength;
-            Vector3 toShoulder = side.shoulder.position - elbow;
-            if (toShoulder.sqrMagnitude < 1e-6f) toShoulder = -along;
-            Vector3 shoulder = elbow + toShoulder.normalized * upperLength;
-            Transform upper = side.upper[v], fore = side.fore[v];
-            if (upper != null) { upper.gameObject.SetActive(true); Align(upper, shoulder, elbow, back); }
-            if (fore != null) { fore.gameObject.SetActive(true); Align(fore, elbow, wrist, back); }
-        }
-
-        // El codo con IK de dos huesos desde el hombro, hacia afuera y abajo (cargando: la muñeca se dobla lo que haga falta).
-        private void ArmIK(ArmSide side, Vector3 wrist, Quaternion rot)
-        {
-            int v = Mathf.Clamp(_variant, 0, 1);
-            Vector3 shoulder = side.shoulder.position;
-            // Si no llega, el hombro se acerca (está fuera de la vista).
-            float a = upperLength, c = foreLength;
+            Vector3 shoulder = s.shoulder.position;
+            float a = s.upperLength, c = s.foreLength;
             Vector3 toWrist = wrist - shoulder;
             float d = toWrist.magnitude;
             if (d > (a + c) * 0.995f) { shoulder = wrist - toWrist.normalized * (a + c) * 0.995f; toWrist = wrist - shoulder; d = toWrist.magnitude; }
             d = Mathf.Max(d, Mathf.Abs(a - c) + 0.01f);
             Vector3 dir = toWrist / d;
-            Vector3 pole = head.TransformDirection(side.isLeft ? new Vector3(-elbowPole.x, elbowPole.y, elbowPole.z) : elbowPole);
+            Vector3 pole = head.TransformDirection(s.isLeft ? new Vector3(-elbowPole.x, elbowPole.y, elbowPole.z) : elbowPole);
             Vector3 bend = Vector3.ProjectOnPlane(pole, dir).normalized;
             float cosA = Mathf.Clamp((a * a + d * d - c * c) / (2f * a * d), -1f, 1f);
-            Vector3 elbow = shoulder + dir * (a * cosA) + bend * (a * Mathf.Sqrt(1f - cosA * cosA));
-
-            Transform upper = side.upper[v], fore = side.fore[v];
-            if (upper != null) { upper.gameObject.SetActive(true); Align(upper, shoulder, elbow, bend); }
-            if (fore != null) { fore.gameObject.SetActive(true); Align(fore, elbow, wrist, rot * Vector3.forward); }
+            return shoulder + dir * (a * cosA) + bend * (a * Mathf.Sqrt(1f - cosA * cosA));
         }
 
-        // Pone una pieza desde "from" hasta "to" (su largo en lengthAxis), girada para que "up" quede arriba.
-        private void Align(Transform piece, Vector3 from, Vector3 to, Vector3 up)
+        // Acomoda el brazo entero: el antebrazo hacia "along" terminando en la muñeca, el brazo desde el codo hacia el hombro (la
+        // raíz del brazo se corre para que llegue) y la mano con su giro.
+        private void PlaceChain(ArmSide s, Vector3 wrist, Vector3 along, Quaternion handRot)
         {
-            Vector3 along = (to - from).normalized;
-            Quaternion look = Quaternion.LookRotation(along, up);
-            Quaternion axisFix = Quaternion.FromToRotation(lengthAxis, Vector3.forward); // del eje del modelo al "adelante" de LookRotation
-            piece.SetPositionAndRotation(from, look * axisFix);
+            Vector3 elbow = wrist - along * s.foreLength;
+            Vector3 upperDir = elbow - s.shoulder.position;
+            upperDir = upperDir.sqrMagnitude > 1e-6f ? upperDir.normalized : -along;
+            Vector3 shoulderPos = elbow - upperDir * s.upperLength;
+            s.root.position += shoulderPos - s.upperArm.position;
+            Quaternion upperRest = rigRoot.rotation * s.upperRest;
+            s.upperArm.rotation = Quaternion.FromToRotation(upperRest * s.upperAlong, upperDir) * upperRest;
+            // El antebrazo: alineado al codo-muñeca, con su giro repartido entre el del brazo y el de la mano.
+            Quaternion fromHand = handRot * s.foreRelHand;
+            fromHand = Quaternion.FromToRotation(fromHand * s.foreAlong, along) * fromHand;
+            Quaternion fromUpper = s.upperArm.rotation * s.foreRelUpper;
+            fromUpper = Quaternion.FromToRotation(fromUpper * s.foreAlong, along) * fromUpper;
+            s.forearm.rotation = Quaternion.Slerp(fromUpper, fromHand, forearmTwist);
+            s.forearm.rotation = Quaternion.FromToRotation(s.forearm.rotation * s.foreAlong, along) * s.forearm.rotation;
+            s.hand.rotation = handRot;
+        }
+
+        // Los dedos van hacia la pose (de a poco, o de una vez si el brazo recién aparece).
+        private void ApplyFingers(ArmSide s, string poseName, bool snap)
+        {
+            FingerPose pose = null;
+            foreach (FingerPose p in poses) if (p.name == poseName) { pose = p; break; }
+            if (pose == null) return;
+            Quaternion[] target = s.isLeft ? pose.left : pose.right;
+            float t = snap ? 1f : 1f - Mathf.Exp(-fingerBlendSpeed * Time.deltaTime);
+            for (int i = 0; i < s.fingerBones.Length && i < target.Length; i++)
+                if (s.fingerBones[i] != null) s.fingerBones[i].localRotation = Quaternion.Slerp(s.fingerBones[i].localRotation, target[i], t);
         }
 
         // ---------------------------------------------------------------- Ayudas
 
-        private void ShowVariant(ArmSide side)
+        // Muestra u oculta la ropa de un brazo (la de la variante del traje que corresponde). Devuelve true si recién apareció.
+        private bool SetVisible(ArmSide s, bool on)
         {
-            for (int v = 0; v < 2; v++)
+            if (s.visible == on) return false;
+            s.visible = on;
+            int v = Mathf.Clamp(_variant, 0, 1);
+            for (int i = 0; i < 2; i++)
             {
-                foreach (Transform[] parts in new[] { side.upper, side.fore, side.fist, side.open })
-                    if (parts != null && v < parts.Length && parts[v] != null) parts[v].gameObject.SetActive(false);
+                if (i < s.sleeves.Length && s.sleeves[i] != null) s.sleeves[i].enabled = on && i == v;
+                if (i < s.gloves.Length && s.gloves[i] != null) s.gloves[i].enabled = on && i == v;
             }
+            return on;
         }
 
-        private void Hide(ArmSide side) => ShowVariant(side);
+        private static void HideAll(ArmSide s)
+        {
+            s.visible = false;
+            foreach (Renderer r in s.sleeves) if (r != null) r.enabled = false;
+            foreach (Renderer r in s.gloves) if (r != null) r.enabled = false;
+        }
 
         private static Bounds BoundsOf(Transform t)
         {
@@ -252,14 +287,6 @@ namespace SurvivalEnTren.Equipment
             Bounds b = renderers[0].bounds;
             foreach (Renderer r in renderers) b.Encapsulate(r.bounds);
             return b;
-        }
-
-        // Un vacío de la mano por nombre ("Agarre", "Agarre_Pulgar"; Blender les pone .001, .002... a los repetidos).
-        private static Transform FindGrip(Transform hand, string name)
-        {
-            foreach (Transform child in hand)
-                if (child.name == name || child.name.StartsWith(name + ".")) return child;
-            return null;
         }
 
         private static Transform FindDeep(Transform root, string name)

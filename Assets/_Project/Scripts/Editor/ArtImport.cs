@@ -55,8 +55,11 @@ namespace SurvivalEnTren.EditorTools
             var importer = (ModelImporter)assetImporter;
             importer.importCameras = false;
             importer.importLights = false;
-            importer.importAnimation = false;
-            importer.animationType = ModelImporterAnimationType.None;
+            // Los brazos en primera persona (rig de Tomi, 2026-10-16) traen las poses de los dedos como animaciones de un
+            // cuadro: el armado de la escena las lee. El resto del arte no se anima.
+            bool rig = Path.GetFileNameWithoutExtension(assetPath) == "BrazosFPS";
+            importer.importAnimation = rig;
+            importer.animationType = rig ? ModelImporterAnimationType.Generic : ModelImporterAnimationType.None;
             importer.importBlendShapes = false;
             importer.addCollider = false;
             importer.generateSecondaryUV = false; // los meshes ya traen el segundo canal de UV

@@ -1,0 +1,6 @@
+fps arms (rigged only)
+Autor: para (OpenGameArt.org), 2015. Malla y textura hechas con MakeHuman; rig con IK y control de dedos.
+Fuente: https://opengameart.org/content/fps-arms-rigged-only
+Licencia: CC0 (dominio público). Se puede usar y modificar sin dar crédito; se da igual.
+Lo pasó Tomi el 2026-10-16 para reemplazar las manos provisorias. El juego usa este rig vestido por
+Fuentes/Scripts_Manos/brazos_rig.py (mangas y guantes según el traje); estos son los archivos originales.

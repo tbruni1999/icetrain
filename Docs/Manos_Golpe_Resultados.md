@@ -157,4 +157,64 @@ Tomi: "sigue agarrando re chueca la barreta, y la mano se ve re mal".
 - `h6_mejoras` mostró una vez otra indicación al mirar el banco ("tomar"); corrida sola dio la de siempre. Fue una casualidad de la física.
 - Rendimiento (`m13_rendimiento`): de 3,4 a 4,1 ms por cuadro (antes, de 4,1 a 4,6).
 
-**Después**: Tomi (2026-10-16) no quedó conforme con la mano ("una poronga la mano que tenemos") y va a pasar manos propias. Se integran con las convenciones de `Docs/Manos_Pedido_Arte.md`. El agarre fijo a la herramienta y el antebrazo en línea quedan listos para cualquier modelo de mano.
+**Después**: Tomi (2026-10-16) no quedó conforme con la mano ("una poronga la mano que tenemos") y pasó un rig de brazos: ver la cuarta vuelta.
+
+## Cuarta vuelta (2026-10-16): el rig de Tomi, vestido
+Tomi pasó un rig de brazos: "fps arms (rigged only)", de para en OpenGameArt. Está hecho con MakeHuman, la licencia es **CC0** (verificada en la página) y el original quedó en `Fuentes/Brazos_OGA`.
+
+Lo pidió así: "agregale la ropa, pero necesito que la ropa se vea impecable".
+
+**En Blender** (`Fuentes/Scripts_Manos/brazos_rig.py`, sin ventana):
+- **El rig, limpio y en metros**:
+  - sin las restricciones de Blender (IK y control de dedos), porque en el juego los huesos los mueve el código;
+  - la mano colgada del antebrazo;
+  - el brazo derecho y el izquierdo como piezas aparte.
+- **Mangas prolijas, hechas a medida del brazo**. Se mide el contorno de la piel en cada altura (rayos desde el eje del brazo), se suaviza (la tela no copia los músculos) y se le suma la holgura. Resultado:
+  - un tubo con el codo redondeado;
+  - el puño doblado hacia adentro, con espesor (no se ve como una hoja de papel);
+  - la costura abajo, del lado del cuerpo;
+  - la trama de la tela derecha a lo largo del brazo.
+- **Las dos mangas:**
+  - **Campera**: acolchada, con bultos entre costuras cada 7 cm, arrugas en el pliegue del codo y el puño de tejido gris adentro.
+  - **Buzo**: lana con pliegues blandos y puño elástico de canaletas.
+- **Guantes hechos de la propia mano del rig**: inflada 2,2 mm (trabajo) o 4,5 mm (grueso), sin uñas ni arrugas de piel, con las UV originales de la mano llevadas a tamaño real.
+  - De trabajo: tejido gris con los dedos y la palma bañados en goma negra; la línea va recta sobre los nudillos.
+  - Grueso: negro y mate, con puño largo.
+- **Nada asoma**:
+  - la piel no se exporta (siempre queda tapada);
+  - el puño del guante entra en la manga;
+  - la manga mide el guante que tiene adentro y nunca queda más angosta que él.
+- **Los pesos** (de qué hueso depende cada punto de la ropa) se copian de la piel que hay debajo, así la ropa se dobla igual que el brazo. Los 4 vértices sin peso que traía el original tomaron los del vecino más cercano.
+- **El puño**:
+  - primero se buscó dónde cruza el mango la mano: delante de la palma, apenas antes de los nudillos y en diagonal hacia el meñique;
+  - después, para cada dedo, los tres ángulos juntos: las tres falanges apoyadas sobre el mango, sin atravesarlo, con los nudillos bien doblados y la última falange acompañando a la del medio;
+  - el pulgar cruza por encima del índice;
+  - hay un puño para cada guante, porque el grueso cierra un poco menos.
+- **Las poses** (reposo, puño, puño con guante grueso y mano abierta) van en una sola animación, una por cuadro. El exportador de FBX de Blender 5 dejaba vacías las acciones sueltas.
+
+**En Unity:**
+- `FirstPersonArms` mueve los huesos del rig:
+  - el puño fijo al mango con los huesos `agarre` y `agarre_pulgar`;
+  - el antebrazo en línea con la mano, con la muñeca doblada 20°;
+  - el hombro se acomoda para que el brazo llegue;
+  - el giro del antebrazo se reparte entre el codo y la muñeca (`forearmTwist`), para que la tela no se retuerza.
+- Las poses de los dedos se leen del modelo al armar la escena. Al cambiar de herramienta a caja, los dedos pasan de una pose a otra.
+- `ArtImport` deja importar animaciones solo a este modelo.
+- Se borró la mano anterior (`Manos.fbx` y `manos.py`).
+
+**Prueba** `h7_brazos` (adaptada al rig):
+- con la barreta, la mano a 0,0 cm del agarre, el mango derecho en el puño (0,0°) y la muñeca doblada 17°;
+- con el traje, `Guante_Grueso_R` y `Manga_Campera_R`; sin el traje, `Guante_Trabajo_R` y `Manga_Buzo_R`;
+- el golpe, el balanceo y el ritmo de pasos, igual que antes;
+- con la caja, las palmas a 0,0 cm de los costados.
+
+**Regresión** de las 10 pruebas que tocan herramientas, golpes y cargar (`h1`, `h2`, `m7_desmontaje`, `h4`, `m3_llevar`, `m6_equipo_y_bidon`, `m8_almacenamiento`, `h6`, `h7`, `m13_rendimiento`): iguales a la vuelta anterior.
+- En la tanda, `m3_llevar` dio una vez un salto de 52 cm de la caja con el tren a 25 km/h. Corrida sola dos veces dio 0,2 y 0,1 mm, lo normal: fue un tirón del Editor, no los brazos.
+- Rendimiento: de 4,0 a 4,3 ms por cuadro (la vuelta anterior, de 3,4 a 4,1). Los brazos con piel que se deforma cuestan un poco más que las piezas sueltas.
+
+**Fotos** (`Docs/Capturas_Manos`):
+- 24 a 25b: barreta con buzo y con campera (de cerca, afuera de día);
+- 26 a 28: martillo, llave y sierra;
+- 29 y 29b: cargando el golpe y pegando;
+- 30 y 31: caja y bidón;
+- 32 a 35: la ropa y los puños en Blender.
