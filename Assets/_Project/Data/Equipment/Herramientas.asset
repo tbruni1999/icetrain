@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83b5bd1315c6a8749b5cd6804af37f3b, type: 3}
+  m_Name: Herramientas
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalEnTren.Equipment.ToolSettings
+  slots:
+  - label: BARRETA
+    kind: 0
+    gear: 0
+    swingSeconds: 0.75
+    hitAt: 0.42
+    reachMeters: 1.9
+  - label: SIERRA
+    kind: 0
+    gear: 2
+    swingSeconds: 0.6
+    hitAt: 0.45
+    reachMeters: 1.7
+  - label: SONDA
+    kind: 1
+    gear: 0
+    swingSeconds: 0
+    hitAt: 0
+    reachMeters: 0
+  raiseSpeed: 4
+  windupDegrees: 30
+  strikeDegrees: 75
+  impactPauseSeconds: 0.08
+  barHighlightSeconds: 2

@@ -50,6 +50,8 @@ namespace SurvivalEnTren.Probe
         private ProbeInterference[] _zones;
 
         public bool IsOut => _out && _raise > 0.99f;
+        /// <summary>El jugador la quiere en la mano (aunque esté guardada un momento por llevar una caja). Lo sigue la barra de herramientas.</summary>
+        public bool Wanted => _out;
         public float Quality { get; private set; }
         public float Interference { get; private set; }
         /// <summary>Dirección que marca cada aguja respecto de hacia dónde mira el jugador, en grados.</summary>

@@ -252,6 +252,7 @@ namespace SurvivalEnTren.EditorTools
             {
                 BuildSurvival(motor, train, overlay, palette);
                 BuildPortableProbe(motor, train, palette);
+                BuildToolBelt(motor, train); // herramientas en la mano (H1, TestScenesBuilder.Tools.cs)
                 BuildSaveSystem(motor, train);
                 BuildPresentation(motor, train, unknownRoute);
                 StylePlaces(train); // producción P2: los lugares con los materiales de la librería (TestScenesBuilder.Places.cs)
