@@ -104,6 +104,25 @@ System.Collections.IEnumerator EnterThroughDoor(UnityEngine.Transform shed, int 
     result[0] = $"puerta cerrada al llegar={closedBefore}, apuntándola el objetivo es {Name(target)} \"{prompt}\", abierta={door.IsOpen}, entró caminando={Inside(shed, halfX, halfZ)}";
 }
 
+// H2 (herramientas y forja): desarmar es a golpes de barreta, uno cada ~0,75 s como el jugador, y lo que sale cae al piso
+// como bultos: se juntan con E (solo los que cayeron de este objeto).
+System.Collections.IEnumerator HitDown(SurvivalEnTren.Items.SalvageProp target)
+{
+    var hitBelt = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Equipment.ToolBelt>();
+    var where = target.transform.position;
+    var already = new System.Collections.Generic.HashSet<SurvivalEnTren.Items.MaterialBundle>(UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>());
+    int hits = 0;
+    while (target != null && !target.IsDone && hits++ < 60)
+    {
+        target.OnToolHit(new SurvivalEnTren.Equipment.ToolHit(target.Recipe.RequiredTool, where + UnityEngine.Vector3.up * 0.5f, UnityEngine.Vector3.up, null, hitBelt));
+        for (int i = 0; i < 38; i++) yield return new UnityEngine.WaitForFixedUpdate();
+    }
+    for (int i = 0; i < 40; i++) yield return new UnityEngine.WaitForFixedUpdate(); // que caigan los bultos
+    foreach (var b in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>())
+        if (!already.Contains(b) && (b.transform.position - where).sqrMagnitude < 9f) b.Interact(who);
+    for (int i = 0; i < 5; i++) yield return new UnityEngine.WaitForFixedUpdate();
+}
+
 System.Collections.IEnumerator Run()
 {
     clock.SpeedMultiplier = 0f;
@@ -144,7 +163,7 @@ System.Collections.IEnumerator Run()
     foreach (var p in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.SalvageProp>()) if (p.StableId == "salv_taller_armario_001") locker = p;
     var lockerPos = locker.transform.position;
     int guard = 0;
-    while (locker != null && locker.Channel(who, 0.1f) && guard++ < 200) yield return wait;
+    yield return HitDown(locker);
     yield return Frames(60);
     int leftInside = 0, leftOutside = 0, metalBundles = 0;
     foreach (var b in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>())

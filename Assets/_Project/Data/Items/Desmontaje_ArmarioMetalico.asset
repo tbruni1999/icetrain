@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalEnTren.Items.SalvageRecipe
   displayName: "armario met\xE1lico"
   requiredTool: 0
-  salvageSeconds: 6
+  hitsToBreak: 10
+  surface: 1
   yields:
   - item: {fileID: 11400000, guid: 459bee3c699ede349aecfebe9e6eb5db, type: 2}
     count: 3

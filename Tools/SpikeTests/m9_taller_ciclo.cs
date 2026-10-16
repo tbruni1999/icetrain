@@ -93,6 +93,25 @@ void Finish()
     clock.SpeedMultiplier = 1f;
     UnityEngine.Debug.Log("[TallerCiclo] " + log);
 }
+// H2 (herramientas y forja): desarmar es a golpes de barreta, uno cada ~0,75 s como el jugador, y lo que sale cae al piso
+// como bultos: se juntan con E (solo los que cayeron de este objeto).
+System.Collections.IEnumerator HitDown(SurvivalEnTren.Items.SalvageProp target)
+{
+    var hitBelt = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Equipment.ToolBelt>();
+    var where = target.transform.position;
+    var already = new System.Collections.Generic.HashSet<SurvivalEnTren.Items.MaterialBundle>(UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>());
+    int hits = 0;
+    while (target != null && !target.IsDone && hits++ < 60)
+    {
+        target.OnToolHit(new SurvivalEnTren.Equipment.ToolHit(target.Recipe.RequiredTool, where + UnityEngine.Vector3.up * 0.5f, UnityEngine.Vector3.up, null, hitBelt));
+        for (int i = 0; i < 38; i++) yield return new UnityEngine.WaitForFixedUpdate();
+    }
+    for (int i = 0; i < 40; i++) yield return new UnityEngine.WaitForFixedUpdate(); // que caigan los bultos
+    foreach (var b in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>())
+        if (!already.Contains(b) && (b.transform.position - where).sqrMagnitude < 9f) b.Interact(who);
+    for (int i = 0; i < 5; i++) yield return new UnityEngine.WaitForFixedUpdate();
+}
+
 System.Collections.IEnumerator Run()
 {
     clock.SpeedMultiplier = 0f;
@@ -125,7 +144,7 @@ System.Collections.IEnumerator Run()
         yield return Frames(30);
         if (target is SurvivalEnTren.Items.SalvageProp prop)
         {
-            while (prop != null && prop.Channel(who, 0.1f)) yield return wait;
+            yield return HitDown(prop);
             yield return Frames(10);
         }
         else if (target is SurvivalEnTren.Items.MaterialBundle bundle)

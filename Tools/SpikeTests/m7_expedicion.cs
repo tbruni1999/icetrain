@@ -187,11 +187,30 @@ System.Collections.IEnumerator Salvage(SurvivalEnTren.Items.SalvageProp prop, Un
     for (int i = 0; i < 30; i++) yield return wait;
     object t = Target();
     float t0 = 0f;
-    while (prop != null && prop.Channel(who, UnityEngine.Time.fixedDeltaTime)) { yield return wait; t0 += UnityEngine.Time.fixedDeltaTime; }
+    float tStart = UnityEngine.Time.time; yield return HitDown(prop); t0 = UnityEngine.Time.time - tStart;
     for (int i = 0; i < 10; i++) yield return wait;
     bool gone = prop == null;
     if (gone) foreach (var y in recipe.Yields) for (int k = 0; k < 4; k++) if (allItems[k] == y.item) gained[k] += y.count;
     log.Append($" [{recipe.DisplayName}: objetivo {Name(t)}, {t0:0.0} s, ya no existe={gone}]");
+}
+
+// H2 (herramientas y forja): desarmar es a golpes de barreta, uno cada ~0,75 s como el jugador, y lo que sale cae al piso
+// como bultos: se juntan con E (solo los que cayeron de este objeto).
+System.Collections.IEnumerator HitDown(SurvivalEnTren.Items.SalvageProp target)
+{
+    var hitBelt = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Equipment.ToolBelt>();
+    var where = target.transform.position;
+    var already = new System.Collections.Generic.HashSet<SurvivalEnTren.Items.MaterialBundle>(UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>());
+    int hits = 0;
+    while (target != null && !target.IsDone && hits++ < 60)
+    {
+        target.OnToolHit(new SurvivalEnTren.Equipment.ToolHit(target.Recipe.RequiredTool, where + UnityEngine.Vector3.up * 0.5f, UnityEngine.Vector3.up, null, hitBelt));
+        for (int i = 0; i < 38; i++) yield return new UnityEngine.WaitForFixedUpdate();
+    }
+    for (int i = 0; i < 40; i++) yield return new UnityEngine.WaitForFixedUpdate(); // que caigan los bultos
+    foreach (var b in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>())
+        if (!already.Contains(b) && (b.transform.position - where).sqrMagnitude < 9f) b.Interact(who);
+    for (int i = 0; i < 5; i++) yield return new UnityEngine.WaitForFixedUpdate();
 }
 
 System.Collections.IEnumerator Run()

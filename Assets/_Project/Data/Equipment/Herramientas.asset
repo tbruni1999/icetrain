@@ -18,13 +18,13 @@ MonoBehaviour:
     gear: 0
     swingSeconds: 0.75
     hitAt: 0.42
-    reachMeters: 1.9
+    reachMeters: 2.2
   - label: SIERRA
     kind: 0
     gear: 2
     swingSeconds: 0.6
     hitAt: 0.45
-    reachMeters: 1.7
+    reachMeters: 2
   - label: SONDA
     kind: 1
     gear: 0
@@ -35,4 +35,5 @@ MonoBehaviour:
   windupDegrees: 30
   strikeDegrees: 75
   impactPauseSeconds: 0.08
+  energyPerHit: 0.25
   barHighlightSeconds: 2

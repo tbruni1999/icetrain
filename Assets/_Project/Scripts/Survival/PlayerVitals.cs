@@ -127,6 +127,9 @@ namespace SurvivalEnTren.Survival
 
         public void Eat(float satiety) => Satiety = Mathf.Clamp(Satiety + satiety, 0f, MaxValue);
 
+        /// <summary>Cansa: baja la energía (cada golpe con una herramienta, H2).</summary>
+        public void Tire(float amount) => Energy = Mathf.Clamp(Energy - Mathf.Max(0f, amount), 0f, MaxValue);
+
         /// <summary>Vuelve a la vida con estos valores (al despertar después de desmayarse).</summary>
         public void Revive(float health, float satiety, float energy, float warmth)
         {

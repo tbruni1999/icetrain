@@ -43,6 +43,7 @@ run m13_sonido Sonido $M2
 run m13_dia_noche DiaNoche $M2
 run m13_menu_y_final MenuFinal $M2
 run h1_herramientas Herramientas $M2
+run h2_hielo_a_golpes HieloGolpes $M2
 run p1_nieve Nieve $M2
 run p1_escarcha Escarcha $M2
 run p3_inicio Inicio $MENU

@@ -38,8 +38,8 @@ namespace SurvivalEnTren.Equipment
     {
         [SerializeField] private ToolSlot[] slots =
         {
-            new ToolSlot { label = "BARRETA", kind = HandSlotKind.Gear, gear = GearId.Crowbar, swingSeconds = 0.75f, hitAt = 0.42f, reachMeters = 1.9f },
-            new ToolSlot { label = "SIERRA", kind = HandSlotKind.Gear, gear = GearId.Saw, swingSeconds = 0.6f, hitAt = 0.45f, reachMeters = 1.7f },
+            new ToolSlot { label = "BARRETA", kind = HandSlotKind.Gear, gear = GearId.Crowbar, swingSeconds = 0.75f, hitAt = 0.42f, reachMeters = 2.2f },
+            new ToolSlot { label = "SIERRA", kind = HandSlotKind.Gear, gear = GearId.Saw, swingSeconds = 0.6f, hitAt = 0.45f, reachMeters = 2.0f },
             new ToolSlot { label = "SONDA", kind = HandSlotKind.Probe }
         };
 
@@ -50,6 +50,8 @@ namespace SurvivalEnTren.Equipment
         [SerializeField, Range(30f, 140f)] private float strikeDegrees = 75f;
         [Tooltip("Cuánto tiempo queda frenada la herramienta contra lo que golpeó, en segundos.")]
         [SerializeField, Range(0f, 0.3f)] private float impactPauseSeconds = 0.08f;
+        [Tooltip("Cuánta energía gasta cada golpe que sirve (de 0 a 100; H2: golpear cansa).")]
+        [SerializeField, Range(0f, 3f)] private float energyPerHit = 0.25f;
         [Tooltip("Cuántos segundos se ve la barra bien marcada después de cambiar de herramienta (después queda tenue).")]
         [SerializeField, Range(0f, 5f)] private float barHighlightSeconds = 2f;
 
@@ -59,5 +61,6 @@ namespace SurvivalEnTren.Equipment
         public float StrikeDegrees => strikeDegrees;
         public float ImpactPauseSeconds => impactPauseSeconds;
         public float BarHighlightSeconds => barHighlightSeconds;
+        public float EnergyPerHit => energyPerHit;
     }
 }

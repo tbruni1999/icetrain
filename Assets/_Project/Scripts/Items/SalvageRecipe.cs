@@ -12,10 +12,20 @@ namespace SurvivalEnTren.Items
         [Min(1)] public int count;
     }
 
+    /// <summary>De qué está hecho lo que se golpea: cambia el ruido y lo que salta con cada golpe.</summary>
+    public enum SalvageSurface
+    {
+        Madera,
+        Metal,
+        Tela,
+        Electrico
+    }
+
     /// <summary>
     /// Qué se necesita para desmontar un tipo de objeto y qué sale (sección 9.2: "la acción consume tiempo y
-    /// produce materiales coherentes"). Es un dato por tipo de objeto (pallet, armario...): la herramienta, el
-    /// tiempo y los materiales se ajustan en el archivo, sin tocar código (Anexo B.3).
+    /// produce materiales coherentes"). Es un dato por tipo de objeto (pallet, armario...): la herramienta, los
+    /// golpes y los materiales se ajustan en el archivo, sin tocar código (Anexo B.3).
+    /// Desde H2 (herramientas y forja; DECISIÓN de Tomi del 2026-10-13) se desarma a golpes, no manteniendo E.
     /// </summary>
     [CreateAssetMenu(menuName = "Survival en tren/Objetos/Receta de desmontaje", fileName = "Desmontaje")]
     public class SalvageRecipe : ScriptableObject
@@ -24,8 +34,10 @@ namespace SurvivalEnTren.Items
         [SerializeField] private string displayName = "objeto";
         [Tooltip("Herramienta necesaria (sección 9.2): la barreta separa tablas y abre cajones.")]
         [SerializeField] private GearId requiredTool = GearId.Crowbar;
-        [Tooltip("Cuántos segundos hay que mantener E para desmontarlo.")]
-        [SerializeField, Range(0.5f, 30f)] private float salvageSeconds = 4f;
+        [Tooltip("Cuántos golpes con la herramienta hacen falta para romperlo (0 = sin configurar: 6).")]
+        [SerializeField, Range(0, 40)] private int hitsToBreak;
+        [Tooltip("De qué está hecho (el ruido y las astillas o chispas de cada golpe).")]
+        [SerializeField] private SalvageSurface surface = SalvageSurface.Madera;
         [Tooltip("Qué materiales salen, y cuántos.")]
         [SerializeField] private SalvageYield[] yields = Array.Empty<SalvageYield>();
         [Tooltip("Cuántos pedazos salen volando al terminar.")]
@@ -33,7 +45,8 @@ namespace SurvivalEnTren.Items
 
         public string DisplayName => displayName;
         public GearId RequiredTool => requiredTool;
-        public float SalvageSeconds => salvageSeconds;
+        public int HitsToBreak => hitsToBreak > 0 ? hitsToBreak : 6;
+        public SalvageSurface Surface => surface;
         public SalvageYield[] Yields => yields;
         public int ShardCount => shardCount;
 

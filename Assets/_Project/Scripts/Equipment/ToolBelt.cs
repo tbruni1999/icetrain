@@ -23,6 +23,8 @@ namespace SurvivalEnTren.Equipment
         [SerializeField] private PlayerMotor motor;
         [SerializeField] private PlayerCarrier carrier;
         [SerializeField] private PlayerInteractor interactor;
+        [Tooltip("Opcional: cada golpe que sirve cansa un poco (ToolSettings.energyPerHit).")]
+        [SerializeField] private SurvivalEnTren.Survival.PlayerVitals vitals;
         [Tooltip("La cabeza (cámara): de acá sale el golpe.")]
         [SerializeField] private Transform head;
         [Tooltip("El modelo de cada casilla en la mano (hijo de la cabeza), en el mismo orden que las casillas. Vacío en la de la sonda.")]
@@ -99,6 +101,9 @@ namespace SurvivalEnTren.Equipment
             ToolSlot s = settings.Slots[slot];
             return s.kind == HandSlotKind.Probe ? probe != null : gear.Has(s.gear);
         }
+
+        /// <summary>La casilla de una herramienta (-1 si no está en la barra).</summary>
+        public int SlotOf(GearId tool) => Array.FindIndex(settings.Slots, s => s.kind == HandSlotKind.Gear && s.gear == tool);
 
         /// <summary>Elige una casilla; si ya estaba elegida (o es -1), deja las manos libres.</summary>
         public void Select(int slot)
@@ -222,6 +227,7 @@ namespace SurvivalEnTren.Equipment
             HitCount++;
             LastHitName = hit.collider.name;
             LastHitUseful = useful;
+            if (useful && vitals != null) vitals.Tire(settings.EnergyPerHit);
             _impactPause = settings.ImpactPauseSeconds;
             _audio.PlayOneShot(useful || target == null ? _thud : _clank, 0.6f);
             Struck?.Invoke(info, useful);
@@ -232,7 +238,7 @@ namespace SurvivalEnTren.Equipment
         private bool TryFindTarget(float reach, out RaycastHit best)
         {
             best = default;
-            int count = Physics.SphereCastNonAlloc(head.position, 0.06f, head.forward, HitBuffer, reach, ~0, QueryTriggerInteraction.Collide);
+            int count = Physics.SphereCastNonAlloc(head.position, 0.06f, head.forward, HitBuffer, reach, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Collide);
             float nearest = float.MaxValue;
             for (int i = 0; i < count; i++)
             {

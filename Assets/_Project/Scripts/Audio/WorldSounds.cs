@@ -26,6 +26,7 @@ namespace SurvivalEnTren.Audio
         [SerializeField] private Transform listener;
 
         private AudioClip _lever, _switch, _door, _ice, _build, _salvage, _paper, _craft;
+        private AudioClip _hitWood, _hitMetal, _hitCloth, _hitElectric, _hitIce;
 
         /// <summary>Cuántos sonidos de cosas sonaron (lo usan las pruebas).</summary>
         public int Played { get; private set; }
@@ -41,6 +42,12 @@ namespace SurvivalEnTren.Audio
             _salvage = ProceduralClips.Crack("Desarme", 0.5f, 97);
             _paper = ProceduralClips.Slide("Papel", 0.3f, 101);
             _craft = ProceduralClips.Clank("Banco", 330f, 0.4f, 103);
+            // Golpes con herramientas (H2): un ruido por material.
+            _hitWood = ProceduralClips.Crack("Golpe_Madera", 0.16f, 107);
+            _hitMetal = ProceduralClips.Clank("Golpe_Metal", 420f, 0.3f, 109);
+            _hitCloth = ProceduralClips.Thud("Golpe_Tela", 0.14f, 113);
+            _hitElectric = ProceduralClips.Clank("Golpe_Tablero", 690f, 0.2f, 127);
+            _hitIce = ProceduralClips.Crack("Golpe_Hielo", 0.22f, 131);
 
             if (controls != null) controls.Changed += () => Play(_lever, cab != null ? cab.position : listener.position, 0.5f, "palanca");
             foreach (RailSwitch rail in FindObjectsByType<RailSwitch>())
@@ -58,12 +65,14 @@ namespace SurvivalEnTren.Audio
                 FrozenDoor captured = ice;
                 Vector3 where = captured.transform.position;
                 captured.Broken += () => Play(_ice, where, 1f, "hielo");
+                captured.Hit += point => Play(_hitIce, point, 0.6f, "golpe hielo");
             }
             foreach (SalvageProp prop in FindObjectsByType<SalvageProp>())
             {
                 SalvageProp captured = prop;
                 Vector3 where = captured.transform.position;
                 captured.Salvaged += () => Play(_salvage, where, 0.9f, "desarme");
+                captured.Hit += (point, surface) => Play(HitClip(surface), point, 0.7f, "golpe " + surface.ToString().ToLowerInvariant());
             }
             foreach (BuildSite site in FindObjectsByType<BuildSite>())
                 site.Changed += () => Play(_build, listener.position, 0.6f, "obra");
@@ -74,6 +83,9 @@ namespace SurvivalEnTren.Audio
             }
             if (book != null) book.Changed += () => Play(_paper, listener.position, 0.6f, "plano");
         }
+
+        private AudioClip HitClip(SalvageSurface surface) =>
+            surface == SalvageSurface.Metal ? _hitMetal : surface == SalvageSurface.Tela ? _hitCloth : surface == SalvageSurface.Electrico ? _hitElectric : _hitWood;
 
         private void Play(AudioClip clip, Vector3 where, float volume, string what)
         {

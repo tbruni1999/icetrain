@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalEnTren.Items.SalvageRecipe
   displayName: pallet
   requiredTool: 0
-  salvageSeconds: 3
+  hitsToBreak: 5
+  surface: 0
   yields:
   - item: {fileID: 11400000, guid: 99c9953acd394a8458acded756b3b3ac, type: 2}
     count: 4

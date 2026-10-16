@@ -186,11 +186,21 @@ string Compare(System.Collections.Generic.SortedDictionary<string, string> ex, S
     return diffs.Count == 0 ? "IGUAL" : $"{diffs.Count} DIFERENCIAS: " + string.Join("; ", diffs);
 }
 
+// H2: desarmar es a golpes; si se rompe, lo que sale cae al piso y se junta con E (los bultos nuevos de ahí cerca).
 System.Collections.IEnumerator Salvage(string id, float upTo)
 {
     var prop = Prop(id);
     if (prop == null) yield break;
-    while (prop != null && prop.Progress < upTo && prop.Channel(who, 0.05f)) yield return wait;
+    var where = prop.transform.position;
+    var already = new System.Collections.Generic.HashSet<SurvivalEnTren.Items.MaterialBundle>(UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>());
+    while (prop != null && prop.Progress < upTo)
+    {
+        prop.OnToolHit(new SurvivalEnTren.Equipment.ToolHit(prop.Recipe.RequiredTool, where, UnityEngine.Vector3.up, null, null));
+        yield return Frames(3);
+    }
+    yield return Frames(40);
+    foreach (var b in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>())
+        if (!already.Contains(b) && (b.transform.position - where).sqrMagnitude < 9f) b.Interact(who);
     yield return Frames(10);
 }
 System.Collections.IEnumerator WaitLoad(int before)

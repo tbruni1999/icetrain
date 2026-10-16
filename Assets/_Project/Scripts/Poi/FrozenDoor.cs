@@ -16,7 +16,7 @@ namespace SurvivalEnTren.Poi
     /// - El ID estable es para el guardado futuro (puertas ya abiertas, Anexo D.2).
     /// - También sirve para el hielo de un cambio de vía (sección 6.3): el evento Broken avisa cuando cede.
     /// </summary>
-    public class FrozenDoor : MonoBehaviour, IChanneledInteractable
+    public class FrozenDoor : MonoBehaviour, IChanneledInteractable, IToolTarget
     {
         [SerializeField] private string stableId;
         [Tooltip("Cuántos segundos hay que mantener E con la barreta para romper el hielo.")]
@@ -28,6 +28,8 @@ namespace SurvivalEnTren.Poi
         [Tooltip("De dónde salen los pedazos al romperse (centro y mitad del tamaño, en coordenadas del hielo). Por defecto, el hueco de una puerta.")]
         [SerializeField] private Vector3 shardCenter = new Vector3(0.15f, 1.1f, 0f);
         [SerializeField] private Vector3 shardHalfSize = new Vector3(0.15f, 1.0f, 0.55f);
+        [Tooltip("Cuánto rompe cada golpe de barreta en la mano (H2), en segundos de los de mantener E.")]
+        [SerializeField, Range(0.1f, 5f)] private float secondsPerHit = 0.8f;
         [Tooltip("Lo que dice la indicación si no se tiene barreta.")]
         [SerializeField] private string needCrowbarPrompt = "el hielo la traba: hace falta una barreta";
 
@@ -38,6 +40,8 @@ namespace SurvivalEnTren.Poi
         public bool IsBroken { get; private set; }
         /// <summary>Se dispara cuando el hielo se rompe del todo (justo antes de desaparecer).</summary>
         public event Action Broken;
+        /// <summary>Cada golpe de barreta que le pega (para el ruido): dónde.</summary>
+        public event Action<Vector3> Hit;
         /// <summary>Cuánto del hielo está roto, de 0 a 1.</summary>
         public float Progress => _progress;
 
@@ -48,7 +52,8 @@ namespace SurvivalEnTren.Poi
             if (IsBroken) return null;
             var equipment = interactor.GetComponent<PlayerGear>();
             if (equipment == null || !equipment.Has(GearId.Crowbar)) return needCrowbarPrompt;
-            return _progress > 0.01f ? $"mantener para romper el hielo   ({_progress * 100f:0}%)" : "mantener para romper el hielo";
+            string how = interactor.GetComponent<ToolBelt>() is ToolBelt belt && belt.ActiveTool == GearId.Crowbar ? "golpear o mantener E" : "mantener";
+            return _progress > 0.01f ? $"{how} para romper el hielo   ({_progress * 100f:0}%)" : $"{how} para romper el hielo";
         }
 
         public float GetHoldSeconds(PlayerInteractor interactor) => 0f;
@@ -59,12 +64,25 @@ namespace SurvivalEnTren.Poi
         {
             var equipment = interactor.GetComponent<PlayerGear>();
             if (IsBroken || equipment == null || !equipment.Has(GearId.Crowbar)) return false;
+            return Advance(deltaTime, interactor.GetComponent<CharacterController>());
+        }
 
-            _progress = Mathf.Min(1f, _progress + deltaTime / breakSeconds);
+        // Golpe de barreta en la mano (H2): rompe lo mismo que mantener E unos segundos.
+        public bool OnToolHit(in ToolHit hit)
+        {
+            if (IsBroken || hit.Tool != GearId.Crowbar) return false;
+            Hit?.Invoke(hit.Point);
+            Advance(secondsPerHit, hit.By != null ? hit.By.GetComponent<CharacterController>() : null);
+            return true;
+        }
+
+        // Avanza la rotura; devuelve true mientras queda hielo.
+        private bool Advance(float seconds, CharacterController breaker)
+        {
+            _progress = Mathf.Min(1f, _progress + seconds / breakSeconds);
             transform.localScale = new Vector3(Mathf.Lerp(1f, thinnestScale, _progress), 1f, 1f);
             if (_progress < 1f) return true;
-
-            Break(interactor.GetComponent<CharacterController>());
+            Break(breaker);
             return false;
         }
 

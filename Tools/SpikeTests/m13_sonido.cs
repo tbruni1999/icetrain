@@ -31,6 +31,25 @@ string Amb() => $"{placeName[ambient.Place]}: viento {ambient.WindVolume:0.00} (
 void Power(int notch) { while (controls.BrakeNotch > 0) controls.MovePowerBrake(+1); while (controls.PowerNotch < notch) controls.MovePowerBrake(+1); while (controls.PowerNotch > notch) controls.MovePowerBrake(-1); }
 void Brake(int notch) { while (controls.PowerNotch > 0) controls.MovePowerBrake(-1); while (controls.BrakeNotch < notch) controls.MovePowerBrake(-1); }
 
+// H2 (herramientas y forja): desarmar es a golpes de barreta, uno cada ~0,75 s como el jugador, y lo que sale cae al piso
+// como bultos: se juntan con E (solo los que cayeron de este objeto).
+System.Collections.IEnumerator HitDown(SurvivalEnTren.Items.SalvageProp target)
+{
+    var hitBelt = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Equipment.ToolBelt>();
+    var where = target.transform.position;
+    var already = new System.Collections.Generic.HashSet<SurvivalEnTren.Items.MaterialBundle>(UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>());
+    int hits = 0;
+    while (target != null && !target.IsDone && hits++ < 60)
+    {
+        target.OnToolHit(new SurvivalEnTren.Equipment.ToolHit(target.Recipe.RequiredTool, where + UnityEngine.Vector3.up * 0.5f, UnityEngine.Vector3.up, null, hitBelt));
+        for (int i = 0; i < 38; i++) yield return new UnityEngine.WaitForFixedUpdate();
+    }
+    for (int i = 0; i < 40; i++) yield return new UnityEngine.WaitForFixedUpdate(); // que caigan los bultos
+    foreach (var b in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>())
+        if (!already.Contains(b) && (b.transform.position - where).sqrMagnitude < 9f) b.Interact(who);
+    for (int i = 0; i < 5; i++) yield return new UnityEngine.WaitForFixedUpdate();
+}
+
 System.Collections.IEnumerator Run()
 {
     clock.SpeedMultiplier = 0f;
@@ -87,7 +106,7 @@ System.Collections.IEnumerator Run()
     yield return Frames(5); Note();
     SurvivalEnTren.Items.SalvageProp pallet = null;
     foreach (var p in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.SalvageProp>()) if (p.StableId == "salv_prueba_pallet_001") pallet = p;
-    while (pallet != null && pallet.Channel(who, 0.1f)) yield return wait;
+    yield return HitDown(pallet);
     yield return Frames(5); Note();
     SurvivalEnTren.Building.BuildSite bed = null;
     foreach (var b in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Building.BuildSite>()) if (b.StableId == "obra_tren_cama_001") bed = b;

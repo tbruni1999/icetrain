@@ -74,6 +74,7 @@ namespace SurvivalEnTren.EditorTools
             SetReference(belt, "motor", motor);
             SetReference(belt, "carrier", motor.GetComponent<PlayerCarrier>());
             SetReference(belt, "interactor", motor.GetComponent<PlayerInteractor>());
+            SetReference(belt, "vitals", motor.GetComponent<SurvivalEnTren.Survival.PlayerVitals>());
             SetReference(belt, "head", head);
             SetReference(belt, "use", FindActionReference("Player/UseTool"));
             SetReference(belt, "scroll", FindActionReference("Player/ToolScroll"));

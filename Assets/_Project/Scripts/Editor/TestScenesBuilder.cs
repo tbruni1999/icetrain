@@ -482,10 +482,10 @@ namespace SurvivalEnTren.EditorTools
             // Un pallet tirado cerca del vehículo, para probar el desmontaje sin ir a la estación.
             Vector3 palletSpot = train.transform.position + train.transform.forward * 31f + train.transform.right * 10f;
             BuildPallet(null, new Vector3(palletSpot.x, 0f, palletSpot.z), train.transform.eulerAngles.y + 20f, "salv_prueba_pallet_001",
-                LoadOrCreateRecipe("Pallet", "pallet", 3f, (LoadMaterials().Wood, 4)), backpackSettings, p);
+                LoadOrCreateRecipe("Pallet", "pallet", 5, SalvageSurface.Madera, (LoadMaterials().Wood, 4)), backpackSettings, p);
             Vector3 palletSpot2 = train.transform.position + train.transform.forward * 26f + train.transform.right * 8.5f;
             BuildPallet(null, new Vector3(palletSpot2.x, 0f, palletSpot2.z), train.transform.eulerAngles.y - 15f, "salv_prueba_pallet_002",
-                LoadOrCreateRecipe("Pallet", "pallet", 3f, (LoadMaterials().Wood, 4)), backpackSettings, p); // la madera de la sierra y del estante
+                LoadOrCreateRecipe("Pallet", "pallet", 5, SalvageSurface.Madera, (LoadMaterials().Wood, 4)), backpackSettings, p); // la madera de la sierra y del estante
         }
 
         // Los cuatro materiales de la V1 (sección 9.1) como archivos de datos. Se crean una sola vez: si Tomi cambia
@@ -904,10 +904,10 @@ namespace SurvivalEnTren.EditorTools
             // pocos bultos ya sueltos (tablones, tela, chapas). Los usos de los materiales son de M8 y M9.
             MaterialSet materials = LoadMaterials();
             BackpackSettings backpackSettings = LoadBackpackSettings();
-            SalvageRecipe palletRecipe = LoadOrCreateRecipe("Pallet", "pallet", 3f, (materials.Wood, 4));
-            SalvageRecipe lockerRecipe = LoadOrCreateRecipe("ArmarioMetalico", "armario metálico", 6f, (materials.Metal, 3));
-            SalvageRecipe mattressRecipe = LoadOrCreateRecipe("Colchon", "colchón", 4f, (materials.Cloth, 3));
-            SalvageRecipe panelRecipe = LoadOrCreateRecipe("TableroElectrico", "tablero eléctrico", 5f, (materials.Parts, 2));
+            SalvageRecipe palletRecipe = LoadOrCreateRecipe("Pallet", "pallet", 5, SalvageSurface.Madera, (materials.Wood, 4));
+            SalvageRecipe lockerRecipe = LoadOrCreateRecipe("ArmarioMetalico", "armario metálico", 10, SalvageSurface.Metal, (materials.Metal, 3));
+            SalvageRecipe mattressRecipe = LoadOrCreateRecipe("Colchon", "colchón", 4, SalvageSurface.Tela, (materials.Cloth, 3));
+            SalvageRecipe panelRecipe = LoadOrCreateRecipe("TableroElectrico", "tablero eléctrico", 6, SalvageSurface.Electrico, (materials.Parts, 2));
             BuildPallet(station, new Vector3(-0.8f, 0f, 1.2f), 12f, "salv_estacion_pallet_001", palletRecipe, backpackSettings, p);
             BuildLocker(station, new Vector3(3.5f, 0f, -2.6f), 0f, "salv_estacion_armario_001", lockerRecipe, backpackSettings, p);
             BuildMattress(station, new Vector3(-0.55f, 0f, -2.3f), 0f, "salv_estacion_colchon_001", mattressRecipe, backpackSettings);
@@ -1128,8 +1128,8 @@ namespace SurvivalEnTren.EditorTools
             north.transform.localPosition = new Vector3(0f, 0.6f, 4.6f);
             north.transform.localRotation = Quaternion.Euler(20f, 0f, 0f);
 
-            SalvageRecipe locker = LoadOrCreateRecipe("ArmarioMetalico", "armario metálico", 6f, (materials.Metal, 3));
-            SalvageRecipe panel = LoadOrCreateRecipe("TableroElectrico", "tablero eléctrico", 5f, (materials.Parts, 2));
+            SalvageRecipe locker = LoadOrCreateRecipe("ArmarioMetalico", "armario metálico", 10, SalvageSurface.Metal, (materials.Metal, 3));
+            SalvageRecipe panel = LoadOrCreateRecipe("TableroElectrico", "tablero eléctrico", 6, SalvageSurface.Electrico, (materials.Parts, 2));
             BuildLocker(shed, new Vector3(-1.4f, 0f, 3.05f), 0f, "salv_taller_armario_001", locker, settings, p);
             BuildLocker(shed, new Vector3(0.0f, 0f, 3.05f), 0f, "salv_taller_armario_002", locker, settings, p);
             BuildPowerPanel(shed, new Vector3(2.75f, 0f, 1.6f), 90f, "salv_taller_tablero_001", panel, settings);
@@ -1162,8 +1162,8 @@ namespace SurvivalEnTren.EditorTools
             var shed = BuildShed("Refugio", marker, Vector3.zero, 2.5f, 2.0f, 2.5f, 1, wall, floor, roof, door, p);
             BoxMinMax("Nieve_Techo", shed, new Vector3(-2.7f, 2.7f, -2.2f), new Vector3(1.0f, 3.0f, 2.2f), p.Snow);
 
-            SalvageRecipe pallet = LoadOrCreateRecipe("Pallet", "pallet", 3f, (materials.Wood, 4));
-            SalvageRecipe mattress = LoadOrCreateRecipe("Colchon", "colchón", 4f, (materials.Cloth, 3));
+            SalvageRecipe pallet = LoadOrCreateRecipe("Pallet", "pallet", 5, SalvageSurface.Madera, (materials.Wood, 4));
+            SalvageRecipe mattress = LoadOrCreateRecipe("Colchon", "colchón", 4, SalvageSurface.Tela, (materials.Cloth, 3));
             BuildPallet(shed, new Vector3(-1.6f, 0f, -1.0f), 90f, "salv_refugio_pallet_001", pallet, settings, p);
             BuildPallet(shed, new Vector3(-1.6f, 0f, 0.9f), 90f, "salv_refugio_pallet_002", pallet, settings, p);
             BuildMattress(shed, new Vector3(0.6f, 0f, 1.4f), 0f, "salv_refugio_colchon_001", mattress, settings);
@@ -1566,18 +1566,31 @@ namespace SurvivalEnTren.EditorTools
             return settings;
         }
 
-        // Receta de desmontaje como archivo de datos: se crea una sola vez (si se ajusta en el archivo, no se pisa).
-        private static SalvageRecipe LoadOrCreateRecipe(string fileName, string displayName, float seconds, params (ItemDefinition item, int count)[] yields)
+        // Receta de desmontaje (M7; desde H2 a golpes). Los golpes y el material se cargan una vez (si el archivo es de antes de H2,
+        // también): después se ajustan en el archivo sin que el armado los pise.
+        private static SalvageRecipe LoadOrCreateRecipe(string fileName, string displayName, int hits, SalvageSurface surface, params (ItemDefinition item, int count)[] yields)
         {
             string path = $"{ItemsFolderPath}/Desmontaje_{fileName}.asset";
             var recipe = AssetDatabase.LoadAssetAtPath<SalvageRecipe>(path);
-            if (recipe != null) return recipe;
+            if (recipe != null)
+            {
+                var existing = new SerializedObject(recipe);
+                if (existing.FindProperty("hitsToBreak").intValue == 0)
+                {
+                    existing.FindProperty("hitsToBreak").intValue = hits;
+                    existing.FindProperty("surface").enumValueIndex = (int)surface;
+                    existing.ApplyModifiedPropertiesWithoutUndo();
+                    EditorUtility.SetDirty(recipe);
+                }
+                return recipe;
+            }
             recipe = ScriptableObject.CreateInstance<SalvageRecipe>();
             AssetDatabase.CreateAsset(recipe, path);
             var so = new SerializedObject(recipe);
             so.FindProperty("displayName").stringValue = displayName;
             so.FindProperty("requiredTool").enumValueIndex = (int)GearId.Crowbar;
-            so.FindProperty("salvageSeconds").floatValue = seconds;
+            so.FindProperty("hitsToBreak").intValue = hits;
+            so.FindProperty("surface").enumValueIndex = (int)surface;
             var list = so.FindProperty("yields");
             list.arraySize = yields.Length;
             for (int i = 0; i < yields.Length; i++)

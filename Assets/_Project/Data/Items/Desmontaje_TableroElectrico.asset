@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalEnTren.Items.SalvageRecipe
   displayName: "tablero el\xE9ctrico"
   requiredTool: 0
-  salvageSeconds: 5
+  hitsToBreak: 6
+  surface: 3
   yields:
   - item: {fileID: 11400000, guid: 95dbddb397966e8468272ccdc96c7c7a, type: 2}
     count: 2
