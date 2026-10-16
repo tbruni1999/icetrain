@@ -76,6 +76,7 @@ namespace SurvivalEnTren.Train
 
         private void Apply(Renderer[] layers, float alpha)
         {
+            if (_block == null) _block = new MaterialPropertyBlock(); // si Unity recompiló con el juego andando, Awake no vuelve a correr
             foreach (Renderer r in layers)
             {
                 r.enabled = alpha > 0.01f;
