@@ -67,7 +67,7 @@ namespace SurvivalEnTren.EditorTools
         }
 
         // Cómo se mueve el golpe de cada herramienta (PROPUESTA del 2026-10-16, en Data/Equipment/Herramientas.asset): se carga
-        // una sola vez; después se ajusta en el archivo. La barreta en diagonal desde arriba con las dos manos; el martillo corto y
+        // una sola vez; después se ajusta en el archivo. La barreta en diagonal desde arriba (con una mano); el martillo corto y
         // seco; la sierra de ida y vuelta; la llave con un giro de muñeca.
         private static void MigrateSwingPoses(ToolSettings settings)
         {
@@ -108,6 +108,15 @@ namespace SurvivalEnTren.EditorTools
             so.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(settings);
         }
+        // Cómo queda una herramienta en la mano, en los ejes de la vista: el mango hacia "handle" (del lado del pulgar) y los
+        // nudillos hacia "forearm" (la mano agarra en su vacío Agarre_Derecha: su +Y es el mango y su +Z los nudillos, así que
+        // el antebrazo, que sale en línea con la mano, apunta más o menos hacia ahí).
+        private static Quaternion GripPose(Vector3 handle, Vector3 forearm)
+        {
+            Vector3 up = handle.normalized;
+            return Quaternion.LookRotation(Vector3.ProjectOnPlane(forearm, up).normalized, up);
+        }
+
         private const string ToolsArtFolder = "Assets/_Project/Art/Herramientas";
         private const string ArmsArtPath = "Assets/_Project/Art/Manos/Manos.fbx";
 
@@ -172,7 +181,7 @@ namespace SurvivalEnTren.EditorTools
                 SerializedProperty side = so.FindProperty(left ? "left" : "right");
                 side.FindPropertyRelative("shoulder").objectReferenceValue = shoulder;
                 side.FindPropertyRelative("isLeft").boolValue = left;
-                side.FindPropertyRelative("mirrored").boolValue = !left; // la mano del modelo es izquierda: la derecha es la espejada
+                side.FindPropertyRelative("mirrored").boolValue = left; // la mano del modelo es derecha: la izquierda es la espejada
                 foreach (string list in new[] { "upper", "fore", "fist", "open" })
                 {
                     SerializedProperty parts = side.FindPropertyRelative(list);
@@ -181,7 +190,7 @@ namespace SurvivalEnTren.EditorTools
                     {
                         string piece = list == "upper" ? $"Brazo_{variants[v]}" : list == "fore" ? $"Antebrazo_{variants[v]}"
                             : list == "fist" ? $"Mano_{gloves[v]}_Puno" : $"Mano_{gloves[v]}_Abierta";
-                        parts.GetArrayElementAtIndex(v).objectReferenceValue = ArmPiece(piece, root, !left);
+                        parts.GetArrayElementAtIndex(v).objectReferenceValue = ArmPiece(piece, root, left);
                     }
                 }
             }

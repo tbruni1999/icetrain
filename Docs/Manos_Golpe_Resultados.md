@@ -105,3 +105,56 @@ Tomi: "que la barreta la agarre con una mano; además al correr la animación qu
   - el cuerpo en pintura roja y las puntas de metal gastado;
   - 568 triángulos (el límite de un objeto de mano es 1.500), malla cerrada, sin caras rotas.
 - **Pruebas**: `h7_brazos` mide ahora el ritmo caminando y corriendo de verdad (con W y Shift): 1,9 y 2,7 pasos por segundo, pose de correr 1,0. La barreta va con una mano, a 0,0 cm del agarre. `h1_herramientas` y `m7_desmontaje` pasan igual que antes.
+
+## Tercera vuelta (2026-10-16): el agarre derecho y guantes de verdad
+Tomi: "sigue agarrando re chueca la barreta, y la mano se ve re mal".
+
+**Qué pasaba** (foto `10_antes_agarre_chueco.png`):
+- La mano se giraba sola según dónde quedaba el hombro. Con la barreta, la barra salía casi en la misma línea que el antebrazo, como una prolongación del brazo, y la muñeca quedaba quebrada de costado.
+- Los dedos eran tubos sueltos.
+- El guante de cuero marrón, con la luz cálida del vagón, parecía una mano desnuda.
+
+**Ahora:**
+- **El agarre queda fijo a la herramienta**, como en los juegos en primera persona (`FirstPersonArms`):
+  - el vacío `Agarre_Derecha` de cada herramienta dice dónde está el mango, hacia dónde va (el lado del pulgar) y hacia dónde miran los nudillos (la uña de la barreta, la cara del martillo);
+  - el puño del modelo trae dos vacíos sobre su mango (`Agarre` y `Agarre_Pulgar`), y el juego hace coincidir los dos mangos;
+  - durante el golpe la mano no "patina" alrededor del mango: gira con la herramienta.
+- **El antebrazo sigue a la mano**, con la muñeca apenas doblada hacia el meñique, como al sostener un martillo (20 grados, en el componente: `wristDeviation`). Ya no se quiebra para buscar el hombro.
+  - Cargando cajas y el bidón, el codo se sigue calculando desde el hombro.
+- **El mango cruza la palma en diagonal**, como en una mano de verdad: la barra no sale a 90 grados del antebrazo.
+- **Poses de reposo nuevas** para la barreta, el martillo, la llave y la sierra (`TestScenesBuilder.Tools.cs`, con `GripPose`):
+  - el puño abajo a la derecha, entero a la vista, y el antebrazo entra desde la esquina;
+  - la barreta va casi parada, con la uña arriba a la vista;
+  - en la sierra, el agarre pasó a la parte de atrás del mango de madera (antes la mano quedaba delante de la tabla).
+- **Guantes nuevos** (`Fuentes/Scripts_Manos/manos.py`):
+  - cada guante es **una sola pieza blanda**: palma, dedos y pulgar se funden como en un guante de verdad, con pliegues entre dedo y dedo, nudillos marcados y el pulgar cruzado sobre los dedos;
+  - se hicieron con metaballs (bolas y cápsulas que se funden) y se redujeron a 3.300 a 3.900 triángulos (el límite de la ficha es 4.000);
+  - **sin el traje**: guante de trabajo de tejido gris con la palma bañada en goma negra y puño tejido; no se confunde con piel;
+  - **con el traje**: guante grueso negro y mate, más abultado, con su puño negro;
+  - la mano del modelo pasó a ser **derecha**; la izquierda (solo se ve cargando cajas) es la espejada;
+  - los bordes entre materiales son rectos (cortes por planos), sin dientes aunque la malla esté reducida.
+- **El bidón**: la mano lo agarra de arriba, con el dorso hacia arriba.
+
+**Prueba** `h7_brazos` (actualizada): con la barreta, la mano a 0,0 cm del agarre, **el mango cruza el puño desviado 0,0°** (cero es derecho) y **la muñeca doblada 20°** (lo configurado). Lo demás, igual que antes:
+- el ritmo caminando: 1,9 pasos por segundo; corriendo: 2,7;
+- el empujón del golpe: 1,1 a 1,3°;
+- la caja a 0,75 m, con las palmas a 0,0 cm.
+
+**Fotos** (`Docs/Capturas_Manos`):
+- 11 y 11b: barreta con el guante de trabajo (de cerca);
+- 12: barreta con el guante grueso;
+- 13 y 14: cargando el golpe y pegando;
+- 15 y 15b: martillo (de cerca);
+- 16: llave;
+- 17: sierra;
+- 18: bidón;
+- 19: caja;
+- 20 a 23: los guantes en Blender.
+
+**Regresión** de las 9 pruebas que tocan herramientas, golpes y cargar:
+- `h1_herramientas`, `h2_hielo_a_golpes`, `m7_desmontaje`, `h4_forja`, `m3_llevar`, `m6_equipo_y_bidon`, `m8_almacenamiento`, `h6_mejoras` y `h7_brazos`: **iguales a la vuelta anterior**.
+- `h4_forja` no contestó en la tanda y se corrió sola.
+- `h6_mejoras` mostró una vez otra indicación al mirar el banco ("tomar"); corrida sola dio la de siempre. Fue una casualidad de la física.
+- Rendimiento (`m13_rendimiento`): de 3,4 a 4,1 ms por cuadro (antes, de 4,1 a 4,6).
+
+**Después**: Tomi (2026-10-16) no quedó conforme con la mano ("una poronga la mano que tenemos") y va a pasar manos propias. Se integran con las convenciones de `Docs/Manos_Pedido_Arte.md`. El agarre fijo a la herramienta y el antebrazo en línea quedan listos para cualquier modelo de mano.

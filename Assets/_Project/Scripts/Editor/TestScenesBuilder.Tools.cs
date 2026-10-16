@@ -63,11 +63,10 @@ namespace SurvivalEnTren.EditorTools
             Material steel = LibraryMaterial("MT_AceroOscuro") ?? Mat("Barreta_Acero", new Color(0.18f, 0.19f, 0.2f));
             Material paint = LibraryMaterial("MT_PinturaRoja") ?? Mat("Barreta_Pintura", new Color(0.6f, 0.12f, 0.08f));
             var crowbar = Group("Mano_Barreta", hands);
-            // Con una mano (decisión de Tomi del 2026-10-16), como un garrote: la derecha abajo a la derecha, la barra hacia
-            // arriba, adelante y apenas al centro, la uña adelante.
-            crowbar.localPosition = new Vector3(0.2f, -0.2f, 0.42f);
-            Vector3 crowbarDir = new Vector3(0.18f, 0.62f, 0.76f).normalized;
-            crowbar.localRotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(Vector3.forward, crowbarDir), crowbarDir);
+            // Con una mano (decisión de Tomi del 2026-10-16), como un garrote: el puño abajo a la derecha, la barra casi parada y
+            // apenas hacia el centro, la uña adelante; el antebrazo entra desde la esquina hacia adelante.
+            crowbar.localPosition = new Vector3(0.26f, -0.22f, 0.56f);
+            crowbar.localRotation = GripPose(new Vector3(-0.12f, 1f, 0.28f), new Vector3(-0.32f, 0.3f, 0.9f));
             if (!ArtTool(crowbar, "Barreta")) // desde el 2026-10-16, el modelo de Fuentes/Scripts_Manos (hasta el arte final)
             {
                 BoxMinMax("Hierro", crowbar, new Vector3(-0.012f, -0.05f, -0.012f), new Vector3(0.012f, 0.62f, 0.012f), steel, false);
@@ -76,15 +75,15 @@ namespace SurvivalEnTren.EditorTools
 
             // Sierra: la del arte del vagón (la misma que cuelga en el taller), con la hoja hacia adelante.
             var saw = Group("Mano_Sierra", hands);
-            saw.localPosition = new Vector3(0.2f, -0.16f, 0.42f);
-            saw.localRotation = Quaternion.Euler(14f, -12f, 0f);
+            saw.localPosition = new Vector3(0.22f, -0.2f, 0.46f);
+            saw.localRotation = GripPose(new Vector3(-0.15f, 1f, 0.3f), new Vector3(-0.32f, 0.28f, 0.9f)); // la hoja hacia adelante
             GameObject wagonArt = InstantiateArt(WagonArtPath, saw);
             Transform artSaw = wagonArt != null ? wagonArt.transform.Find("Sierra") : null;
             if (artSaw != null)
             {
                 artSaw.SetParent(saw, false);
                 artSaw.localPosition = Vector3.zero;
-                artSaw.localRotation = Quaternion.Euler(-90f, 0f, 0f); // la hoja colgaba hacia abajo: ahora va hacia adelante
+                artSaw.localRotation = Quaternion.Euler(-90f, 0f, 0f); // la hoja colgaba hacia abajo: ahora va hacia adelante (+Z)
                 Object.DestroyImmediate(wagonArt);
             }
             else
@@ -97,9 +96,8 @@ namespace SurvivalEnTren.EditorTools
 
             // Martillo (H4): mango de madera y cabeza de acero (sin arte todavía).
             var hammer = Group("Mano_Martillo", hands);
-            hammer.localPosition = new Vector3(0.2f, -0.2f, 0.42f);
-            Vector3 hammerDir = new Vector3(0.1f, 0.82f, 0.56f).normalized; // el mango hacia arriba y adelante, la cabeza a la vista
-            hammer.localRotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(Vector3.forward, hammerDir), hammerDir);
+            hammer.localPosition = new Vector3(0.25f, -0.2f, 0.5f);
+            hammer.localRotation = GripPose(new Vector3(-0.1f, 1f, 0.4f), new Vector3(-0.32f, 0.28f, 0.9f)); // la cabeza a la vista, la cara adelante
             Material handle = LibraryMaterial("MT_Madera") ?? Mat("Martillo_Mango", new Color(0.55f, 0.4f, 0.24f));
             if (!ArtTool(hammer, "Martillo"))
             {
@@ -109,15 +107,16 @@ namespace SurvivalEnTren.EditorTools
 
             // Llave de montaje (2026-10-16): una llave fija larga, de acero, con una boca en cada punta (sin arte todavía).
             var wrench = Group("Mano_Llave", hands);
-            wrench.localPosition = new Vector3(0.2f, -0.19f, 0.4f);
-            wrench.localRotation = Quaternion.Euler(30f, -14f, -10f);
+            wrench.localPosition = new Vector3(0.24f, -0.2f, 0.48f);
+            wrench.localRotation = GripPose(new Vector3(-0.3f, 1f, 0.35f), new Vector3(-0.32f, 0.28f, 0.9f));
             if (!ArtTool(wrench, "Llave"))
             {
                 BoxMinMax("Cuerpo", wrench, new Vector3(-0.012f, -0.03f, -0.005f), new Vector3(0.012f, 0.3f, 0.005f), steel, false);
                 BoxMinMax("Boca_B", wrench, new Vector3(-0.025f, -0.06f, -0.006f), new Vector3(0.025f, -0.03f, 0.006f), steel, false);
             }
-            // La sierra del arte no trae agarre: va en su pivote (el puño).
-            if (saw.Find("Agarre_Derecha") == null) Group("Agarre_Derecha", saw);
+            // La sierra del arte no trae agarre: va en la parte de atrás del mango de madera (el mango, hacia arriba; los
+            // nudillos, hacia la hoja).
+            if (saw.Find("Agarre_Derecha") == null) Group("Agarre_Derecha", saw).localPosition = new Vector3(-0.02f, 0f, -0.012f);
 
             foreach (Transform model in new[] { crowbar, saw, hammer, wrench })
             {

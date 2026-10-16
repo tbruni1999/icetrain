@@ -1,5 +1,6 @@
 // Prueba de los brazos en primera persona y del golpe con peso (pedido de Tomi del 2026-10-16). Con las manos libres no se ven;
-// con la barreta (con una mano desde el 2026-10-16) y el martillo, una mano en el mango; el balanceo va al ritmo de los pasos (caminando y corriendo); cargando una caja, las dos abiertas; según el traje cambian
+// con la barreta (con una mano desde el 2026-10-16) y el martillo, una mano en el mango, con el mango derecho en el puño y la
+// muñeca apenas doblada; el balanceo va al ritmo de los pasos (caminando y corriendo); cargando una caja, las dos abiertas; según el traje cambian
 // las mangas y los guantes; la cámara principal no dibuja las manos (las dibuja la suya, encima); un golpe contra la pared empuja
 // la vista y vuelve; las manos se balancean al caminar y se quedan un poco atrás al girar.
 // Cómo correrla: escena M2_Conduccion recién puesta en Play (esperar ~12 s),
@@ -35,6 +36,27 @@ float GripGap(string grip)
         if (t.name.StartsWith("Agarre") && t.parent.name.StartsWith("Mano_") && t.parent.parent.name.StartsWith("Brazo_")) best = UnityEngine.Mathf.Min(best, UnityEngine.Vector3.Distance(t.position, g.position));
     return best * 100f;
 }
+// El agarre derecho (Tomi, 2026-10-16: "sigue agarrando re chueca la barreta"): el mango tiene que cruzar el puño por su túnel
+// (la línea Agarre -> Agarre_Pulgar de la mano, en la misma dirección que el mango de la herramienta) y la muñeca, apenas doblada.
+string Straight()
+{
+    var model = rig.Root.Find(belt.Selected == 0 ? "Mano_Barreta" : "Mano_Martillo");
+    UnityEngine.Transform toolGrip = null, hand = null, fore = null, ag = null, pu = null;
+    foreach (var t in model.GetComponentsInChildren<UnityEngine.Transform>()) if (t.name == "Agarre_Derecha") toolGrip = t;
+    foreach (var t in rig.Root.Find("Brazo_Derecho").GetComponentsInChildren<UnityEngine.Transform>())
+    {
+        if (t.name.Contains("_Puno")) hand = t;
+        if (t.name.StartsWith("Antebrazo_")) fore = t;
+    }
+    foreach (UnityEngine.Transform c in hand)
+    {
+        if (c.name == "Agarre" || c.name.StartsWith("Agarre.")) ag = c;
+        if (c.name.StartsWith("Agarre_Pulgar")) pu = c;
+    }
+    float handle = UnityEngine.Vector3.Angle(pu.position - ag.position, toolGrip.up);
+    float wrist = UnityEngine.Vector3.Angle(fore.up, hand.up);
+    return $"el mango cruza el puño desviado {handle:0.0}° (0 = derecho), la muñeca doblada {wrist:0}°";
+}
 
 System.Collections.IEnumerator Run()
 {
@@ -51,7 +73,7 @@ System.Collections.IEnumerator Run()
     belt.Select(0);
     for (int i = 0; i < 100 && !belt.IsRaised; i++) yield return wait;
     yield return Frames(5);
-    log.Append($" BARRETA (con el traje): pose \"{arms.Pose}\", manos {ActiveHands()} ({ActiveSleeves()}); la mano a {GripGap("Agarre_Derecha"):0.0} cm del agarre.");
+    log.Append($" BARRETA (con el traje): pose \"{arms.Pose}\", manos {ActiveHands()} ({ActiveSleeves()}); la mano a {GripGap("Agarre_Derecha"):0.0} cm del agarre; {Straight()}.");
     gear.SetSuit(false);
     yield return Frames(3);
     log.Append($" SIN EL TRAJE: {ActiveSleeves()}.");
