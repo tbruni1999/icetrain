@@ -120,6 +120,14 @@ namespace SurvivalEnTren.EditorTools
             zone.GetComponent<Collider>().isTrigger = true;
             Object.DestroyImmediate(zone.GetComponent<MeshRenderer>());
 
+            // El lugar del yunque (que no se ve hasta instalarlo) queda reservado: no se le puede poner un mueble encima.
+            var anvilReserved = BoxMinMax("Reservado_Yunque", root, new Vector3(0.7f, y0, -5.3f), new Vector3(1.3f, y0 + 1.0f, -4.35f), brick);
+            anvilReserved.GetComponent<Collider>().isTrigger = true;
+            Object.DestroyImmediate(anvilReserved.GetComponent<MeshRenderer>());
+            var anvilSo = new SerializedObject(anvilReserved.AddComponent<SurvivalEnTren.Building.PlacementBlocker>());
+            anvilSo.FindProperty("reason").stringValue = "ahí va el yunque de la forja";
+            anvilSo.ApplyModifiedPropertiesWithoutUndo();
+
             BuildSite site = NewBuildSite(root, project, "obra_tren_forja_001",
                 new List<GameObject[]> { phase1.ToArray(), phase2.ToArray(), phase3.ToArray() }, null);
             var siteSo = new SerializedObject(site);

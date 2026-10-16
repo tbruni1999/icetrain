@@ -11,7 +11,9 @@ namespace SurvivalEnTren.Equipment
         HandPump,
         Saw,
         /// <summary>El martillo de la forja (H4): se fabrica en el banco y se usa en el yunque.</summary>
-        Hammer
+        Hammer,
+        /// <summary>La llave de montaje (2026-10-16): mueve los muebles que el jugador colocó (decisión de Tomi).</summary>
+        Wrench
     }
 
     /// <summary>
@@ -28,6 +30,7 @@ namespace SurvivalEnTren.Equipment
         private bool _handPump;
         private bool _saw;
         private bool _hammer;
+        private bool _wrench;
 
         public bool SuitWorn { get; private set; }
 
@@ -42,6 +45,7 @@ namespace SurvivalEnTren.Equipment
                 case GearId.HandPump: return _handPump;
                 case GearId.Saw: return _saw;
                 case GearId.Hammer: return _hammer;
+                case GearId.Wrench: return _wrench;
                 default: return false;
             }
         }
@@ -54,6 +58,7 @@ namespace SurvivalEnTren.Equipment
                 case GearId.HandPump: _handPump = true; break;
                 case GearId.Saw: _saw = true; break;
                 case GearId.Hammer: _hammer = true; break;
+                case GearId.Wrench: _wrench = true; break;
             }
             Changed?.Invoke();
         }

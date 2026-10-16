@@ -254,6 +254,7 @@ namespace SurvivalEnTren.EditorTools
                 BuildPortableProbe(motor, train, palette);
                 BuildToolBelt(motor, train); // herramientas en la mano (H1, TestScenesBuilder.Tools.cs)
                 BuildForge(motor, train); // la forja del tren (H4, TestScenesBuilder.Forge.cs)
+                WireWorkbench(train); // el banco arma los kits de la cama, la forja y la bifurcación (TestScenesBuilder.Upgrades.cs)
                 BuildSaveSystem(motor, train);
                 BuildPresentation(motor, train, unknownRoute);
                 StylePlaces(train); // producción P2: los lugares con los materiales de la librería (TestScenesBuilder.Places.cs)
@@ -1208,7 +1209,7 @@ namespace SurvivalEnTren.EditorTools
 
         private sealed class BlueprintSet
         {
-            public Blueprint Saw, Jerrycan, ShelfProject, Hammer;
+            public Blueprint Saw, Jerrycan, ShelfProject, Hammer, Wrench;
         }
 
         // Los tres planos de la V1 como archivos de datos (se crean una sola vez; si se ajustan, no se pisan).
@@ -1229,6 +1230,9 @@ namespace SurvivalEnTren.EditorTools
                 Hammer = LoadOrCreateBlueprint("Martillo", "plano_martillo", "martillo",
                     "Para trabajar el metal al rojo en el yunque de la forja (H4).", true, BlueprintKind.Craft,
                     new[] { (materials.Wood, 1), (materials.Metal, 1) }, new GearId[0], 6f, CraftOutputKind.Gear, GearId.Hammer, "queda al cinto: casilla 4"),
+                Wrench = LoadOrCreateBlueprint("LlaveMontaje", "plano_llave_montaje", "llave de montaje",
+                    "Para mover los muebles que colocaste (un golpe lo levanta, un clic lo deja). PROPUESTA del 2026-10-16.", true, BlueprintKind.Craft,
+                    new[] { (materials.Metal, 1) }, new GearId[0], 6f, CraftOutputKind.Gear, GearId.Wrench, "queda al cinto: casilla 5"),
             };
         }
 
@@ -1258,9 +1262,22 @@ namespace SurvivalEnTren.EditorTools
             output.localRotation = Quaternion.Euler(0f, 90f, 0f); // el bidón queda de costado para entrar entre las dos cajas
             SetReference(workbench, "outputPoint", output);
             SetReference(workbench, "jerrycanPrefab", BuildJerrycanPrefab(p));
+            // Las mejoras salen como kits en el piso, al lado del banco (hacia la puerta del taller, contra la pared).
+            var kitPoint = Group("Banco_Salida_Kit", workshop);
+            kitPoint.localPosition = new Vector3(-(InnerHalfWidth - 0.34f), FloorTop + 0.005f, 1.42f);
+            SetReference(workbench, "kitPoint", kitPoint);
+            // Ese lugar queda reservado: no se puede colocar un mueble encima (el banco no tendría dónde dejar el kit).
+            var reserved = BoxMinMax("Reservado_Kit", kitPoint, new Vector3(-0.34f, 0f, -0.3f), new Vector3(0.34f, 0.5f, 0.3f), p.Furniture);
+            reserved.GetComponent<Collider>().isTrigger = true;
+            Object.DestroyImmediate(reserved.GetComponent<MeshRenderer>());
+            var reservedSo = new SerializedObject(reserved.AddComponent<SurvivalEnTren.Building.PlacementBlocker>());
+            reservedSo.FindProperty("reason").stringValue = "ahí deja el banco lo que arma";
+            reservedSo.ApplyModifiedPropertiesWithoutUndo();
+            SetReference(workbench, "kitPrefab", BuildKitPrefab());
             var so = new SerializedObject(workbench);
             var catalog = so.FindProperty("catalog");
-            Blueprint[] recipes = { plans.Saw, plans.Jerrycan, plans.Hammer };
+            ConfigureShelfBlueprint(plans.ShelfProject, LoadMaterials()); // desde el 2026-10-16, un mueble que se coloca
+            Blueprint[] recipes = { plans.Saw, plans.Jerrycan, plans.Hammer, plans.Wrench, plans.ShelfProject };
             catalog.arraySize = recipes.Length;
             for (int i = 0; i < recipes.Length; i++) catalog.GetArrayElementAtIndex(i).objectReferenceValue = recipes[i];
             so.ApplyModifiedPropertiesWithoutUndo();
@@ -1333,29 +1350,6 @@ namespace SurvivalEnTren.EditorTools
 
         // ---------------------------------------------------------------- Obras por fases (M8)
 
-        // Material translúcido de las piezas que todavía faltan en una obra (URP sin iluminación, con transparencia).
-        private static Material GhostMaterial()
-        {
-            string path = $"{MaterialsFolder}/Fantasma.mat";
-            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
-            if (material == null)
-            {
-                material = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-                AssetDatabase.CreateAsset(material, path);
-            }
-            material.SetFloat("_Surface", 1f);                 // transparente
-            material.SetFloat("_Blend", 0f);                   // mezcla normal
-            material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            material.SetFloat("_ZWrite", 0f);
-            material.SetOverrideTag("RenderType", "Transparent");
-            material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-            material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-            material.SetColor("_BaseColor", new Color(0.55f, 0.85f, 1f, 0.32f));
-            EditorUtility.SetDirty(material);
-            return material;
-        }
-
         // Una obra como archivo de datos: se crea una sola vez (si se ajusta en el archivo, no se pisa).
         private static BuildProject LoadOrCreateBuildProject(string fileName, string displayName, float[] levelValues,
             params (string name, (ItemDefinition item, int count)[] requirements)[] phases)
@@ -1388,12 +1382,11 @@ namespace SurvivalEnTren.EditorTools
             return project;
         }
 
-        // Cablea una obra: el proyecto, el ID, las piezas de cada fase, el material fantasma y el mueble de "fallback".
+        // Cablea una obra: el proyecto, el ID, las piezas de cada fase y el mueble de "fallback" (sin fantasmas desde el 2026-10-16).
         private static BuildSite NewBuildSite(Transform root, BuildProject project, string id, List<GameObject[]> piecesByPhase, MonoBehaviour fallback)
         {
             var site = root.gameObject.AddComponent<BuildSite>();
             SetReference(site, "project", project);
-            SetReference(site, "ghostMaterial", GhostMaterial());
             if (fallback != null) SetReference(site, "fallback", fallback);
             var so = new SerializedObject(site);
             so.FindProperty("stableId").stringValue = id;
@@ -1506,72 +1499,6 @@ namespace SurvivalEnTren.EditorTools
                 new Vector3(InnerHalfWidth - 0.2f, FloorTop + 0.73f, -2.1f), new Vector3(InnerHalfWidth - 0.2f, FloorTop + 0.73f, -1.1f));
             var storage = shelf.gameObject.AddComponent<StorageContainer>();
             ConfigureStorage(storage, "storage_tren_estante_precario_001", "estante precario", new Vector2Int(4, 3), null, slots);
-        }
-
-        // El estante reforzado (sección 11.1, "Ejemplo: estante"): una obra de cuatro fases en la pared izquierda del taller:
-        // soportes de metal, estructura de madera, primer estante y segundo estante. Se vuelve útil con el primer estante
-        // (cuadrícula de 4 x 2) y llega a 6 x 4 con el segundo.
-        private static void BuildReinforcedShelf(Transform parent, Palette p)
-        {
-            MaterialSet materials = LoadMaterials();
-            BuildProject project = LoadOrCreateBuildProject("Estante", "estante reforzado", new float[] { 0f, 0f, 0f, 0f, 0f },
-                ("soportes", new[] { (materials.Metal, 2) }),
-                ("estructura", new[] { (materials.Wood, 2) }),
-                ("primer estante", new[] { (materials.Wood, 2) }),
-                ("segundo estante", new[] { (materials.Wood, 2) }));
-            // Tamaño de la cuadrícula por nivel (0 = soportes, 1 = estructura, 2 = primer estante, 3 = segundo): solo crece.
-            var projectSo = new SerializedObject(project);
-            var sizes = projectSo.FindProperty("levelGridSizes");
-            if (sizes.arraySize != 5)
-            {
-                sizes.arraySize = 5;
-                Vector2Int[] values = { Vector2Int.zero, Vector2Int.zero, Vector2Int.zero, new Vector2Int(4, 2), new Vector2Int(6, 4) };
-                for (int i = 0; i < values.Length; i++) sizes.GetArrayElementAtIndex(i).vector2IntValue = values[i];
-                projectSo.ApplyModifiedPropertiesWithoutUndo();
-            }
-
-            var root = Group("Taller_EstanteReforzado", parent);
-            root.localPosition = new Vector3(-InnerHalfWidth, FloorTop, 2.4f); // contra la pared izquierda, z de 1,4 a 3,4
-            Material wood = Mat("Cama_Madera", new Color(0.55f, 0.4f, 0.24f));
-
-            var phase1 = new List<GameObject>();
-            foreach (float z in new[] { -0.9f, 0.9f })
-            {
-                var bracket = Group($"Soporte_{(z < 0 ? 1 : 2)}", root);
-                BoxMinMax("Placa", bracket, new Vector3(0f, 0.3f, z - 0.05f), new Vector3(0.04f, 1.4f, z + 0.05f), p.Track);
-                BoxMinMax("Brazo_Bajo", bracket, new Vector3(0f, 0.46f, z - 0.04f), new Vector3(0.32f, 0.5f, z + 0.04f), p.Track);
-                BoxMinMax("Brazo_Alto", bracket, new Vector3(0f, 1.06f, z - 0.04f), new Vector3(0.32f, 1.1f, z + 0.04f), p.Track);
-                phase1.Add(bracket.gameObject);
-            }
-            var phase2 = new List<GameObject>();
-            foreach (float z in new[] { -0.9f, 0.9f })
-                phase2.Add(BoxMinMax($"Poste_{(z < 0 ? 1 : 2)}", root, new Vector3(0.3f, 0f, z - 0.04f), new Vector3(0.36f, 1.6f, z + 0.04f), wood));
-            var phase3 = new List<GameObject>
-            {
-                BoxMinMax("Tabla_Baja_1", root, new Vector3(0f, 0.5f, -0.95f), new Vector3(0.34f, 0.55f, 0f), wood),
-                BoxMinMax("Tabla_Baja_2", root, new Vector3(0f, 0.5f, 0f), new Vector3(0.34f, 0.55f, 0.95f), wood),
-            };
-            var phase4 = new List<GameObject>
-            {
-                BoxMinMax("Tabla_Alta_1", root, new Vector3(0f, 1.1f, -0.95f), new Vector3(0.34f, 1.15f, 0f), wood),
-                BoxMinMax("Tabla_Alta_2", root, new Vector3(0f, 1.1f, 0f), new Vector3(0.34f, 1.15f, 0.95f), wood),
-            };
-
-            // Zona de uso invisible sobre todo el estante (para apuntarlo aunque haya piezas fantasma).
-            var zone = BoxMinMax("Zona_Obra", root, new Vector3(0f, 0f, -1.05f), new Vector3(0.55f, 1.8f, 1.05f), wood);
-            zone.GetComponent<Collider>().isTrigger = true;
-            Object.DestroyImmediate(zone.GetComponent<MeshRenderer>());
-
-            // El mueble en sí (sin colliders: lo que se apunta es la obra, que lo abre cuando no hay nada que aportar).
-            var storageHolder = Group("Almacen", root);
-            Transform[] slots = DisplaySlots(storageHolder, "Guardado",
-                new Vector3(0.17f, 0.55f, -0.7f), new Vector3(0.17f, 0.55f, -0.25f), new Vector3(0.17f, 0.55f, 0.25f), new Vector3(0.17f, 0.55f, 0.7f));
-            var storage = storageHolder.gameObject.AddComponent<StorageContainer>();
-
-            BuildSite site = NewBuildSite(root, project, "obra_tren_estante_001",
-                new List<GameObject[]> { phase1.ToArray(), phase2.ToArray(), phase3.ToArray(), phase4.ToArray() }, storage);
-            ConfigureStorage(storage, "storage_tren_estante_reforzado_001", "estante reforzado", Vector2Int.zero, site, slots);
-            SetReference(site, "requiredBlueprint", Blueprints().ShelfProject); // sin el plano, la pared está vacía (sección 20.6)
         }
 
         // ---------------------------------------------------------------- Objetos desmontables (M7)
@@ -1913,7 +1840,6 @@ namespace SurvivalEnTren.EditorTools
             foreach (float h in new[] { 0.1f, 0.7f, 1.3f })
                 BoxMinMax($"Repisa_{h:0.0}", shelf, new Vector3(InnerHalfWidth - 0.4f, FloorTop + h, -2.5f), new Vector3(InnerHalfWidth, FloorTop + h + 0.03f, -0.53f), p.Furniture);
             BuildStarterStorage(shelf);
-            BuildReinforcedShelf(workshop, p);
 
             var cargo = Group("Zona_EntradaCarga", interior);
 

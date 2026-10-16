@@ -50,11 +50,15 @@ System.Collections.IEnumerator HitDown(SurvivalEnTren.Items.SalvageProp target)
     for (int i = 0; i < 5; i++) yield return new UnityEngine.WaitForFixedUpdate();
 }
 
+System.IO.File.WriteAllText("Temp/prueba_paso.txt", "");
+void Step(string s) { System.IO.File.AppendAllText("Temp/prueba_paso.txt", s + "\n"); }
+
 System.Collections.IEnumerator Run()
 {
     clock.SpeedMultiplier = 0f;
     yield return Frames(60);
 
+    Step("1");
     // 1) El ambiente según el lugar.
     motor.TeleportTo(trainBody.position + trainBody.rotation * new UnityEngine.Vector3(0f, 1.05f, 2f), trainBody);
     yield return Frames(90);
@@ -75,6 +79,7 @@ System.Collections.IEnumerator Run()
     yield return Frames(90);
     log.Append($" | en la estación, {Amb()}.");
 
+    Step("2");
     // 2) El motor: ralentí, carga con la potencia y las ruedas en las juntas.
     motor.TeleportTo(trainBody.position + trainBody.rotation * new UnityEngine.Vector3(0f, 1.05f, 2f), trainBody);
     yield return Frames(60);
@@ -93,6 +98,7 @@ System.Collections.IEnumerator Run()
     log.Append($" Sin combustible: ralentí {engine.IdleVolume:0.00}, carga {engine.LoadVolume:0.00} (motor apagado).");
     tank.Add(fuel);
 
+    Step("3");
     // 3) Las cosas del mundo: palanca, hielo, desarme, obra, banco, plano.
     yield return Frames(30);
     int p0 = world.Played;
@@ -110,9 +116,20 @@ System.Collections.IEnumerator Run()
     yield return Frames(5); Note();
     SurvivalEnTren.Building.BuildSite bed = null;
     foreach (var b in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Building.BuildSite>()) if (b.StableId == "obra_tren_cama_001") bed = b;
-    bed.Channel(who, 0.55f);
-    yield return Frames(5); Note();
+    // La cama: el banco arma el kit de la base (con su reloj adelantado) y se instala (desde el 2026-10-16).
     var bench = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Crafting.Workbench>();
+    var carrier = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Interaction.PlayerCarrier>();
+    Step("3a madera=" + backpack.CountOf(UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.ItemDefinition>("Assets/_Project/Data/Items/Madera.asset")));
+    bench.StartJob(new SurvivalEnTren.Crafting.BenchRecipe(bed, 0), backpack, gear);
+    bench.FinishJobNow();
+    yield return Frames(5);
+    SurvivalEnTren.Building.UpgradeKit kit = null;
+    foreach (var k in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Building.UpgradeKit>()) kit = k;
+    carrier.Pick(kit.GetComponent<SurvivalEnTren.Interaction.Carryable>());
+    yield return Frames(3);
+    bed.Interact(who);
+    yield return Frames(5); Note();
+    backpack.Add(UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.ItemDefinition>("Assets/_Project/Data/Items/Madera.asset"), 1);
     backpack.Add(UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.ItemDefinition>("Assets/_Project/Data/Items/Metal.asset"), 1);
     bench.Complete(UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Crafting.Blueprint>("Assets/_Project/Data/Crafting/Plano_SierraManual.asset"), backpack, gear);
     yield return Frames(5); Note();

@@ -1,6 +1,6 @@
-// Prueba del M10 paso 2: el proyecto de reparación de la bifurcación. Congelado, la obra no se ve ni se puede empezar; con el
-// hielo roto aparece como fantasmas; se aporta por fases (palanca, durmientes y riel, aguja de cambio), el avance parcial se
-// conserva entre viajes, la pieza especial se recoge del taller ferroviario (M11), y al terminar el cambio queda
+// Prueba del M10 paso 2 (desde el 2026-10-16 con kits): el proyecto de reparación de la bifurcación. El banco del tren arma un
+// kit por fase (palanca, durmientes y riel, aguja de cambio); congelado no se puede instalar; con el hielo roto se lleva el kit
+// y se instala (lo que falta no se ve); la pieza especial se recoge del taller ferroviario (M11); al terminar el cambio queda
 // REPARADO y la palanca (apuntada de verdad) lo mueve.
 // Cómo correrla: escena M2_Conduccion recién puesta en Play (esperar ~12 s),
 //   unity command eval_file --file "Tools/SpikeTests/m10_reparacion.cs" --timeout 60
@@ -25,7 +25,9 @@ var metal = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.ItemD
 var wood = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.ItemDefinition>("Assets/_Project/Data/Items/Madera.asset");
 var parts = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.ItemDefinition>("Assets/_Project/Data/Items/Componentes.asset");
 var needle = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.ItemDefinition>("Assets/_Project/Data/Items/AgujaCambio.asset");
-var ghost = (UnityEngine.Material)typeof(SurvivalEnTren.Building.BuildSite).GetField("ghostMaterial", flags).GetValue(site);
+var bench = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Crafting.Workbench>();
+var book = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Crafting.BlueprintBook>();
+var carrier = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Interaction.PlayerCarrier>();
 var tInteractor = typeof(SurvivalEnTren.Interaction.PlayerInteractor);
 var log = new System.Text.StringBuilder();
 var wait = new UnityEngine.WaitForFixedUpdate();
@@ -58,7 +60,7 @@ string Pieces()
             if (!piece.activeSelf) continue;
             visible++;
             var r = piece.GetComponentInChildren<UnityEngine.Renderer>();
-            if (r != null && r.sharedMaterial != ghost) solid++;
+            if (r != null) solid++;
         }
         sb.Append($"fase {n++}: {visible}/{total} visibles, {solid} sólidas; ");
     }
@@ -70,13 +72,21 @@ bool ZonesOn()
     foreach (var c in site.GetComponentsInChildren<UnityEngine.Collider>(true)) if (c.isTrigger && c.enabled) on = true;
     return on;
 }
-System.Collections.IEnumerator Contribute(int maxLoops = 60)
+// El banco arma el kit de una fase (se adelanta su reloj: la prueba no espera los 30 min del juego).
+bool CraftKit(int phase) { bool ok = bench.StartJob(new SurvivalEnTren.Crafting.BenchRecipe(site, phase), backpack, gear); bench.FinishJobNow(); return ok; }
+SurvivalEnTren.Building.UpgradeKit NewestKit() { SurvivalEnTren.Building.UpgradeKit k = null; foreach (var x in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Building.UpgradeKit>()) k = x; return k; }
+// Lo que se lleva en la mano viaja con el jugador (los teletransportes de la prueba lo dejarían atrás).
+void CarryWithMe() { var h = carrier.Holding; if (h == null) return; var p = motor.transform.position + UnityEngine.Vector3.up * 1.4f + motor.transform.forward * 0.8f; h.transform.position = p; h.Body.position = p; h.Body.linearVelocity = UnityEngine.Vector3.zero; }
+// Instalar: con el kit en la mano, lo mismo que mantener E sobre la obra.
+System.Collections.IEnumerator Install() { site.Interact(who); for (int i = 0; i < 5; i++) yield return wait; }
+// Lo que no entra en la mochila va al estante del taller (el banco usa los dos).
+void Give(SurvivalEnTren.Items.ItemDefinition item, int n)
 {
-    int g = 0;
-    while (site.Channel(who, 0.55f) && g++ < maxLoops) yield return null;
-    for (int i = 0; i < 3; i++) yield return wait;
+    int left = n - backpack.Add(item, n);
+    SurvivalEnTren.Items.StorageContainer shelf = null;
+    foreach (var s in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.StorageContainer>()) if (s.StableId == "storage_tren_estante_precario_001") shelf = s;
+    for (int i = 0; i < left; i++) shelf.Grid.TryAutoPlace(item);
 }
-void Give(SurvivalEnTren.Items.ItemDefinition item, int n) { backpack.Add(item, n); }
 void StandAtLever(float side = 2.2f, float aimHeight = 0.7f)
 {
     var stand = UnityEngine.GameObject.Find("Cambio_2_Palanca").transform;
@@ -85,11 +95,15 @@ void StandAtLever(float side = 2.2f, float aimHeight = 0.7f)
     LookAtWorld(target);
 }
 
+System.IO.File.WriteAllText("Temp/prueba_paso.txt", "");
+void Step(string s) { System.IO.File.AppendAllText("Temp/prueba_paso.txt", s + "\n"); }
+
 System.Collections.IEnumerator Run()
 {
     clock.SpeedMultiplier = 0f;
     for (int i = 0; i < 30; i++) yield return wait;
 
+    Step("0");
     // 0) Datos y lugares: la pieza especial y los objetos desmontables de los lugares del M11.
     SurvivalEnTren.Items.MaterialBundle needleBundle = null;
     foreach (var b in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>()) if (b.Item == needle) needleBundle = b;
@@ -111,61 +125,56 @@ System.Collections.IEnumerator Run()
     }
     log.Append($"DATOS: pieza especial \"{needle.DisplayName}\" {needle.SizeCells.x}x{needle.SizeCells.y}, {needle.WeightKg:0.0} kg, rota={needle.CanRotate}, en el taller ferroviario={(needleBundle != null)} (a {(needleBundle != null ? UnityEngine.Vector3.Distance(needleBundle.transform.position, new UnityEngine.Vector3(480f, 0f, 150f)) : -1f):0} m de la masa metálica); proyecto \"{req.DisplayName}\":{reqText} objetos desmontables en el taller y el refugio: {supProps} (madera ×{woodSup}, chapas ×{metalSup}, componentes ×{partsSup}).");
 
-    // 1) Congelado: la obra no se ve ni se puede empezar.
-    StandAtLever();
-    for (int i = 0; i < 40; i++) yield return wait;
-    object t0 = Target();
-    log.Append($" CONGELADO: obra bloqueada={site.Locked}; {Pieces()}; zonas de uso prendidas={ZonesOn()}; apuntando el objetivo es {Name(t0)} (el hielo), indicación \"{P(t0 as SurvivalEnTren.Interaction.IInteractable)}\".");
+    Step("1");
+    // 1) Congelado: el banco ya arma el kit de la palanca, pero con el hielo encima no se puede instalar.
     Give(metal, 2); Give(parts, 1);
-    yield return Contribute();
-    log.Append($" Con chapas y componente en la mochila, la obra no recibe nada: nivel {site.Level}, aportado {site.ContributedUnits}.");
-    backpack.Remove(metal, 2); backpack.Remove(parts, 1);
+    bool made1 = CraftKit(0);
+    yield return Frames(5);
+    var kit1 = NewestKit();
+    carrier.Pick(kit1.GetComponent<SurvivalEnTren.Interaction.Carryable>());
+    StandAtLever();
+    CarryWithMe();
+    for (int i = 0; i < 40; i++) yield return wait;
+    log.Append($" CONGELADO: el banco ofrece {string.Join(", ", bench.Recipes(book).FindAll(r => r.Site == site).ConvertAll(r => r.DisplayName))}; armó el kit={made1}; obra bloqueada={site.Locked}; {Pieces()}; zonas de uso prendidas={ZonesOn()}; con el kit, la obra lo acepta={site.Accepts(kit1)}, indicación de la obra \"{P(site)}\".");
 
-    // 2) Hielo roto: la obra aparece (fantasmas).
+    Step("2");
+    // 2) Hielo roto: se puede instalar (lo que falta no se ve: sin fantasmas).
     gear.Give(SurvivalEnTren.Equipment.GearId.Crowbar);
+    carrier.Drop(false);
     int g = 0;
     while (ice != null && !ice.IsBroken && g++ < 1000) { if (!ice.Channel(who, UnityEngine.Time.fixedDeltaTime)) break; yield return wait; }
     for (int i = 0; i < 30; i++) yield return wait;
+    carrier.Pick(kit1.GetComponent<SurvivalEnTren.Interaction.Carryable>());
+    CarryWithMe();
     LookAtWorld(UnityEngine.GameObject.Find("Cambio_2_Palanca").transform.position + new UnityEngine.Vector3(0f, 0.7f, 0f));
     for (int i = 0; i < 20; i++) yield return wait;
     object t1 = Target();
-    log.Append($" SIN HIELO: estado {sw.Condition}; obra bloqueada={site.Locked}; {Pieces()}; zonas prendidas={ZonesOn()}; apuntando el objetivo es {Name(t1)}, indicación \"{P(t1 as SurvivalEnTren.Interaction.IInteractable)}\"; el muñón de la palanca rota se ve={UnityEngine.GameObject.Find("Palanca_Rota") != null && UnityEngine.GameObject.Find("Palanca_Rota").activeSelf}.");
+    log.Append($" SIN HIELO: estado {sw.Condition}; obra bloqueada={site.Locked}; {Pieces()}; zonas prendidas={ZonesOn()}; con el kit en la mano el objetivo es {Name(t1)}, indicación \"{P(t1 as SurvivalEnTren.Interaction.IInteractable)}\"; el muñón de la palanca rota se ve={UnityEngine.GameObject.Find("Palanca_Rota") != null && UnityEngine.GameObject.Find("Palanca_Rota").activeSelf}.");
 
-    // 3) Fase 1: la palanca (chapa ×2 + componente ×1), aportando en dos tandas.
-    Give(metal, 2);
-    yield return Contribute();
-    log.Append($" FASE 1 (solo las chapas): nivel {site.Level}, fracción {site.Fraction:0.00}; {Pieces()}.");
-    Give(parts, 1);
-    yield return Contribute();
+    Step("3");
+    // 3) Fase 1: instalar la palanca (mantener E con el kit: lo mismo que Interact).
+    yield return Install();
     LookAtWorld(UnityEngine.GameObject.Find("Cambio_2_Palanca").transform.position + new UnityEngine.Vector3(0f, 0.7f, 0f));
     yield return Frames(10);
-    log.Append($" FASE 1 completa: nivel {site.Level}; {Pieces()}; el muñón se ve={UnityEngine.GameObject.Find("Palanca_Rota") != null && UnityEngine.GameObject.Find("Palanca_Rota").activeSelf}; estado del cambio {sw.Condition}; moverlo → {(sw.TrySetDiverging(true, null) ? "SE MOVIÓ (mal)" : "no se mueve (bien)")}.");
+    log.Append($" FASE 1 instalada: nivel {site.Level}; {Pieces()}; el muñón se ve={UnityEngine.GameObject.Find("Palanca_Rota") != null && UnityEngine.GameObject.Find("Palanca_Rota").activeSelf}; estado del cambio {sw.Condition}; moverlo → {(sw.TrySetDiverging(true, null) ? "SE MOVIÓ (mal)" : "no se mueve (bien)")}.");
 
-    // 4) Fase 2: durmientes y riel (madera ×4 + chapa ×3), con el avance parcial conservado entre viajes.
-    Give(wood, 2);
-    yield return Contribute();
-    float partial = site.Fraction;
-    int woodIn = site.ContributedOf(wood);
-    // "Se fue a buscar el resto": lejos de la obra un rato, y vuelve.
-    motor.TeleportTo(new UnityEngine.Vector3(sw.Point.x + 40f, 0.1f, sw.Point.z + 40f), null);
-    yield return Frames(60);
-    StandAtLever();
-    yield return Frames(20);
-    log.Append($" FASE 2 a medias: madera aportada {woodIn} de 4 (fracción {partial:0.00}); después de irse y volver sigue {site.ContributedOf(wood)} (fracción {site.Fraction:0.00}), la mochila quedó con {backpack.CountOf(wood)} tablones; {Pieces()}.");
+    Step("4");
+    // 4) Fase 2: durmientes y riel (madera ×4 + chapa ×3). Con la mitad de la madera el banco no lo arma.
     Give(wood, 2); Give(metal, 3);
-    yield return Contribute();
-    log.Append($" FASE 2 completa: nivel {site.Level}; {Pieces()}; el cambio sigue {sw.Condition}.");
+    var block2 = bench.Check(new SurvivalEnTren.Crafting.BenchRecipe(site, 1), backpack, gear);
+    Give(wood, 2);
+    bool made2 = CraftKit(1);
+    yield return Frames(5);
+    carrier.Pick(NewestKit().GetComponent<SurvivalEnTren.Interaction.Carryable>());
+    StandAtLever();
+    CarryWithMe();
+    yield return Frames(20);
+    yield return Install();
+    log.Append($" FASE 2: con 2 tablones de 4 el banco dice {block2}; con los 4 armó el kit={made2} y se instaló: nivel {site.Level}; {Pieces()}; el cambio sigue {sw.Condition}.");
 
-    // 5) Fase 3: la pieza especial. Sin ella no avanza; se recoge de la segunda sala de la estación.
-    LookAtWorld(sw.Point + new UnityEngine.Vector3(0f, 0.6f, -4f));
-    yield return Frames(30);
-    object t2 = Target();
-    log.Append($" FASE 3 sin la pieza: objetivo {Name(t2)}, indicación \"{P(t2 as SurvivalEnTren.Interaction.IInteractable)}\".");
-    Give(metal, 5); // chapas de sobra: no sirven para esta fase
-    yield return Contribute();
-    log.Append($" Con chapas de sobra no avanza: nivel {site.Level}.");
-    backpack.Remove(metal, 5);
-
+    Step("5");
+    // 5) Fase 3: la pieza especial. Sin ella el banco no arma el kit; se recoge del taller ferroviario.
+    var block3 = bench.Check(new SurvivalEnTren.Crafting.BenchRecipe(site, 2), backpack, gear);
     var bundlePos = needleBundle.transform.position;
     motor.TeleportTo(new UnityEngine.Vector3(bundlePos.x + 0.9f, 0.1f, bundlePos.z), null);
     LookAtWorld(bundlePos + new UnityEngine.Vector3(0f, 0.15f, 0f));
@@ -175,15 +184,18 @@ System.Collections.IEnumerator Run()
     needleBundle.Interact(who);
     yield return Frames(10);
     bool took = backpack.CountOf(needle) == 1;
-    var needlePiece = backpack.Grid.Items.Count > 0 ? backpack.Grid.Items[0] : null;
-    log.Append($" PIEZA ESPECIAL: apuntándola el objetivo es {Name(t3)}, indicación \"{pickPrompt}\"; la guardó en la mochila={took} (ocupa {(needlePiece != null ? needlePiece.Size.x + "x" + needlePiece.Size.y : "?")} casillas, {backpack.MassKg:0.0} kg).");
-
+    log.Append($" FASE 3 sin la pieza: el banco dice {block3}. PIEZA ESPECIAL: apuntándola el objetivo es {Name(t3)}, indicación \"{pickPrompt}\"; la guardó en la mochila={took} ({backpack.MassKg:0.0} kg).");
+    bool made3 = CraftKit(2);
+    yield return Frames(5);
+    carrier.Pick(NewestKit().GetComponent<SurvivalEnTren.Interaction.Carryable>());
     StandAtLever();
+    CarryWithMe();
     yield return Frames(20);
-    yield return Contribute();
+    yield return Install();
     yield return Frames(10);
-    log.Append($" FASE 3 con la pieza: nivel {site.Level}/{site.Project.PhaseCount}, obra completa={site.IsComplete}; {Pieces()}; estado del cambio {sw.Condition}; la mochila quedó con {backpack.CountOf(needle)} agujas.");
+    log.Append($" FASE 3 con la pieza: armó el kit={made3}; nivel {site.Level}/{site.Project.PhaseCount}, obra completa={site.IsComplete}; {Pieces()}; estado del cambio {sw.Condition}; la mochila quedó con {backpack.CountOf(needle)} agujas.");
 
+    Step("6");
     // 6) Reparado: las zonas de la obra se apagan y la palanca se apunta de verdad (hay que estar al alcance: 2,2 m).
     StandAtLever(1.0f, 0.15f); // se apunta a la base del soporte (la varilla se inclina al mover la palanca)
     yield return Frames(20);
@@ -195,6 +207,7 @@ System.Collections.IEnumerator Run()
     lever.Interact(who);
     log.Append($" Otra vez: desvío={sw.IsDiverging}.");
 
+    Step("7");
     // 7) Cuentas: lo aportado es exactamente lo pedido.
     log.Append($" CUENTAS: aportado madera {site.ContributedOf(wood)}, chapas {site.ContributedOf(metal)}, componentes {site.ContributedOf(parts)}, agujas {site.ContributedOf(needle)} (pedido: 4, 5, 1, 1); en la mochila quedó madera {backpack.CountOf(wood)}, chapas {backpack.CountOf(metal)}, componentes {backpack.CountOf(parts)}.");
     clock.SpeedMultiplier = 1f;

@@ -144,10 +144,57 @@ System.Collections.IEnumerator PickBundlesNear(UnityEngine.Vector3 center, float
         while (bundle != null && bundle.Count > 0 && backpack.MaxAddable(bundle.Item) > 0 && guard++ < 10) { int c = bundle.Count; bundle.Interact(who); yield return wait; if (bundle != null && bundle.Count == c) break; }
     }
 }
+// Desde el 2026-10-16 las fases se arman en el banco del tren como kits (con su tiempo de verdad: se espera) y se instalan en la
+// obra con el kit en la mano. Arma e instala todas las fases que alcancen con lo que hay en la mochila (y los estantes del tren).
+var kitBench = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Crafting.Workbench>();
+var kitCarrier = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Interaction.PlayerCarrier>();
+var kitGear = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Equipment.PlayerGear>();
+float benchWaitSeconds = 0f;
 System.Collections.IEnumerator Contribute()
 {
-    int g = 0;
-    while (g++ < 8) { int n = 0; while (site.Channel(who, 0.55f) && n++ < 60) yield return null; yield return Frames(3); if (site.IsComplete || n == 0) break; }
+    var back = motor.transform.position;
+    float yaw = motor.transform.eulerAngles.y;
+    for (int round = 0; round < 3 && !site.IsComplete; round++)
+    {
+        // En el tren, lo que se trae se guarda en el estante del taller (lo que entre): el banco usa la mochila y los estantes, y
+        // así el próximo viaje hay lugar en la mochila.
+        foreach (var shelf in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.StorageContainer>())
+        {
+            if (shelf.StableId != "storage_tren_estante_precario_001" || shelf.Grid == null) continue;
+            foreach (var piece in new System.Collections.Generic.List<SurvivalEnTren.Items.GridItem>(backpack.Grid.Items))
+                if (shelf.Grid.FindFreeSpot(piece.Item, out int sx, out int sy, out bool sr)) { backpack.Grid.Remove(piece); shelf.Grid.TryPlace(piece.Item, sx, sy, sr); }
+        }
+        // Lo que no entró en el estante se deja en el piso del tren (el banco también lo usa).
+        var dropSettings = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.BackpackSettings>("Assets/_Project/Data/Items/BackpackSettings.asset");
+        var floorRb = kitBench.GetComponentInParent<UnityEngine.Rigidbody>();
+        int floorDrops = 0;
+        foreach (var piece in new System.Collections.Generic.List<SurvivalEnTren.Items.GridItem>(backpack.Grid.Items))
+        {
+            backpack.Grid.Remove(piece);
+            SurvivalEnTren.Items.MaterialBundle.Spawn(dropSettings, piece.Item, 1, floorRb.position + floorRb.rotation * new UnityEngine.Vector3(0.9f, 1.4f, 0.4f + 0.25f * (floorDrops++ % 5)), floorRb.linearVelocity);
+        }
+        var recipe = new SurvivalEnTren.Crafting.BenchRecipe(site, site.Level);
+        if (kitBench.Check(recipe, backpack, kitGear) != SurvivalEnTren.Crafting.CraftBlock.None) break;
+        var trainRb = kitBench.GetComponentInParent<UnityEngine.Rigidbody>();
+        motor.TeleportTo(trainRb.position + trainRb.rotation * new UnityEngine.Vector3(-0.3f, 1.05f, 1.2f), trainRb);
+        for (int i = 0; i < 10; i++) yield return new UnityEngine.WaitForFixedUpdate();
+        kitBench.StartJob(recipe, backpack, kitGear);
+        float waited = 0f;
+        while (kitBench.IsBusy && waited < 200f) { yield return new UnityEngine.WaitForFixedUpdate(); waited += UnityEngine.Time.fixedDeltaTime; }
+        benchWaitSeconds += waited;
+        SurvivalEnTren.Building.UpgradeKit kit = null;
+        foreach (var k in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Building.UpgradeKit>()) kit = k;
+        if (kit == null) break;
+        kitCarrier.Pick(kit.GetComponent<SurvivalEnTren.Interaction.Carryable>());
+        motor.TeleportTo(back, null);
+        motor.AddYaw(UnityEngine.Mathf.DeltaAngle(motor.transform.eulerAngles.y, yaw));
+        var p = back + UnityEngine.Vector3.up * 1.4f + motor.transform.forward * 0.8f;
+        kit.transform.position = p; kit.GetComponent<UnityEngine.Rigidbody>().position = p;
+        for (int i = 0; i < 10; i++) yield return new UnityEngine.WaitForFixedUpdate();
+        Step("instalar fase " + site.Level + " kit " + (kit != null ? kit.SaveKey : "-") + " en la mano " + (kitCarrier.Holding != null));
+        site.Interact(who); // con el kit en la mano: lo mismo que mantener E sobre la obra
+        for (int i = 0; i < 5; i++) yield return new UnityEngine.WaitForFixedUpdate();
+    }
 }
 void BoardTrain() => motor.TeleportTo(trainBody.position + trainBody.rotation * new UnityEngine.Vector3(0f, 1.05f, 2f), trainBody);
 
@@ -188,6 +235,9 @@ System.Collections.IEnumerator HitDown(SurvivalEnTren.Items.SalvageProp target)
         if (!already.Contains(b) && (b.transform.position - where).sqrMagnitude < 9f) b.Interact(who);
     for (int i = 0; i < 5; i++) yield return new UnityEngine.WaitForFixedUpdate();
 }
+
+System.IO.File.WriteAllText("Temp/prueba_paso.txt", "");
+void Step(string s) { System.IO.File.AppendAllText("Temp/prueba_paso.txt", s + "\n"); }
 
 System.Collections.IEnumerator Run()
 {
@@ -243,13 +293,13 @@ System.Collections.IEnumerator Run()
     while (ice != null && !ice.IsBroken && g++ < 1000) { if (!ice.Channel(who, UnityEngine.Time.fixedDeltaTime)) break; yield return wait; }
     yield return Frames(30);
     yield return Contribute();
-    log.Append($" Hielo roto ({sw.Condition}); aportó lo que traía: nivel {site.Level}, fracción {site.Fraction:0.00}; queda {Pack()}.");
+    log.Append($" Hielo roto ({sw.Condition}); armó e instaló lo que alcanzaba: nivel {site.Level}; queda {Pack()}.");
     yield return Salvage("salv_refugio_pallet_001", wood);
     log.Append($" En el refugio: {Pack()}.");
     StandNear(stand.position + new UnityEngine.Vector3(0f, 0.6f, 0f), 2.0f);
     yield return Frames(20);
     yield return Contribute();
-    log.Append($" Volvió y aportó: nivel {site.Level}/{site.Project.PhaseCount}, completa={site.IsComplete}, cambio {sw.Condition}; queda {Pack()}.");
+    log.Append($" Volvió y aportó: nivel {site.Level}/{site.Project.PhaseCount}, completa={site.IsComplete}, cambio {sw.Condition}; queda {Pack()}; el banco tardó {benchWaitSeconds:0} s reales en armar los kits.");
     motor.TeleportTo(new UnityEngine.Vector3(stand.position.x + 1.0f, 0.1f, stand.position.z + 1.2f), null);
     LookAtWorld(stand.position + new UnityEngine.Vector3(0f, 0.15f, 0f));
     yield return Frames(30);

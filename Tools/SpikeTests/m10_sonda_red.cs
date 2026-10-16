@@ -71,16 +71,21 @@ System.Collections.IEnumerator Walk(System.Func<float> needleDeg, UnityEngine.Te
     result[0] = t; result[1] = path;
 }
 
+System.IO.File.WriteAllText("Temp/prueba_paso.txt", "");
+void Step(string s) { System.IO.File.AppendAllText("Temp/prueba_paso.txt", s + "\n"); }
+
 System.Collections.IEnumerator Run()
 {
     clock.SpeedMultiplier = 0f;
     for (int i = 0; i < 90; i++) yield return wait; // que la sonda lea
 
+    Step("1");
     // 1) La consola detecta la bifurcación como lectura de la red.
     int detected = scanner.Readings.Count;
     bool seen = scanner.TryGetReading(fork, out var reading);
     log.Append($"LECTURA: la bifurcación \"{fork.StableId}\" es lectura de la red={fork.IsNetworkMarker}, estado \"{fork.StatusText}\" (bloqueada={fork.IsBlocked}); la sonda detecta {detected} señales en total, la detecta={seen}; ~{reading.Distance:0} m, dirección {reading.BearingDegrees:0}°, por la vía {(reading.AlongKnown ? reading.AlongMeters.ToString("0") + " m" : "(fuera de la ruta)")}.");
 
+    Step("2");
     // 2) Fijarla como objetivo y leer la pantalla de la cabina.
     Select(fork);
     yield return Frames(30);
@@ -94,6 +99,7 @@ System.Collections.IEnumerator Run()
     yield return Frames(30);
     log.Append($" Con una señal de un lugar ({cleanSignal}): \"{line1.text}\" / \"{line3.text}\" (sin rombo ni estado).");
 
+    Step("3");
     // 3) La sonda portátil: el tren queda cerca de la bifurcación y se camina siguiendo la aguja ámbar.
     var tRail = typeof(SurvivalEnTren.Train.TrainMover).GetField("_railPosition", flags);
     tRail.SetValue(train, new SurvivalEnTren.Rail.RailPosition(seg3, 140f));
@@ -113,6 +119,7 @@ System.Collections.IEnumerator Run()
     var stand = UnityEngine.GameObject.Find("Cambio_2_Palanca").transform;
     log.Append($" PORTÁTIL: sonda afuera={probe.IsOut}, texto al empezar \"{first}\" (a {straight:0} m reales); IDA: {res[0]:0} s, caminó {res[1]:0} m para {straight:0} m en línea recta, terminó a {miss:0.0} m de la bifurcación y a {Flat(stand.position, motor.transform.position):0.0} m de la palanca, texto \"{targetText.text}\".");
 
+    Step("4");
     // 4) Repararlo: el texto pasa de BLOQUEADA a ABIERTA.
     Select(fork);
     yield return Frames(20);
@@ -122,13 +129,26 @@ System.Collections.IEnumerator Run()
     while (ice != null && !ice.IsBroken && g2++ < 1000) { if (!ice.Channel(who, UnityEngine.Time.fixedDeltaTime)) break; yield return wait; }
     yield return Frames(20);
     string broken = line1.text;
-    // Se aporta por tandas (la mochila es de 6x5 casillas: el tablón es largo y la chapa es 2x2, no entra todo junto).
+    // Cada fase: el banco del tren arma el kit (se adelanta su reloj) y se instala con el kit en la mano (desde el 2026-10-16).
+    var bench = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Crafting.Workbench>();
+    var carrier = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Interaction.PlayerCarrier>();
     var giveByPhase = new System.Action[] {
         () => { backpack.Add(metal, 2); backpack.Add(parts, 1); },
-        () => { backpack.Add(wood, 4); },
-        () => { backpack.Add(metal, 3); },
+        () => { backpack.Add(wood, 4); int left = 3 - backpack.Add(metal, 3); foreach (var s in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.StorageContainer>()) if (s.StableId == "storage_tren_estante_precario_001") for (int i = 0; i < left; i++) s.Grid.TryAutoPlace(metal); },
         () => { backpack.Add(needle, 1); } };
-    for (int phase = 0; phase < giveByPhase.Length; phase++) { giveByPhase[phase](); int g = 0; while (site.Channel(who, 0.55f) && g++ < 60) yield return null; yield return Frames(3); }
+    for (int phase = 0; phase < giveByPhase.Length; phase++)
+    {
+        giveByPhase[phase]();
+        bench.StartJob(new SurvivalEnTren.Crafting.BenchRecipe(site, site.Level), backpack, gear);
+        bench.FinishJobNow();
+        yield return Frames(5);
+        SurvivalEnTren.Building.UpgradeKit kit = null;
+        foreach (var k in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Building.UpgradeKit>()) kit = k;
+        carrier.Pick(kit.GetComponent<SurvivalEnTren.Interaction.Carryable>());
+        yield return Frames(3);
+        site.Interact(who);
+        yield return Frames(3);
+    }
     yield return Frames(30);
     log.Append($" REPARACIÓN: antes \"{before}\"; con el hielo roto \"{broken}\"; cambio reparado={sw.Condition} → \"{line1.text}\"; el rombo pasó a estado {fork.StatusText}.");
     probe.SetOut(false);

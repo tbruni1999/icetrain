@@ -20,20 +20,24 @@ MonoBehaviour:
       count: 2
     - item: {fileID: 11400000, guid: 95dbddb397966e8468272ccdc96c7c7a, type: 2}
       count: 1
+    workMinutes: 0
   - name: durmientes y riel
     requirements:
     - item: {fileID: 11400000, guid: 99c9953acd394a8458acded756b3b3ac, type: 2}
       count: 4
     - item: {fileID: 11400000, guid: 459bee3c699ede349aecfebe9e6eb5db, type: 2}
       count: 3
+    workMinutes: 0
   - name: aguja de cambio
     requirements:
     - item: {fileID: 11400000, guid: 204b69ebddb8ea14c8c32fa9f3b40bba, type: 2}
       count: 1
+    workMinutes: 0
   levelValues:
   - 0
   - 0
   - 0
   - 0
   levelGridSizes: []
-  unitsPerSecond: 2
+  workMinutes: 30
+  installSeconds: 2.5

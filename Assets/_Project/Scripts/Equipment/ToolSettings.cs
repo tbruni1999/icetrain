@@ -41,7 +41,8 @@ namespace SurvivalEnTren.Equipment
             new ToolSlot { label = "BARRETA", kind = HandSlotKind.Gear, gear = GearId.Crowbar, swingSeconds = 0.75f, hitAt = 0.42f, reachMeters = 2.2f },
             new ToolSlot { label = "SIERRA", kind = HandSlotKind.Gear, gear = GearId.Saw, swingSeconds = 0.6f, hitAt = 0.45f, reachMeters = 2.0f },
             new ToolSlot { label = "SONDA", kind = HandSlotKind.Probe },
-            new ToolSlot { label = "MARTILLO", kind = HandSlotKind.Gear, gear = GearId.Hammer, swingSeconds = 0.6f, hitAt = 0.45f, reachMeters = 2.0f }
+            new ToolSlot { label = "MARTILLO", kind = HandSlotKind.Gear, gear = GearId.Hammer, swingSeconds = 0.6f, hitAt = 0.45f, reachMeters = 2.0f },
+            new ToolSlot { label = "LLAVE", kind = HandSlotKind.Gear, gear = GearId.Wrench, swingSeconds = 0.5f, hitAt = 0.4f, reachMeters = 2.4f }
         };
 
         [Tooltip("Qué tan rápido se saca y se guarda la herramienta (1 = un segundo).")]

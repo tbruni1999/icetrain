@@ -1,7 +1,7 @@
 // Prueba del M10 paso 4: el final de la slice, de punta a punta. Desde cero: se toma la aguja de cambio del taller ferroviario (M11; antes en la segunda sala de la
 // estación, se maneja el tren hasta la bifurcación dañada (la consola la muestra BLOQUEADA), se frena antes del cambio, se baja,
-// se rompe el hielo con la barreta, se desarman objetos del taller y del refugio (armarios, tablero, pallet; antes estaban al lado del cambio) y se aporta el proyecto por
-// fases, se acciona la palanca ya reparada, se vuelve al tren y se entra por primera vez a la ruta desconocida.
+// se rompe el hielo con la barreta, se desarman objetos del taller y del refugio (armarios, tablero, pallet; antes estaban al lado del cambio) y se arman en el banco del tren los kits del proyecto
+// (desde el 2026-10-16) y se instalan por fases, se acciona la palanca ya reparada, se vuelve al tren y se entra por primera vez a la ruta desconocida.
 // Cómo correrla: escena M2_Conduccion recién puesta en Play (esperar ~12 s),
 //   unity command eval_file --file "Tools/SpikeTests/m10_slice.cs" --timeout 60
 // Resultado en la Console, líneas [Slice]. Dura unos 5 minutos reales.
@@ -87,10 +87,57 @@ System.Collections.IEnumerator Salvage(string id)
         while (bundle != null && bundle.Count > 0 && backpack.MaxAddable(bundle.Item) > 0 && guard++ < 10) { int c = bundle.Count; bundle.Interact(who); yield return wait; if (bundle != null && bundle.Count == c) break; }
     }
 }
+// Desde el 2026-10-16 las fases se arman en el banco del tren como kits (con su tiempo de verdad: se espera) y se instalan en la
+// obra con el kit en la mano. Arma e instala todas las fases que alcancen con lo que hay en la mochila (y los estantes del tren).
+var kitBench = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Crafting.Workbench>();
+var kitCarrier = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Interaction.PlayerCarrier>();
+var kitGear = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Equipment.PlayerGear>();
+float benchWaitSeconds = 0f;
 System.Collections.IEnumerator Contribute()
 {
-    int total = 0, g = 0;
-    while (g++ < 8) { int n = 0; while (site.Channel(who, 0.55f) && n++ < 60) yield return null; yield return Frames(3); if (site.IsComplete || n == 0) break; total++; }
+    var back = motor.transform.position;
+    float yaw = motor.transform.eulerAngles.y;
+    for (int round = 0; round < 3 && !site.IsComplete; round++)
+    {
+        // En el tren, lo que se trae se guarda en el estante del taller (lo que entre): el banco usa la mochila y los estantes, y
+        // así el próximo viaje hay lugar en la mochila.
+        foreach (var shelf in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.StorageContainer>())
+        {
+            if (shelf.StableId != "storage_tren_estante_precario_001" || shelf.Grid == null) continue;
+            foreach (var piece in new System.Collections.Generic.List<SurvivalEnTren.Items.GridItem>(backpack.Grid.Items))
+                if (shelf.Grid.FindFreeSpot(piece.Item, out int sx, out int sy, out bool sr)) { backpack.Grid.Remove(piece); shelf.Grid.TryPlace(piece.Item, sx, sy, sr); }
+        }
+        // Lo que no entró en el estante se deja en el piso del tren (el banco también lo usa).
+        var dropSettings = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.BackpackSettings>("Assets/_Project/Data/Items/BackpackSettings.asset");
+        var floorRb = kitBench.GetComponentInParent<UnityEngine.Rigidbody>();
+        int floorDrops = 0;
+        foreach (var piece in new System.Collections.Generic.List<SurvivalEnTren.Items.GridItem>(backpack.Grid.Items))
+        {
+            backpack.Grid.Remove(piece);
+            SurvivalEnTren.Items.MaterialBundle.Spawn(dropSettings, piece.Item, 1, floorRb.position + floorRb.rotation * new UnityEngine.Vector3(0.9f, 1.4f, 0.4f + 0.25f * (floorDrops++ % 5)), floorRb.linearVelocity);
+        }
+        var recipe = new SurvivalEnTren.Crafting.BenchRecipe(site, site.Level);
+        if (kitBench.Check(recipe, backpack, kitGear) != SurvivalEnTren.Crafting.CraftBlock.None) break;
+        var trainRb = kitBench.GetComponentInParent<UnityEngine.Rigidbody>();
+        motor.TeleportTo(trainRb.position + trainRb.rotation * new UnityEngine.Vector3(-0.3f, 1.05f, 1.2f), trainRb);
+        for (int i = 0; i < 10; i++) yield return new UnityEngine.WaitForFixedUpdate();
+        kitBench.StartJob(recipe, backpack, kitGear);
+        float waited = 0f;
+        while (kitBench.IsBusy && waited < 200f) { yield return new UnityEngine.WaitForFixedUpdate(); waited += UnityEngine.Time.fixedDeltaTime; }
+        benchWaitSeconds += waited;
+        SurvivalEnTren.Building.UpgradeKit kit = null;
+        foreach (var k in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Building.UpgradeKit>()) kit = k;
+        if (kit == null) break;
+        kitCarrier.Pick(kit.GetComponent<SurvivalEnTren.Interaction.Carryable>());
+        motor.TeleportTo(back, null);
+        motor.AddYaw(UnityEngine.Mathf.DeltaAngle(motor.transform.eulerAngles.y, yaw));
+        var p = back + UnityEngine.Vector3.up * 1.4f + motor.transform.forward * 0.8f;
+        kit.transform.position = p; kit.GetComponent<UnityEngine.Rigidbody>().position = p;
+        for (int i = 0; i < 10; i++) yield return new UnityEngine.WaitForFixedUpdate();
+        Step("instalar fase " + site.Level + " kit " + (kit != null ? kit.SaveKey : "-") + " en la mano " + (kitCarrier.Holding != null));
+        site.Interact(who); // con el kit en la mano: lo mismo que mantener E sobre la obra
+        for (int i = 0; i < 5; i++) yield return new UnityEngine.WaitForFixedUpdate();
+    }
 }
 string Backpack() => $"madera {backpack.CountOf(wood)}, chapas {backpack.CountOf(metal)}, componentes {backpack.CountOf(parts)}, agujas {backpack.CountOf(needle)} ({backpack.UsedCells}/30 casillas)";
 
@@ -113,6 +160,9 @@ System.Collections.IEnumerator HitDown(SurvivalEnTren.Items.SalvageProp target)
     for (int i = 0; i < 5; i++) yield return new UnityEngine.WaitForFixedUpdate();
 }
 
+System.IO.File.WriteAllText("Temp/prueba_paso.txt", "");
+void Step(string s) { System.IO.File.AppendAllText("Temp/prueba_paso.txt", s + "\n"); }
+
 System.Collections.IEnumerator Run()
 {
     float real0 = UnityEngine.Time.realtimeSinceStartup;
@@ -124,6 +174,7 @@ System.Collections.IEnumerator Run()
     yield return Frames(30);
     log.Append($"AL EMPEZAR: cambio {sw.Condition}, la consola dice \"{line1.text}\"; obra {site.Level}/{site.Project.PhaseCount} (bloqueada={site.Locked}); mochila: {Backpack()}.");
 
+    Step("1");
     // 1) La pieza especial: en el taller ferroviario (M11; a pie con la sonda portátil en el juego real; acá se va directo).
     SurvivalEnTren.Items.MaterialBundle needleBundle = null;
     foreach (var b in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>()) if (b.Item == needle) needleBundle = b;
@@ -135,6 +186,7 @@ System.Collections.IEnumerator Run()
     yield return Frames(10);
     log.Append($" TALLER: tomó la aguja de cambio de la mesa del taller ferroviario (en la mochila {backpack.CountOf(needle)}).");
 
+    Step("2");
     // 2) Volver al tren y manejar hasta la bifurcación (recta oeste, hacia -z).
     motor.TeleportTo(trainBody.position + trainBody.rotation * new UnityEngine.Vector3(0f, 1.05f, 2f), trainBody);
     yield return Frames(200);
@@ -157,6 +209,7 @@ System.Collections.IEnumerator Run()
     yield return Frames(30);
     log.Append($" MANEJANDO: recorrido {path}; temblor máx. del jugador {maxJitter:0.00} mm; el tren quedó a {toSwitch:0} m del cambio (el cambio pide >13 m libres); la consola dice \"{line1.text}\".");
 
+    Step("3");
     // 3) Bajar, romper el hielo.
     var stand = UnityEngine.GameObject.Find("Cambio_2_Palanca").transform;
     motor.TeleportTo(new UnityEngine.Vector3(stand.position.x + 2.0f, 0.1f, stand.position.z + 1.0f), null);
@@ -170,6 +223,7 @@ System.Collections.IEnumerator Run()
     yield return Frames(30);
     log.Append($" HIELO: apuntando el objetivo era {Name(tIce)} \"{icePrompt}\"; se rompió en {held:0.0} s; el cambio pasó a {sw.Condition}.");
 
+    Step("4");
     // 4) Juntar y aportar por tandas (la mochila es de 6x5 casillas).
     yield return Salvage("salv_taller_armario_001");
     yield return Salvage("salv_taller_tablero_001");
@@ -180,11 +234,12 @@ System.Collections.IEnumerator Run()
     log.Append($" FASE 1: nivel {site.Level}, {Backpack()}.");
     yield return Salvage("salv_taller_armario_002");
     yield return Contribute();
-    log.Append($" Más chapas → nivel {site.Level}, fracción {site.Fraction:0.00}, {Backpack()}.");
+    log.Append($" Más chapas → nivel {site.Level}, {Backpack()}.");
     yield return Salvage("salv_refugio_pallet_001");
     yield return Contribute();
-    log.Append($" FASES 2 y 3: nivel {site.Level}/{site.Project.PhaseCount}, obra completa={site.IsComplete}, cambio {sw.Condition}, {Backpack()}.");
+    log.Append($" FASES 2 y 3: nivel {site.Level}/{site.Project.PhaseCount}, obra completa={site.IsComplete}, cambio {sw.Condition}, {Backpack()}; el banco tardó en total {benchWaitSeconds:0} s reales en armar los kits.");
 
+    Step("5");
     // 5) Accionar la palanca (apuntada de verdad, a 1 m de la base).
     motor.TeleportTo(new UnityEngine.Vector3(stand.position.x + 1.0f, 0.1f, stand.position.z + 1.2f), null);
     LookAtWorld(stand.position + new UnityEngine.Vector3(0f, 0.15f, 0f));
@@ -195,6 +250,7 @@ System.Collections.IEnumerator Run()
     yield return Frames(10);
     log.Append($" PALANCA: apuntando el objetivo es {Name(tLever)} \"{leverPrompt}\"; desvío={sw.IsDiverging}, el tren iría a {sw.ActiveExit.name}; la consola dice \"{line1.text}\".");
 
+    Step("6");
     // 6) Volver al tren y entrar por primera vez a la ruta desconocida.
     motor.TeleportTo(trainBody.position + trainBody.rotation * new UnityEngine.Vector3(0f, 1.05f, 2f), trainBody);
     yield return Frames(200);

@@ -37,6 +37,12 @@ MonoBehaviour:
     swingSeconds: 0.6
     hitAt: 0.45
     reachMeters: 2
+  - label: LLAVE
+    kind: 0
+    gear: 4
+    swingSeconds: 0.5
+    hitAt: 0.4
+    reachMeters: 2.4
   raiseSpeed: 4
   windupDegrees: 30
   strikeDegrees: 75

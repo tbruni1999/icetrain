@@ -124,6 +124,15 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "Tool5",
+                    "type": "Button",
+                    "id": "6d2f5a0e-3b1c-4e8a-9f27-5c1e0b7a4d31",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "ToolScroll",
                     "type": "Value",
                     "id": "5ab99b4e-495c-476c-a075-736853fb0330",
@@ -327,6 +336,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "Tool4",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "a4e81c27-90d5-4b63-8f1e-27c9d05b6e18",
+                    "path": "<Keyboard>/5",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Tool5",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

@@ -367,11 +367,6 @@ namespace SurvivalEnTren.EditorTools
                 else if (c.name == "Manta") Paint(c, "MT_TelaManta");
                 else if (c.name == "Almohada") Paint(c, "MT_TelaGris");
             }
-            foreach (Transform c in G("Interior/Zona_Taller/Taller_EstanteReforzado"))
-            {
-                if (c.name.StartsWith("Soporte_")) Paint(c, "MT_AceroOscuro");
-                else if (c.name.StartsWith("Poste_") || c.name.StartsWith("Tabla_")) Paint(c, "MT_Madera");
-            }
         }
 
         // ------------------------------------------------------------------------------------------------ Props

@@ -67,6 +67,16 @@ namespace SurvivalEnTren.Items
             return $"guardar {item.DisplayName} ×{fits} de {count}   (entra lo que da el lugar)";
         }
 
+        /// <summary>Saca hasta n piezas del bulto (el banco de trabajo usa lo que está en el piso del tren); devuelve cuántas sacó.</summary>
+        public int TakeUnits(int n)
+        {
+            int taken = Mathf.Clamp(n, 0, count);
+            count -= taken;
+            if (count <= 0) Destroy(gameObject);
+            else if (taken > 0) Refresh();
+            return taken;
+        }
+
         public float GetHoldSeconds(PlayerInteractor interactor) => 0f;
 
         public void Interact(PlayerInteractor interactor)

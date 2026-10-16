@@ -37,6 +37,22 @@ namespace SurvivalEnTren.EditorTools
                 slotsSo.ApplyModifiedPropertiesWithoutUndo();
                 EditorUtility.SetDirty(settings);
             }
+            // 2026-10-16: la llave de montaje en la casilla 5 (mueve los muebles colocados; si el archivo es de antes, se le agrega).
+            if (System.Array.FindIndex(settings.Slots, s => s.kind == HandSlotKind.Gear && s.gear == GearId.Wrench) < 0)
+            {
+                var slotsSo = new SerializedObject(settings);
+                var slotList = slotsSo.FindProperty("slots");
+                slotList.arraySize++;
+                SerializedProperty wrenchSlot = slotList.GetArrayElementAtIndex(slotList.arraySize - 1);
+                wrenchSlot.FindPropertyRelative("label").stringValue = "LLAVE";
+                wrenchSlot.FindPropertyRelative("kind").enumValueIndex = (int)HandSlotKind.Gear;
+                wrenchSlot.FindPropertyRelative("gear").enumValueIndex = (int)GearId.Wrench;
+                wrenchSlot.FindPropertyRelative("swingSeconds").floatValue = 0.5f;
+                wrenchSlot.FindPropertyRelative("hitAt").floatValue = 0.4f;
+                wrenchSlot.FindPropertyRelative("reachMeters").floatValue = 2.4f;
+                slotsSo.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(settings);
+            }
 
             // Barreta: hierro hexagonal de 75 cm con la uña doblada hacia adelante arriba (sin arte todavía: pedida al chat de arte).
             Material steel = LibraryMaterial("MT_AceroOscuro") ?? Mat("Barreta_Acero", new Color(0.18f, 0.19f, 0.2f));
@@ -81,7 +97,16 @@ namespace SurvivalEnTren.EditorTools
             BoxMinMax("Mango", hammer, new Vector3(-0.014f, -0.04f, -0.014f), new Vector3(0.014f, 0.34f, 0.014f), handle, false);
             BoxMinMax("Cabeza", hammer, new Vector3(-0.025f, 0.3f, -0.07f), new Vector3(0.025f, 0.36f, 0.06f), steel, false);
 
-            foreach (Transform model in new[] { crowbar, saw, hammer })
+            // Llave de montaje (2026-10-16): una llave fija larga, de acero, con una boca en cada punta (sin arte todavía).
+            var wrench = Group("Mano_Llave", head);
+            wrench.localPosition = new Vector3(0.3f, -0.42f, 0.42f);
+            wrench.localRotation = Quaternion.Euler(30f, -14f, -10f);
+            BoxMinMax("Cuerpo", wrench, new Vector3(-0.012f, -0.03f, -0.005f), new Vector3(0.012f, 0.3f, 0.005f), steel, false);
+            BoxMinMax("Boca_A_1", wrench, new Vector3(-0.03f, 0.3f, -0.006f), new Vector3(-0.012f, 0.35f, 0.006f), steel, false);
+            BoxMinMax("Boca_A_2", wrench, new Vector3(0.012f, 0.3f, -0.006f), new Vector3(0.03f, 0.35f, 0.006f), steel, false);
+            BoxMinMax("Boca_B", wrench, new Vector3(-0.025f, -0.06f, -0.006f), new Vector3(0.025f, -0.03f, 0.006f), steel, false);
+
+            foreach (Transform model in new[] { crowbar, saw, hammer, wrench })
             {
                 foreach (Renderer r in model.GetComponentsInChildren<Renderer>(true))
                 {
@@ -110,13 +135,25 @@ namespace SurvivalEnTren.EditorTools
             for (int i = 0; i < slots.Length; i++)
             {
                 Transform model = slots[i].kind != HandSlotKind.Gear ? null
-                    : slots[i].gear == GearId.Crowbar ? crowbar : slots[i].gear == GearId.Saw ? saw : slots[i].gear == GearId.Hammer ? hammer : null;
+                    : slots[i].gear == GearId.Crowbar ? crowbar : slots[i].gear == GearId.Saw ? saw : slots[i].gear == GearId.Hammer ? hammer : slots[i].gear == GearId.Wrench ? wrench : null;
                 models.GetArrayElementAtIndex(i).objectReferenceValue = model;
             }
             var keys = so.FindProperty("slotKeys");
-            keys.arraySize = 4;
-            for (int i = 0; i < 4; i++) keys.GetArrayElementAtIndex(i).objectReferenceValue = FindActionReference($"Player/Tool{i + 1}");
+            keys.arraySize = 5;
+            for (int i = 0; i < 5; i++) keys.GetArrayElementAtIndex(i).objectReferenceValue = FindActionReference($"Player/Tool{i + 1}");
             so.ApplyModifiedPropertiesWithoutUndo();
+
+            // Colocar muebles (2026-10-16): con el kit de un mueble en la mano, o moviéndolo con la llave.
+            var placer = motor.gameObject.AddComponent<SurvivalEnTren.Building.PlacementController>();
+            SetReference(placer, "head", head);
+            SetReference(placer, "motor", motor);
+            SetReference(placer, "carrier", motor.GetComponent<PlayerCarrier>());
+            SetReference(placer, "belt", belt);
+            SetReference(placer, "use", FindActionReference("Player/UseTool"));
+            SetReference(placer, "scroll", FindActionReference("Player/ToolScroll"));
+            SetReference(placer, "okMaterial", PreviewMaterial("Colocar_Bien", new Color(0.92f, 0.95f, 1f, 0.3f)));
+            SetReference(placer, "badMaterial", PreviewMaterial("Colocar_Mal", new Color(1f, 0.32f, 0.25f, 0.34f)));
+            SetReference(belt, "placement", placer);
 
             var hud = motor.gameObject.AddComponent<ToolBarHud>();
             SetReference(hud, "belt", belt);

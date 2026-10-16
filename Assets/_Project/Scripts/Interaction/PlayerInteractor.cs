@@ -174,6 +174,8 @@ namespace SurvivalEnTren.Interaction
 
             var center = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
             IInteractable shown = _engaged != null && !_usableWhileEngaged ? _engaged : _target;
+            // El editor puede dibujar entre un cuadro y otro: lo que se apuntaba pudo destruirse recién (un kit instalado).
+            if (shown is Object gone && gone == null) shown = null;
             string prompt = shown?.GetPrompt(this);
             bool usable = !string.IsNullOrEmpty(prompt);
 

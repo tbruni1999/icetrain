@@ -145,7 +145,7 @@ namespace SurvivalEnTren.UI
             _title.normal.textColor = Color.white;
             GUI.Label(new Rect(30f, 30f, W - 60f, 50f), "SURVIVAL EN TREN", _title);
             _subtitle.normal.textColor = new Color(1f, 1f, 1f, 0.6f);
-            GUI.Label(new Rect(32f, 80f, W - 60f, 26f), _panel.IsOpen ? "Opciones" : "La Red Blanca, después del Enfriamiento", _subtitle);
+            GUI.Label(new Rect(32f, 80f, W - 60f, 26f), _panel.IsOpen ? "Opciones" : "WHITE NETWORK · después del Enfriamiento", _subtitle);
 
             Vector2 mouse = MenuMouse();
             if (_panel.IsOpen) _panel.Draw(mouse, _item, _value);

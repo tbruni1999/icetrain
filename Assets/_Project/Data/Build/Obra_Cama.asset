@@ -18,17 +18,22 @@ MonoBehaviour:
     requirements:
     - item: {fileID: 11400000, guid: 99c9953acd394a8458acded756b3b3ac, type: 2}
       count: 4
+    workMinutes: 0
   - name: relleno
     requirements:
     - item: {fileID: 11400000, guid: 11d890b8564682a4f9e69b36087f10f6, type: 2}
       count: 3
+    workMinutes: 0
   - name: manta
     requirements:
     - item: {fileID: 11400000, guid: 11d890b8564682a4f9e69b36087f10f6, type: 2}
       count: 2
+    workMinutes: 0
   levelValues:
   - 6
   - 7.5
   - 9
   - 11
-  unitsPerSecond: 2
+  levelGridSizes: []
+  workMinutes: 30
+  installSeconds: 2.5

@@ -14,12 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalEnTren.Crafting.Blueprint
   id: plano_estante_reforzado
   displayName: estante reforzado
-  description: 'Un estante de verdad contra la pared del taller: se construye por fases.'
+  description: "Un estante de verdad, de 6 x 4 casillas: lo coloc\xE1s donde quieras dentro del tren."
   knownFromStart: 0
-  kind: 1
-  ingredients: []
+  kind: 0
+  ingredients:
+  - item: {fileID: 11400000, guid: 459bee3c699ede349aecfebe9e6eb5db, type: 2}
+    count: 2
+  - item: {fileID: 11400000, guid: 99c9953acd394a8458acded756b3b3ac, type: 2}
+    count: 6
   requiredTools: 
   craftSeconds: 0.5
-  outputKind: 0
+  outputKind: 2
   outputGear: 2
-  outputText: 
+  outputText: un kit en el piso, al lado del banco
+  workMinutes: 40
+  placeablePrefab: {fileID: 1246982080830919737, guid: 3a8de28931f53c344844ab4d544e6a44, type: 3}

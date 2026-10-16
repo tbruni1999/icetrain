@@ -1,6 +1,6 @@
-// Prueba del M8 paso 3: obras por fases (BuildSite) y la cama mejorable: aportar materiales de la mochila, piezas sólidas
-// y fantasmas, aporte parcial que se conserva, cada fase mejora la recuperación de energía (se mide durmiendo 8 h en cada
-// nivel), y que no se pierdan ni dupliquen materiales.
+// Prueba de la cama mejorable (M8 paso 3; desde el 2026-10-16 con kits): cada fase (base, relleno, manta) se arma en el banco
+// como un kit, se lleva a la cama y se instala manteniendo E de verdad; lo que falta no se ve (sin fantasmas); cada fase mejora
+// la recuperación de energía (se mide durmiendo 8 h en cada nivel); no se pierden ni duplican materiales.
 // Cómo correrla: escena M2_Conduccion recién puesta en Play (esperar ~12 s),
 //   unity command eval_file --file "Tools/SpikeTests/m8_obras_y_cama.cs" --timeout 60
 // Resultado en la Console, líneas [Obras].
@@ -15,6 +15,9 @@ var backpack = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Items.Backp
 var vitals = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Survival.PlayerVitals>();
 var clock = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Survival.GameClock>();
 var bed = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Survival.Bed>();
+var bench = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Crafting.Workbench>();
+var carrier = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Interaction.PlayerCarrier>();
+var gear = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Equipment.PlayerGear>();
 SurvivalEnTren.Building.BuildSite site = null;
 foreach (var s in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Building.BuildSite>()) if (s.StableId == "obra_tren_cama_001") site = s;
 var wood = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.ItemDefinition>("Assets/_Project/Data/Items/Madera.asset");
@@ -94,54 +97,34 @@ System.Collections.IEnumerator Run()
     // Nivel 0: dormir en el lugar miserable.
     yield return Sleep("nivel 0");
 
-    // 1) Con materiales: prompt de construir y aporte con la tecla E de verdad (1 s = 2 piezas).
+    // Cada fase: el banco arma el kit (se adelanta el reloj), se toma, se mira la cama y se mantiene E de verdad.
     Give(wood, 4); Give(cloth, 5);
-    for (int i = 0; i < 10; i++) yield return wait;
-    string promptBuild = P(site);
-    int woodPack0 = backpack.CountOf(wood);
-    KeyE(true);
-    for (int i = 0; i < 65; i++) yield return wait; // ~1,3 s
-    KeyE(false);
-    for (int i = 0; i < 10; i++) yield return wait;
-    log.Append($" APORTAR con E mantenido ~1,3 s: indicación \"{promptBuild}\"; salieron de la mochila {woodPack0 - backpack.CountOf(wood)} tablones; fracción {site.Fraction:0.00}, valor {site.Value:0.00} (6 + 1,5 × {site.Fraction:0.00}); {Visuals()}.");
-    log.Append($" Indicación a mitad: \"{P(site)}\".");
-    yield return Sleep("a mitad de la fase 1");
-
-    // 2) El avance se conserva: soltar E y volver más tarde; completar la fase 1.
-    int levelBefore = site.Level;
-    KeyE(true);
-    int held = 0;
-    while (site.Level == levelBefore && held < 300) { yield return wait; held++; }
-    KeyE(false);
-    for (int i = 0; i < 10; i++) yield return wait;
-    log.Append($" COMPLETAR la fase 1: nivel {levelBefore} → {site.Level} (se cortó el aporte al completar), valor {site.Value:0.00}, tablones en la mochila {backpack.CountOf(wood)}, en la obra 4; {Visuals()}; indicación \"{P(site)}\".");
-    yield return Sleep("fase 1 completa");
-
-    // 3) Fase 2 (relleno) con 3 rollos de tela; a mitad.
-    KeyE(true);
-    for (int i = 0; i < 40; i++) yield return wait; // ~0,8 s: 1 pieza
-    KeyE(false);
-    for (int i = 0; i < 10; i++) yield return wait;
-    log.Append($" FASE 2 con 1 rollo de 3: fracción {site.Fraction:0.00}, valor {site.Value:0.00} (7,5 + 1,5 × {site.Fraction:0.00}); {Visuals()}.");
-    yield return Sleep("a mitad de la fase 2");
-    levelBefore = site.Level;
-    KeyE(true); held = 0;
-    while (site.Level == levelBefore && held < 300) { yield return wait; held++; }
-    KeyE(false);
-    for (int i = 0; i < 10; i++) yield return wait;
-    yield return Sleep("fase 2 completa");
-
-    // 4) Fase 3 (manta): termina la obra.
-    levelBefore = site.Level;
-    KeyE(true); held = 0;
-    while (site.Level == levelBefore && held < 300) { yield return wait; held++; }
-    KeyE(false);
-    for (int i = 0; i < 10; i++) yield return wait;
+    for (int phase = 0; phase < project.PhaseCount; phase++)
+    {
+        int packBefore = backpack.CountOf(wood) + backpack.CountOf(cloth);
+        bool started = bench.StartJob(new SurvivalEnTren.Crafting.BenchRecipe(site, site.Level), backpack, gear);
+        bench.FinishJobNow();
+        for (int i = 0; i < 5; i++) yield return wait;
+        SurvivalEnTren.Building.UpgradeKit kit = null;
+        foreach (var k in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Building.UpgradeKit>()) kit = k;
+        int used = packBefore - backpack.CountOf(wood) - backpack.CountOf(cloth);
+        carrier.Pick(kit.GetComponent<SurvivalEnTren.Interaction.Carryable>());
+        for (int i = 0; i < 20; i++) yield return wait;
+        string prompt = P(site);
+        int levelBefore = site.Level;
+        KeyE(true);
+        int held = 0;
+        while (site.Level == levelBefore && held < 300) { yield return wait; held++; }
+        KeyE(false);
+        for (int i = 0; i < 10; i++) yield return wait;
+        log.Append($" FASE {phase + 1} ({project.Phase(phase).name}): el banco empezó={started} y usó {used} piezas; con el kit \"{prompt}\"; mantener E {held * UnityEngine.Time.fixedDeltaTime:0.0} s → nivel {levelBefore} → {site.Level}, valor {site.Value:0.00}; {Visuals()}.");
+        yield return Sleep($"fase {phase + 1}");
+    }
     log.Append($" OBRA TERMINADA: nivel {site.Level} de {project.PhaseCount}, completa={site.IsComplete}, {Visuals()}; indicación \"{P(site)}\" (solo dormir).");
     yield return Sleep("cama terminada");
 
     // 5) Cuentas: lo que se dio a la mochila = lo que queda en la mochila + lo que está en la obra.
-    log.Append($" CUENTAS: tablones dados {woodGiven}, en la mochila {backpack.CountOf(wood)}, en la obra 4; rollos dados {clothGiven}, en la mochila {backpack.CountOf(cloth)}, en la obra 5; sin duplicar ni perder={woodGiven == backpack.CountOf(wood) + 4 && clothGiven == backpack.CountOf(cloth) + 5}.");
+    log.Append($" CUENTAS: tablones dados {woodGiven}, en la mochila {backpack.CountOf(wood)}, en la obra {site.ContributedOf(wood)}; rollos dados {clothGiven}, en la mochila {backpack.CountOf(cloth)}, en la obra {site.ContributedOf(cloth)}; sin duplicar ni perder={woodGiven == backpack.CountOf(wood) + site.ContributedOf(wood) && clothGiven == backpack.CountOf(cloth) + site.ContributedOf(cloth)}.");
 
     UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);
     inputSettings.editorInputBehaviorInPlayMode = oldBehavior;

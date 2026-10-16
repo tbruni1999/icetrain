@@ -44,7 +44,7 @@ namespace SurvivalEnTren.Crafting
         private bool _open;
         private bool _wasMovementLocked;
         private Workbench _bench;
-        private List<Blueprint> _recipes = new List<Blueprint>();
+        private List<BenchRecipe> _recipes = new List<BenchRecipe>();
         private int _selected;
         private bool _crafting;
         private float _progress;
@@ -58,9 +58,11 @@ namespace SurvivalEnTren.Crafting
         public bool IsCrafting => _crafting;
         public int RecipeCount => _recipes.Count;
         public int SelectedIndex => _selected;
-        public Blueprint Selected => _selected >= 0 && _selected < _recipes.Count ? _recipes[_selected] : null;
+        public BenchRecipe Selected => _selected >= 0 && _selected < _recipes.Count ? _recipes[_selected] : null;
         /// <summary>Qué fracción de la fabricación en curso va hecha (0 a 1).</summary>
-        public float Progress01 => _crafting && Selected != null ? Mathf.Clamp01(_progress / Selected.CraftSeconds) : 0f;
+        public float Progress01 => _crafting && Selected != null ? Mathf.Clamp01(_progress / Selected.Blueprint.CraftSeconds) : 0f;
+        /// <summary>El banco abierto (null si está cerrado).</summary>
+        public Workbench Bench => _open ? _bench : null;
         public string LastMessage => _message;
 
         private void OnDisable()
@@ -76,7 +78,7 @@ namespace SurvivalEnTren.Crafting
             if (_open) Close();
             _open = true;
             _bench = bench;
-            _recipes = bench.KnownRecipes(book);
+            _recipes = bench.Recipes(book);
             _selected = 0;
             _crafting = false;
             _progress = 0f;
@@ -146,10 +148,46 @@ namespace SurvivalEnTren.Crafting
                 Say(BlockText(Selected, block));
                 return false;
             }
+            // Mejoras (kits y muebles): el banco las arma solo, con su tiempo; el panel se puede cerrar.
+            if (Selected.Timed)
+            {
+                BenchRecipe recipe = Selected;
+                if (!_bench.StartJob(recipe, backpack, gear)) return false;
+                Say($"el banco está armando: {recipe.KitName}   ·   {MinutesText(recipe.Minutes)} del juego (podés irte)");
+                Refresh();
+                return true;
+            }
             _crafting = true;
             _progress = 0f;
             return true;
         }
+
+        /// <summary>Cancela lo que el banco está armando (los materiales vuelven a la mochila). Devuelve si se canceló.</summary>
+        public bool CancelJob()
+        {
+            if (!_open || !_bench.IsBusy) return false;
+            string name = _bench.Job.KitName;
+            if (!_bench.CancelJob(backpack))
+            {
+                Say("no entran los materiales en la mochila: hacé lugar para cancelar");
+                return false;
+            }
+            Say($"cancelado: {name}   ·   los materiales volvieron a la mochila");
+            Refresh();
+            return true;
+        }
+
+        // Vuelve a pedir la lista (cambia al empezar un kit: aparece el de la fase siguiente) sin perder la línea elegida.
+        private void Refresh()
+        {
+            string key = Selected?.Key;
+            _recipes = _bench.Recipes(book);
+            int index = key == null ? -1 : _recipes.FindIndex(r => r.Key == key);
+            _selected = index >= 0 ? index : Mathf.Clamp(_selected, 0, Mathf.Max(0, _recipes.Count - 1));
+        }
+
+        private static string MinutesText(float minutes) =>
+            minutes >= 60f ? $"{Mathf.FloorToInt(minutes / 60f)} h {Mathf.RoundToInt(minutes % 60f):00} min" : $"{Mathf.CeilToInt(minutes)} min";
 
         private void Update()
         {
@@ -159,28 +197,31 @@ namespace SurvivalEnTren.Crafting
             if (_crafting)
             {
                 _progress += Time.unscaledDeltaTime;
-                if (_progress >= Selected.CraftSeconds) Finish();
+                if (_progress >= Selected.Blueprint.CraftSeconds) Finish();
             }
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard != null && keyboard.backspaceKey.wasPressedThisFrame) CancelJob();
             HandleMouse(PanelMouse());
         }
 
         private void Finish()
         {
-            Blueprint blueprint = Selected;
+            Blueprint blueprint = Selected.Blueprint;
             _crafting = false;
             _progress = 0f;
             if (_bench.Complete(blueprint, backpack, gear)) Say($"fabricado: {blueprint.DisplayName}   ·   {blueprint.OutputText}");
-            else Say($"no se pudo fabricar: {BlockText(blueprint, _bench.Check(blueprint, backpack, gear))}");
+            else Say($"no se pudo fabricar: {BlockText(Selected, _bench.Check(blueprint, backpack, gear))}");
         }
 
-        private string BlockText(Blueprint blueprint, CraftBlock block)
+        private string BlockText(BenchRecipe recipe, CraftBlock block)
         {
             switch (block)
             {
-                case CraftBlock.MissingMaterials: return "faltan " + Workbench.MissingText(blueprint, backpack, gear);
-                case CraftBlock.MissingTool: return "falta " + Workbench.MissingText(blueprint, backpack, gear);
+                case CraftBlock.MissingMaterials: return "faltan " + _bench.MissingText(recipe, backpack, gear);
+                case CraftBlock.MissingTool: return "falta " + _bench.MissingText(recipe, backpack, gear);
                 case CraftBlock.AlreadyHave: return "ya la tenés";
                 case CraftBlock.OutputBlocked: return "sacá lo que hay sobre la mesa";
+                case CraftBlock.Busy: return "el banco está armando otra cosa";
                 default: return "";
             }
         }
@@ -196,8 +237,11 @@ namespace SurvivalEnTren.Crafting
         private static float Scale => Mathf.Min(1f, (Screen.width - 30f) / W, (Screen.height - 30f) / H);
         private static Vector2 Origin => new Vector2((Screen.width - W * Scale) * 0.5f, (Screen.height - H * Scale) * 0.5f);
 
-        private static Rect RowRect(int i) => new Rect(20f, 64f + i * 60f, 260f, 54f);
+        private static Rect RowRect(int i) => new Rect(20f, 64f + i * 46f, 260f, 42f);
         private static Rect ButtonRect => new Rect(316f, 392f, 240f, 46f);
+        // Lo que el banco está armando (arriba a la derecha) y su botón para cancelar.
+        private static Rect JobRect => new Rect(316f, 16f, 380f, 30f);
+        private static Rect CancelRect => new Rect(704f, 16f, 96f, 30f);
 
         // El mouse en el espacio del panel (origen arriba a la izquierda del panel).
         private static Vector2 PanelMouse()
@@ -218,6 +262,7 @@ namespace SurvivalEnTren.Crafting
 
         public Vector2 RowCenterScreen(int index) => ToMouseScreen(RowRect(index).center);
         public Vector2 CraftButtonCenterScreen() => ToMouseScreen(ButtonRect.center);
+        public Vector2 CancelButtonCenterScreen() => ToMouseScreen(CancelRect.center);
 
         private void HandleMouse(Vector2 pos)
         {
@@ -226,6 +271,7 @@ namespace SurvivalEnTren.Crafting
             for (int i = 0; i < _recipes.Count; i++)
                 if (RowRect(i).Contains(pos)) { Select(i); return; }
             if (ButtonRect.Contains(pos)) StartCraft();
+            if (_bench.IsBusy && CancelRect.Contains(pos)) CancelJob();
         }
 
         // ---------------------------------------------------------------- Dibujo
@@ -247,8 +293,12 @@ namespace SurvivalEnTren.Crafting
 
             _title.normal.textColor = Color.white;
             GUI.Label(new Rect(20f, 14f, 400f, 30f), _bench.DisplayName.ToUpperInvariant(), _title);
-            _small.normal.textColor = new Color(1f, 1f, 1f, 0.55f);
-            GUI.Label(new Rect(W - 330f, 20f, 310f, 20f), "usa los materiales que llevás en la mochila", _small);
+            if (_bench.IsBusy) DrawJob(mouse);
+            else
+            {
+                _small.normal.textColor = new Color(1f, 1f, 1f, 0.55f);
+                GUI.Label(new Rect(W - 330f, 20f, 310f, 20f), "usa lo que llevás y lo que hay en el tren", _small);
+            }
 
             DrawRecipeList(mouse);
             GUI.color = new Color(1f, 1f, 1f, 0.12f);
@@ -265,12 +315,36 @@ namespace SurvivalEnTren.Crafting
             GUI.matrix = saved;
         }
 
+        // Lo que el banco está armando: una barra con lo que falta y el botón para cancelar.
+        private void DrawJob(Vector2 mouse)
+        {
+            Rect r = JobRect;
+            GUI.color = new Color(1f, 1f, 1f, 0.06f);
+            GUI.DrawTexture(r, Texture2D.whiteTexture);
+            GUI.color = new Color(Amber.r, Amber.g, Amber.b, 0.45f);
+            GUI.DrawTexture(new Rect(r.x, r.y, r.width * _bench.JobProgress01, r.height), Texture2D.whiteTexture);
+            ItemTile.Outline(r, Amber, 1.5f);
+            GUI.color = Color.white;
+            _small.normal.textColor = Color.white;
+            string left = _bench.WaitingForSpace ? "listo: falta lugar al lado del banco" : MinutesText(_bench.JobMinutesLeft);
+            GUI.Label(new Rect(r.x + 8f, r.y + 7f, r.width - 16f, 18f), $"armando: {_bench.Job.KitName}   ·   {left}", _small);
+
+            Rect c = CancelRect;
+            GUI.color = new Color(1f, 1f, 1f, c.Contains(mouse) ? 0.16f : 0.06f);
+            GUI.DrawTexture(c, Texture2D.whiteTexture);
+            ItemTile.Outline(c, new Color(1f, 1f, 1f, 0.4f), 1.5f);
+            GUI.color = Color.white;
+            var centered = new GUIStyle(_small) { alignment = TextAnchor.MiddleCenter };
+            centered.normal.textColor = Color.white;
+            GUI.Label(c, "CANCELAR", centered);
+        }
+
         private void DrawRecipeList(Vector2 mouse)
         {
             for (int i = 0; i < _recipes.Count; i++)
             {
                 Rect r = RowRect(i);
-                Blueprint blueprint = _recipes[i];
+                BenchRecipe recipe = _recipes[i];
                 bool selected = i == _selected;
                 GUI.color = new Color(1f, 1f, 1f, selected ? 0.12f : (r.Contains(mouse) && !_crafting ? 0.08f : 0.04f));
                 GUI.DrawTexture(r, Texture2D.whiteTexture);
@@ -278,21 +352,23 @@ namespace SurvivalEnTren.Crafting
                 GUI.color = Color.white;
 
                 _name.normal.textColor = Color.white;
-                GUI.Label(new Rect(r.x + 10f, r.y + 6f, r.width - 20f, 22f), blueprint.DisplayName, _name);
-                CraftBlock block = _bench.Check(blueprint, backpack, gear);
+                GUI.Label(new Rect(r.x + 10f, r.y + 2f, r.width - 20f, 22f), recipe.DisplayName, _name);
+                CraftBlock block = _bench.Check(recipe, backpack, gear);
                 _small.normal.textColor = block == CraftBlock.None ? Amber : new Color(1f, 1f, 1f, 0.5f);
                 string status = block == CraftBlock.None ? "podés fabricarla"
                     : block == CraftBlock.MissingMaterials ? "faltan materiales"
                     : block == CraftBlock.MissingTool ? "falta una herramienta"
                     : block == CraftBlock.AlreadyHave ? "ya la tenés"
+                    : block == CraftBlock.Busy ? "el banco está ocupado"
                     : "la mesa está ocupada";
-                GUI.Label(new Rect(r.x + 10f, r.y + 30f, r.width - 20f, 18f), status, _small);
+                if (recipe.Timed) status += "   ·   " + MinutesText(recipe.Minutes);
+                GUI.Label(new Rect(r.x + 10f, r.y + 23f, r.width - 20f, 18f), status, _small);
             }
         }
 
         private void DrawDetails(Vector2 mouse)
         {
-            Blueprint blueprint = Selected;
+            BenchRecipe blueprint = Selected;
             _name.normal.textColor = Color.white;
             GUI.Label(new Rect(316f, 62f, 480f, 26f), blueprint.DisplayName, _name);
             _small.normal.textColor = new Color(1f, 1f, 1f, 0.7f);
@@ -303,7 +379,7 @@ namespace SurvivalEnTren.Crafting
             float x = 316f;
             foreach (CraftIngredient ingredient in blueprint.Ingredients)
             {
-                int have = backpack.CountOf(ingredient.item);
+                int have = _bench.Available(ingredient.item, backpack);
                 for (int i = 0; i < ingredient.count; i++)
                     ItemTile.Draw(new Rect(x + i * (Tile + 6f), 160f, Tile, Tile), ingredient.item, have > i ? 1f : 0.28f, _small);
                 float groupWidth = ingredient.count * (Tile + 6f);
@@ -334,14 +410,17 @@ namespace SurvivalEnTren.Crafting
 
             Label("SALE", 316f, 316f);
             _tip.normal.textColor = Color.white;
-            GUI.Label(new Rect(316f, 334f, 480f, 24f), $"{blueprint.OutputText}   ·   tarda {blueprint.CraftSeconds:0.#} s", _tip);
+            string time = blueprint.Timed ? $"tarda {MinutesText(blueprint.Minutes)} del juego (el banco sigue solo)" : $"tarda {blueprint.Blueprint.CraftSeconds:0.#} s";
+            GUI.Label(new Rect(316f, 334f, 480f, 24f), blueprint.OutputText, _tip);
+            _small.normal.textColor = new Color(1f, 1f, 1f, 0.7f);
+            GUI.Label(new Rect(316f, 358f, 480f, 20f), time, _small);
 
             // El botón (o la barra mientras se fabrica).
             if (_crafting) DrawProgressBar(blueprint);
             else DrawCraftButton(blueprint, mouse);
         }
 
-        private void DrawCraftButton(Blueprint blueprint, Vector2 mouse)
+        private void DrawCraftButton(BenchRecipe blueprint, Vector2 mouse)
         {
             CraftBlock block = _bench.Check(blueprint, backpack, gear);
             bool can = block == CraftBlock.None;
@@ -351,7 +430,7 @@ namespace SurvivalEnTren.Crafting
             ItemTile.Outline(r, can ? Amber : new Color(1f, 1f, 1f, 0.2f), 2f);
             var centered = new GUIStyle(_name) { alignment = TextAnchor.MiddleCenter };
             centered.normal.textColor = can ? Color.white : new Color(1f, 1f, 1f, 0.35f);
-            GUI.Label(r, "FABRICAR   (Enter)", centered);
+            GUI.Label(r, blueprint.Timed ? "ARMAR   (Enter)" : "FABRICAR   (Enter)", centered);
 
             if (!can)
             {
@@ -360,7 +439,7 @@ namespace SurvivalEnTren.Crafting
             }
         }
 
-        private void DrawProgressBar(Blueprint blueprint)
+        private void DrawProgressBar(BenchRecipe recipe)
         {
             var r = new Rect(316f, 392f, 484f, 46f);
             GUI.color = new Color(1f, 1f, 1f, 0.06f);
@@ -370,7 +449,7 @@ namespace SurvivalEnTren.Crafting
             ItemTile.Outline(r, Amber, 2f);
             var centered = new GUIStyle(_name) { alignment = TextAnchor.MiddleCenter };
             centered.normal.textColor = Color.white;
-            float left = Mathf.Max(0f, blueprint.CraftSeconds - _progress);
+            float left = Mathf.Max(0f, recipe.Blueprint.CraftSeconds - _progress);
             GUI.Label(r, $"fabricando…  {left:0.#} s      (Tab cancela)", centered);
         }
 
@@ -382,7 +461,7 @@ namespace SurvivalEnTren.Crafting
                 GUI.Label(new Rect(20f, 440f, W - 40f, 24f), _message, _tip);
             }
             _small.normal.textColor = new Color(1f, 1f, 1f, 0.5f);
-            GUI.Label(new Rect(20f, 456f, W - 40f, 20f), "mouse: clic en un plano y en FABRICAR   ·   teclado: ↑ ↓ elegir, Enter fabricar   ·   Tab cerrar", _small);
+            GUI.Label(new Rect(20f, 456f, W - 40f, 20f), _bench.IsBusy ? "mouse: clic en un plano y en FABRICAR   ·   teclado: ↑ ↓ elegir, Enter fabricar, Retroceso cancela lo del banco   ·   Tab cerrar" : "mouse: clic en un plano y en FABRICAR   ·   teclado: ↑ ↓ elegir, Enter fabricar   ·   Tab cerrar", _small);
         }
 
         private void Label(string text, float x, float y)

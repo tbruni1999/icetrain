@@ -17,7 +17,9 @@ unity command open_scene --path "$3" $F >/dev/null 2>&1
 unity command editor_play $F >/dev/null; sleep 12
 # calentar el compilador de eval (la primera vez tarda y puede pasar el limite de 5 s): reintentar
 for k in 1 2 3 4 5 6; do
-  r=$(unity command eval --code 'UnityEngine.Application.runInBackground = true; UnityEngine.QualitySettings.vSyncCount = 0; UnityEngine.Application.targetFrameRate = 60; return 1;' $F 2>&1)
+  # (también saca teclados y mouses virtuales de pruebas anteriores que se cortaron: uno con un botón trabado
+  #  apretado no deja que cuente ningún clic nuevo; y reinicia las acciones, que pueden quedar trabadas como "apretadas")
+  r=$(unity command eval --code 'foreach (var d in System.Linq.Enumerable.ToArray(UnityEngine.InputSystem.InputSystem.devices)) if (d.name.StartsWith("Prueba") || d.name.StartsWith("SpikeTest")) UnityEngine.InputSystem.InputSystem.RemoveDevice(d); foreach (var a in UnityEngine.InputSystem.InputSystem.ListEnabledActions()) a.Reset(); UnityEngine.Application.runInBackground = true; UnityEngine.QualitySettings.vSyncCount = 0; UnityEngine.Application.targetFrameRate = 60; return 1;' $F 2>&1)
   echo "$r" | grep -q '"result": 1' && break; sleep 3
 done
 unity command clear_console $F >/dev/null

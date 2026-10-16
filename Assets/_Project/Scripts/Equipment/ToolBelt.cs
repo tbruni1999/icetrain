@@ -25,6 +25,8 @@ namespace SurvivalEnTren.Equipment
         [SerializeField] private PlayerInteractor interactor;
         [Tooltip("Opcional: cada golpe que sirve cansa un poco (ToolSettings.energyPerHit).")]
         [SerializeField] private SurvivalEnTren.Survival.PlayerVitals vitals;
+        [Tooltip("Mientras se coloca un mueble, la rueda lo gira y el clic lo deja: la barra no los usa.")]
+        [SerializeField] private SurvivalEnTren.Building.PlacementController placement;
         [Tooltip("La cabeza (cámara): de acá sale el golpe.")]
         [SerializeField] private Transform head;
         [Tooltip("El modelo de cada casilla en la mano (hijo de la cabeza), en el mismo orden que las casillas. Vacío en la de la sonda.")]
@@ -165,10 +167,11 @@ namespace SurvivalEnTren.Equipment
             {
                 for (int i = 0; i < slotKeys.Length && i < settings.Slots.Length; i++)
                     if (slotKeys[i].action.WasPressedThisFrame()) Select(i);
-                float wheel = scroll.action.ReadValue<float>();
+                bool placing = placement != null && placement.BlocksTool;
+                float wheel = placing ? 0f : scroll.action.ReadValue<float>();
                 if (wheel > 0.01f) Cycle(-1);
                 else if (wheel < -0.01f) Cycle(+1);
-                if (use.action.IsPressed()) TrySwing();
+                if (!placing && use.action.IsPressed()) TrySwing();
             }
         }
 

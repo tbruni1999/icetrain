@@ -1,8 +1,8 @@
 // Prueba del M12: guardar y cargar (Anexo B.4 y sección 25.2: "guardar/cargar conserva recursos, construcciones parciales,
 // combustible y estado de switches; no se duplican ítems ni blueprints al recargar").
 //   A) Se arma un estado: barreta tomada, traje puesto, plano leído, pallet desarmado y armario a medias, hielo de la estación
-//      roto y puerta abierta, cama a medio construir, sierra y bidón fabricados (con combustible adentro), un bulto tirado
-//      afuera, hielo de la bifurcación roto y su obra empezada, una ración comida, el tren movido, el jugador afuera.
+//      roto y puerta abierta, cama con la base instalada y el kit del relleno en el piso, un estante reforzado colocado con una tela, sierra y bidón fabricados (con combustible adentro), un bulto tirado
+//      afuera, hielo de la bifurcación roto y el banco armando el kit de la palanca, una ración comida, el tren movido, el jugador afuera.
 //   Se guarda (en un archivo de prueba, no en la partida del jugador) y se toma la "huella" del estado.
 //   B) Se cambian muchas cosas (más desarme, más comida, más obra, el tren en otro lado): la huella cambia.
 //   C) Se carga: la escena se recarga y la huella tiene que ser la de A.
@@ -73,6 +73,7 @@ T Find<T>(System.Func<T, bool> match) where T : UnityEngine.Object
 }
 SurvivalEnTren.Items.SalvageProp Prop(string id) => Find<SurvivalEnTren.Items.SalvageProp>(p => p.StableId == id);
 SurvivalEnTren.Building.BuildSite Site(string id) => Find<SurvivalEnTren.Building.BuildSite>(s => s.StableId == id);
+SurvivalEnTren.Building.UpgradeKit NewestKit() { SurvivalEnTren.Building.UpgradeKit k = null; foreach (var x in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Building.UpgradeKit>()) k = x; return k; }
 SurvivalEnTren.Poi.FrozenDoor Ice(string id) => Find<SurvivalEnTren.Poi.FrozenDoor>(d => d.StableId == id);
 UnityEngine.Vector3 Abs(UnityEngine.Vector3 w) => w + new UnityEngine.Vector3((float)origin.AbsoluteOriginX, 0f, (float)origin.AbsoluteOriginZ);
 
@@ -95,6 +96,21 @@ void Fingerprint(System.Collections.Generic.SortedDictionary<string, string> ex,
         if (st.Grid != null) foreach (var piece in st.Grid.Items) l.Add($"{piece.Item.Id}@{piece.X},{piece.Y}{(piece.Rotated ? "r" : "")}");
         l.Sort();
         ex["mueble " + st.StableId] = st.Grid == null ? "(sin cuadrícula)" : $"{st.Grid.Width}x{st.Grid.Height}: " + string.Join(" ", l);
+    }
+    // Mejoras (2026-10-16): lo que arma el banco, los kits sueltos y los muebles colocados.
+    var benchNow = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Crafting.Workbench>();
+    ex["banco"] = benchNow.IsBusy ? benchNow.JobKey : "(libre)";
+    if (benchNow.IsBusy) ap["banco minutos"] = benchNow.JobMinutesLeft;
+    var kitKeys = new System.Collections.Generic.List<string>();
+    foreach (var k in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Building.UpgradeKit>()) kitKeys.Add(k.SaveKey);
+    kitKeys.Sort();
+    ex["kits"] = string.Join(",", kitKeys);
+    foreach (var pl2 in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Building.Placeable>())
+    {
+        var lp = train.transform.InverseTransformPoint(pl2.transform.position);
+        ex["colocado " + pl2.StableId] = pl2.Key;
+        ap["colocado " + pl2.StableId + " z"] = lp.z;
+        ap["colocado " + pl2.StableId + " giro"] = UnityEngine.Mathf.DeltaAngle(train.transform.eulerAngles.y, pl2.transform.eulerAngles.y);
     }
     foreach (var site in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Building.BuildSite>())
         ex["obra " + site.StableId] = $"nivel {site.Level} aportado [{string.Join(",", site.ContributedSnapshot())}] bloqueada {site.Locked}";
@@ -212,17 +228,48 @@ System.Collections.IEnumerator WaitLoad(int before)
     yield return Frames(10);
 }
 
+System.IO.File.WriteAllText("Temp/prueba_paso.txt", "");
+void Step(string s) { System.IO.File.AppendAllText("Temp/prueba_paso.txt", s + "\n"); }
+
 System.Collections.IEnumerator Run()
 {
     Refs();
     yield return Frames(60);
 
+    Step("---- A");
     // ---- A) Armar un estado.
     var crowbarPickup = Find<SurvivalEnTren.Equipment.GearPickup>(g => g.Gear == SurvivalEnTren.Equipment.GearId.Crowbar);
     crowbarPickup.Interact(who);                                    // la barreta del perchero
     gear.SetSuit(true);
     foreach (var rack in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Equipment.SuitRack>()) rack.Sync(true);
     UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Crafting.BlueprintPickup>().Interact(who); // el plano de la estación
+    // Desde el 2026-10-16: el estante reforzado se arma en el banco (con lo de la mochila y del estante del taller) y se coloca
+    // contra la pared izquierda, con una tela adentro.
+    var bench = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Crafting.Workbench>();
+    var carrier = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Interaction.PlayerCarrier>();
+    var placer = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Building.PlacementController>();
+    var look = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Player.PlayerLook>();
+    var starterShelf = Find<SurvivalEnTren.Items.StorageContainer>(s => s.StableId == "storage_tren_estante_precario_001");
+    backpack.Add(wood, 4); backpack.Add(metal, 2);
+    starterShelf.Grid.TryAutoPlace(wood); starterShelf.Grid.TryAutoPlace(wood);
+    var shelfPlan = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Crafting.Blueprint>("Assets/_Project/Data/Crafting/Plano_EstanteReforzado.asset");
+    Step("A1 estante del taller=" + (starterShelf != null) + " madera mochila=" + backpack.CountOf(wood));
+    bool shelfJob = bench.StartJob(new SurvivalEnTren.Crafting.BenchRecipe(shelfPlan), backpack, gear);
+    bench.FinishJobNow();
+    yield return Frames(5);
+    Step("A2 armó=" + shelfJob + " kit=" + (NewestKit() != null) + " carrier=" + (carrier != null) + " placer=" + (placer != null));
+    carrier.Pick(NewestKit().GetComponent<SurvivalEnTren.Interaction.Carryable>());
+    motor.TeleportTo(trainBody.position + trainBody.rotation * new UnityEngine.Vector3(0.2f, 1.05f, 2.7f), trainBody);
+    var hp = trainBody.position + trainBody.rotation * new UnityEngine.Vector3(0.2f, 2.3f, 2.7f); carrier.Holding.transform.position = hp; carrier.Holding.Body.position = hp;
+    var dWall = (trainBody.position + trainBody.rotation * new UnityEngine.Vector3(-1.7f, 1.9f, 2.7f)) - (motor.transform.position + UnityEngine.Vector3.up * 1.6f);
+    motor.AddYaw(UnityEngine.Mathf.DeltaAngle(motor.transform.eulerAngles.y, UnityEngine.Mathf.Atan2(dWall.x, dWall.z) * UnityEngine.Mathf.Rad2Deg));
+    typeof(SurvivalEnTren.Player.PlayerLook).GetField("_pitch", flags).SetValue(look, -UnityEngine.Mathf.Atan2(dWall.y, new UnityEngine.Vector2(dWall.x, dWall.z).magnitude) * UnityEngine.Mathf.Rad2Deg);
+    yield return Frames(20);
+    bool shelfPlaced = placer.Confirm();
+    yield return Frames(5);
+    Step("A3 colocado=" + shelfPlaced);
+    var placedShelf = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Building.Placeable>();
+    placedShelf.GetComponent<SurvivalEnTren.Items.StorageContainer>().Grid.TryAutoPlace(cloth);
     yield return Salvage("salv_estacion_pallet_001", 2f);           // madera ×4 a la mochila
     yield return Salvage("salv_estacion_armario_001", 0.5f);        // a medias
     var stationIce = Ice("door_prueba_estacion_001");
@@ -230,9 +277,21 @@ System.Collections.IEnumerator Run()
     yield return Frames(5);
     foreach (var door in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Interaction.SlidingDoor>())
         if (SurvivalEnTren.Save.SaveSystem.PathOf(door.transform).Contains("Estacion_Mantenimiento")) door.Interact(who);
+    Step("A4");
     var bed = Site("obra_tren_cama_001");
-    int g1 = 0; while (backpack.CountOf(wood) > 2 && bed.Channel(who, 0.55f) && g1++ < 20) { } // cama: 2 tablones de 4
-    var bench = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Crafting.Workbench>();
+    // La cama: el kit de la base armado e instalado (nivel 1) y el del relleno armado y en el piso, sin instalar.
+    backpack.Add(wood, 2);
+    bench.StartJob(new SurvivalEnTren.Crafting.BenchRecipe(bed, 0), backpack, gear);
+    bench.FinishJobNow();
+    yield return Frames(5);
+    carrier.Pick(NewestKit().GetComponent<SurvivalEnTren.Interaction.Carryable>());
+    yield return Frames(3);
+    bed.Interact(who);
+    yield return Frames(3);
+    backpack.Add(cloth, 3);
+    bench.StartJob(new SurvivalEnTren.Crafting.BenchRecipe(bed, 1), backpack, gear);
+    bench.FinishJobNow();
+    yield return Frames(5);
     backpack.Add(metal, 3);
     bench.Complete(sawPlan, backpack, gear);                          // la sierra (tablón + chapa)
     bench.Complete(canPlan, backpack, gear);                          // un bidón (2 chapas), sobre la mesa
@@ -243,13 +302,14 @@ System.Collections.IEnumerator Run()
     backpack.Remove(wood, 1);
     SurvivalEnTren.Items.MaterialBundle.Spawn(UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.BackpackSettings>(items + "BackpackSettings.asset"),
         wood, 1, trainBody.position + trainBody.rotation * new UnityEngine.Vector3(5f, 0.5f, 0f), UnityEngine.Vector3.zero);
-    // La bifurcación: hielo roto y la obra empezada.
+    // La bifurcación: hielo roto y el banco armando el kit de la palanca (a medias: el reloj está quieto).
     var forkIce = Ice("ice_switch_oeste_001");
     while (forkIce != null && !forkIce.IsBroken && forkIce.Channel(who, 0.05f)) yield return wait;
     yield return Frames(5);
-    backpack.Add(metal, 1);
+    backpack.Add(metal, 2); backpack.Add(parts, 1);
     var fork = Site("obra_cambio_oeste_001");
-    int g2 = 0; while (fork.Channel(who, 0.55f) && g2++ < 20) { }
+    bool forkJob = bench.StartJob(new SurvivalEnTren.Crafting.BenchRecipe(fork, 0), backpack, gear);
+    clock.SpeedMultiplier = 1f; yield return Frames(120); clock.SpeedMultiplier = 0f; // un par de minutos del juego
     // Comer una ración del tren.
     var ration = Find<SurvivalEnTren.Survival.FoodItem>(f => true);
     ration.Interact(who);
@@ -266,15 +326,21 @@ System.Collections.IEnumerator Run()
     Fingerprint(exactA, approxA);
     bool saved = saver.Save();
     yield return Frames(5);
-    log.Append($"A) ESTADO ARMADO Y GUARDADO={saved} en {saver.SavePath}. Huella: {exactA.Count + approxA.Count} datos. Mochila: {exactA["mochila"]}; obras: cama \"{exactA["obra obra_tren_cama_001"]}\", bifurcación \"{exactA["obra obra_cambio_oeste_001"]}\"; {exactA["objetos"]}; {exactA["bultos"]}; tren {exactA["tren"]}; tanque {approxA["tanque"]:0.0} L; jugador {exactA["jugador"]}.");
+    log.Append($"A) ESTADO ARMADO Y GUARDADO={saved} en {saver.SavePath}. Huella: {exactA.Count + approxA.Count} datos. Mochila: {exactA["mochila"]}; obras: cama \"{exactA["obra obra_tren_cama_001"]}\", bifurcación \"{exactA["obra obra_cambio_oeste_001"]}\"; banco \"{exactA["banco"]}\" (empezó={forkJob}); kits \"{exactA["kits"]}\"; estante colocado={shelfPlaced} (armado={shelfJob}); {exactA["objetos"]}; {exactA["bultos"]}; tren {exactA["tren"]}; tanque {approxA["tanque"]:0.0} L; jugador {exactA["jugador"]}.");
 
+    Step("---- B");
     // ---- B) Cambiar muchas cosas después de guardar.
     yield return Salvage("salv_estacion_armario_001", 2f);
     yield return Salvage("salv_estacion_colchon_001", 2f);
     var ration2 = Find<SurvivalEnTren.Survival.FoodItem>(f => true);
     if (ration2 != null) ration2.Interact(who);
-    backpack.Add(wood, 2);
-    int g4 = 0; while (bed.Channel(who, 0.55f) && g4++ < 20) { }
+    // Instalar el kit del relleno, cancelar lo del banco y correr el estante.
+    carrier.Pick(NewestKit().GetComponent<SurvivalEnTren.Interaction.Carryable>());
+    yield return Frames(3);
+    bed.Interact(who);
+    bench.CancelJob(backpack);
+    placedShelf.transform.localPosition += new UnityEngine.Vector3(0f, 0f, 0.6f);
+    placedShelf.GetComponent<SurvivalEnTren.Items.StorageContainer>().Grid.TryAutoPlace(cloth);
     clock.Skip(3f);
     controls.TryMoveReverser(+1);
     while (controls.PowerNotch < 3) controls.MovePowerBrake(+1);
@@ -288,6 +354,7 @@ System.Collections.IEnumerator Run()
     string diffB = Compare(exB, apB);
     log.Append($" B) DESPUÉS DE GUARDAR se cambió todo: la huella {(diffB == "IGUAL" ? "NO cambió (mal)" : "cambió (bien): " + diffB.Substring(0, System.Math.Min(160, diffB.Length)) + "…")}");
 
+    Step("---- C");
     // ---- C) Cargar: la escena se recarga y vuelve todo a A.
     int loads = SurvivalEnTren.Save.SaveSystem.LoadsApplied;
     float t0 = UnityEngine.Time.realtimeSinceStartup;
@@ -299,6 +366,7 @@ System.Collections.IEnumerator Run()
     Fingerprint(exC, apC);
     log.Append($" C) CARGAR={loading} (recarga de la escena + aplicar: {tookLoad:0.0} s; cargas aplicadas {SurvivalEnTren.Save.SaveSystem.LoadsApplied}): comparado con lo guardado → {Compare(exC, apC)}.");
 
+    Step("---- D");
     // ---- D) Otro estado, ahora con el jugador ADENTRO del tren, cosas en la mochila, en el estante y un bulto en el piso del
     // tren; guardar y cargar: tiene que volver igual (lo de adentro del tren se guarda relativo al tren).
     backpack.Add(metal, 1);

@@ -154,3 +154,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalEnTren.Interaction.Carryable
   oneHanded: 0
+  throwable: 1
+  heldLow: 0

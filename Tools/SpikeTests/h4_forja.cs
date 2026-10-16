@@ -1,5 +1,5 @@
 // Prueba de herramientas y forja, paso H4: la forja del tren de punta a punta.
-// Construir la obra (hogar, fuelle, yunque), el martillo en la barra (4), encender con leña, meter una chapa al fuego, pasarla al
+// Construir la obra (hogar, fuelle, yunque; desde el 2026-10-16 con kits del banco instalados en el lugar), el martillo en la barra (4), encender con leña, meter una chapa al fuego, pasarla al
 // yunque al rojo y martillarla con golpes de verdad (apuntando); si se enfría, de vuelta al fuego; sale una planchuela. Martillar
 // en frío rebota. El combustible del tanque por la válvula. La forja calienta el vagón (con la calefacción apagada).
 // Cómo correrla: escena M2_Conduccion recién puesta en Play (esperar ~6 s),
@@ -56,14 +56,28 @@ System.Collections.IEnumerator Run()
     // 0) Al empezar.
     log.Append($"AL EMPEZAR: obra \"{site.Project.DisplayName}\" {site.Project.PhaseCount} fases, nivel {site.Level}; lista para usar={forge.Ready}; la boca dice \"{P(mouth)}\"; planchuela: {bar.DisplayName} {bar.SizeCells.x}x{bar.SizeCells.y}, {bar.WeightKg:0.0} kg.");
 
-    // 1) Construir la obra con los materiales en la mochila (mantener E: Channel).
+    // 1) Construir la obra: el banco arma cada kit (se adelanta su reloj), se toma y se instala en la forja (lo mismo que
+    //    mantener E con el kit en la mano).
     backpack.Add(metal, 4); backpack.Add(wood, 2); backpack.Add(cloth, 2);
     motor.TeleportTo(Inside(0.0f, -7.0f), body);
     LookAtLocal(new UnityEngine.Vector3(1.05f, 1.5f, -7.0f));
     yield return Frames(20);
-    string sitePrompt = P(site);
+    string sitePrompt = "";
+    var carrier = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Interaction.PlayerCarrier>();
     int rounds = 0;
-    while (!site.IsComplete && rounds++ < 10) { int g = 0; while (site.Channel(who, 0.55f) && g++ < 40) yield return null; yield return Frames(3); }
+    while (!site.IsComplete && rounds++ < 5)
+    {
+        if (!bench.StartJob(new SurvivalEnTren.Crafting.BenchRecipe(site, site.Level), backpack, gear)) break;
+        bench.FinishJobNow();
+        yield return Frames(5);
+        SurvivalEnTren.Building.UpgradeKit kit = null;
+        foreach (var k in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Building.UpgradeKit>()) kit = k;
+        carrier.Pick(kit.GetComponent<SurvivalEnTren.Interaction.Carryable>());
+        yield return Frames(3);
+        sitePrompt = P(site);
+        site.Interact(who);
+        yield return Frames(5);
+    }
     log.Append($" OBRA: \"{sitePrompt}\" → nivel {site.Level}/{site.Project.PhaseCount}, terminada={site.IsComplete}, lista={forge.Ready}; quedan en la mochila chapas {backpack.CountOf(metal)}, tablones {backpack.CountOf(wood)}, tela {backpack.CountOf(cloth)}.");
 
     // 2) El martillo: un plano del banco y la casilla 4.

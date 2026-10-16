@@ -14,19 +14,26 @@ namespace SurvivalEnTren.Interaction
         [Tooltip("Se lleva con una sola mano (un bidón): deja la otra libre para la sonda portátil. " +
                  "Los objetos grandes (cajas) ocupan las dos manos.")]
         [SerializeField] private bool oneHanded;
+        [Tooltip("Se puede lanzar con el clic. Los kits de mejoras no: el clic los instala.")]
+        [SerializeField] private bool throwable = true;
+        [Tooltip("Se lleva bajo, a la altura de la cintura (un kit): se ve por encima.")]
+        [SerializeField] private bool heldLow;
 
         private Rigidbody _body;
         private IItemDescription _description;
         private bool _descriptionLooked;
 
         public bool OneHanded => oneHanded;
+        public bool Throwable => throwable;
+        public bool HeldLow => heldLow;
         public Rigidbody Body => _body != null ? _body : _body = GetComponent<Rigidbody>();
 
         public string GetPrompt(PlayerInteractor interactor)
         {
+            if (this == null) return null; // recién destruido (un kit instalado)
             var carrier = interactor.GetComponent<PlayerCarrier>();
             if (carrier == null) return null;
-            if (carrier.Holding == this) return "soltar   (clic: lanzar)" + Detail();
+            if (carrier.Holding == this) return "soltar   (" + (TryGetComponent(out IHeldHint hint) ? hint.HeldHint() : "clic: lanzar") + ")" + Detail();
             if (carrier.Holding != null) return null;
             return (carrier.CanLift(this) ? "tomar" : "demasiado pesado") + Detail();
         }

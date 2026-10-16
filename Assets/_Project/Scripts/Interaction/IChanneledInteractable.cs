@@ -30,3 +30,15 @@ namespace SurvivalEnTren.Interaction
         string Describe();
     }
 }
+
+namespace SurvivalEnTren.Interaction
+{
+    /// <summary>
+    /// Lo que se lee entre paréntesis mientras se lleva un objeto en la mano, en lugar de "(clic: lanzar)": un kit dice cómo
+    /// se instala.
+    /// </summary>
+    public interface IHeldHint
+    {
+        string HeldHint();
+    }
+}

@@ -26,7 +26,9 @@ namespace SurvivalEnTren.Crafting
         /// <summary>Una herramienta que queda al cinto del jugador (PlayerGear).</summary>
         Gear,
         /// <summary>Un bidón vacío que aparece sobre el banco.</summary>
-        Jerrycan
+        Jerrycan,
+        /// <summary>Un mueble que el jugador coloca donde quiere (un estante): el banco lo arma con su tiempo y sale como kit.</summary>
+        Placeable
     }
 
     /// <summary>
@@ -62,6 +64,11 @@ namespace SurvivalEnTren.Crafting
         [SerializeField] private GearId outputGear = GearId.Saw;
         [Tooltip("Qué sale, en palabras (\"queda al cinto\", \"un bidón vacío sobre la mesa\").")]
         [SerializeField] private string outputText = "";
+        [Header("Mueble (solo si sale un mueble)")]
+        [Tooltip("Minutos del reloj del juego que el banco tarda en armarlo (sigue solo: el jugador puede irse o dormir).")]
+        [SerializeField, Range(1f, 600f)] private float workMinutes = 40f;
+        [Tooltip("El mueble que se coloca (con su Placeable).")]
+        [SerializeField] private GameObject placeablePrefab;
 
         public string Id => id;
         public string DisplayName => displayName;
@@ -74,6 +81,8 @@ namespace SurvivalEnTren.Crafting
         public CraftOutputKind OutputKind => outputKind;
         public GearId OutputGear => outputGear;
         public string OutputText => outputText;
+        public float WorkMinutes => workMinutes;
+        public GameObject PlaceablePrefab => placeablePrefab;
 
         /// <summary>Nombre de una herramienta para mostrar.</summary>
         public static string ToolName(GearId gear)
@@ -84,6 +93,7 @@ namespace SurvivalEnTren.Crafting
                 case GearId.HandPump: return "bomba manual";
                 case GearId.Saw: return "sierra manual";
                 case GearId.Hammer: return "martillo";
+                case GearId.Wrench: return "llave de montaje";
                 default: return gear.ToString();
             }
         }

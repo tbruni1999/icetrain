@@ -1,6 +1,7 @@
 // Prueba del M9 paso 1: planos y conocimiento. Los planos iniciales se saben; el del estante reforzado hay que encontrarlo
 // en la segunda sala de la estación; sin él la pared del taller está vacía; al leerlo se aprende una sola vez, la hoja
-// desaparece y aparece el marco fantasma de la obra.
+// desaparece y el banco de trabajo ofrece armarlo (desde el 2026-10-16 el estante es un mueble que se arma en el banco y se
+// coloca donde uno quiere; ya no hay obra en la pared).
 // Cómo correrla: escena M2_Conduccion recién puesta en Play (esperar ~12 s),
 //   unity command eval_file --file "Tools/SpikeTests/m9_planos.cs" --timeout 60
 // Resultado en la Console, líneas [Planos].
@@ -14,8 +15,7 @@ var who = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Interaction.Play
 var book = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Crafting.BlueprintBook>();
 var backpack = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Items.Backpack>();
 var clock = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Survival.GameClock>();
-SurvivalEnTren.Building.BuildSite shelfSite = null;
-foreach (var s in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Building.BuildSite>()) if (s.StableId == "obra_tren_estante_001") shelfSite = s;
+var bench = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Crafting.Workbench>();
 var sheet = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Crafting.BlueprintPickup>();
 var saw = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Crafting.Blueprint>("Assets/_Project/Data/Crafting/Plano_SierraManual.asset");
 var jerrycan = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Crafting.Blueprint>("Assets/_Project/Data/Crafting/Plano_Bidon.asset");
@@ -31,18 +31,8 @@ UnityEngine.Application.targetFrameRate = 60;
 object Target() => tInteractor.GetField("_target", flags).GetValue(who);
 string Name(object o) => o == null ? "ninguno" : o.GetType().Name;
 string P(SurvivalEnTren.Interaction.IInteractable i) => i?.GetPrompt(who) ?? "(sin indicación)";
-// Cuántas piezas de la obra están activas (visibles) y si la zona de uso está prendida.
-string ShelfVisuals()
-{
-    var phases = (System.Array)typeof(SurvivalEnTren.Building.BuildSite).GetField("phasePieces", flags).GetValue(shelfSite);
-    int visible = 0, total = 0;
-    foreach (var phase in phases)
-        foreach (var piece in (UnityEngine.GameObject[])phase.GetType().GetField("pieces").GetValue(phase)) { total++; if (piece.activeSelf) visible++; }
-    var zone = shelfSite.GetComponentInChildren<UnityEngine.BoxCollider>(true);
-    bool zoneOn = false;
-    foreach (var c in shelfSite.GetComponentsInChildren<UnityEngine.Collider>(true)) if (c.isTrigger && c.enabled) zoneOn = true;
-    return $"{visible} de {total} piezas visibles, zona de uso prendida={zoneOn}";
-}
+// Lo que ofrece el banco con lo que se sabe ahora.
+string Offer() => string.Join(", ", bench.Recipes(book).ConvertAll(r => r.DisplayName));
 void LookAt(UnityEngine.Vector3 world)
 {
     var eye = motor.transform.position + UnityEngine.Vector3.up * 1.6f;
@@ -59,12 +49,8 @@ System.Collections.IEnumerator Run()
     // 1) Qué se sabe al empezar.
     log.Append($"PLANOS AL EMPEZAR: sierra manual (inicial) {book.Knows(saw)}, bidón (inicial) {book.Knows(jerrycan)}, estante reforzado (hay que encontrarlo) {book.Knows(shelf)}.");
 
-    // 2) La obra del estante sin el plano: pared vacía (nada se ve, nada se apunta, no hay indicación).
-    motor.TeleportTo(trainBody.position + trainBody.rotation * new UnityEngine.Vector3(0.0f, 1.05f, 2.4f), trainBody);
-    LookAt(trainBody.position + trainBody.rotation * new UnityEngine.Vector3(-1.4f, 1.0f, 2.4f));
-    backpack.Add(metal, 2);
-    for (int i = 0; i < 40; i++) yield return wait;
-    log.Append($" SIN EL PLANO: la obra está bloqueada={shelfSite.Locked}; {ShelfVisuals()}; apuntando a la pared el objetivo es {Name(Target())}; indicación \"{P(shelfSite)}\" (aunque tenga chapas en la mochila).");
+    // 2) Sin el plano, el banco no ofrece el estante.
+    log.Append($" SIN EL PLANO: el banco ofrece {Offer()}.");
 
     // 3) El plano está sobre el escritorio de la segunda sala de la estación: apuntarlo desde adentro y leerlo.
     var sheetPos = sheet.transform.position;
@@ -79,11 +65,8 @@ System.Collections.IEnumerator Run()
     bool second = book.Learn(shelf);
     log.Append($" Aprenderlo otra vez devuelve {second} (no se duplica).");
 
-    // 4) Con el plano la obra aparece: marco fantasma y se puede construir.
-    motor.TeleportTo(trainBody.position + trainBody.rotation * new UnityEngine.Vector3(0.0f, 1.05f, 2.4f), trainBody);
-    LookAt(trainBody.position + trainBody.rotation * new UnityEngine.Vector3(-1.4f, 1.0f, 2.4f));
-    for (int i = 0; i < 40; i++) yield return wait;
-    log.Append($" CON EL PLANO: bloqueada={shelfSite.Locked}; {ShelfVisuals()}; apuntando a la pared el objetivo es {Name(Target())}, indicación \"{P(shelfSite)}\".");
+    // 4) Con el plano, el banco lo ofrece.
+    log.Append($" CON EL PLANO: el banco ofrece {Offer()}.");
 
     // 5) Pallets de afuera: ahora hay dos.
     int outsidePallets = 0;

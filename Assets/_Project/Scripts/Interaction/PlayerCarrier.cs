@@ -83,7 +83,7 @@ namespace SurvivalEnTren.Interaction
 
         private void OnThrow(InputAction.CallbackContext _)
         {
-            if (_held != null && !ThrowLocked) Drop(throwIt: true);
+            if (_held != null && !ThrowLocked && _held.Throwable) Drop(throwIt: true);
         }
 
         // El peso total que se lleva (mano + mochila) frena el caminar. Se recalcula cada tic porque puede cambiar
@@ -104,8 +104,8 @@ namespace SurvivalEnTren.Interaction
             Vector3 eye = motor.transform.position + Vector3.up * motor.Settings.EyeHeightMeters;
             // Los objetos de una mano (un bidón) van a la cadera, junto al cuerpo: así no tapan la mira ni son más anchos que el
             // jugador al pasar por una puerta. Los grandes (cajas) van al frente, a la altura de los ojos.
-            Vector3 target = _held.OneHanded
-                ? eye + BodyYaw() * settings.OneHandedHoldOffset
+            Vector3 target = _held.OneHanded ? eye + BodyYaw() * settings.OneHandedHoldOffset
+                : _held.HeldLow ? eye + BodyYaw() * settings.LowHoldOffset
                 : eye + LookDirection() * settings.HoldDistanceMeters;
             Vector3 toTarget = target - body.position;
 

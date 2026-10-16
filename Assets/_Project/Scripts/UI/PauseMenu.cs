@@ -210,7 +210,8 @@ namespace SurvivalEnTren.UI
                     "WASD caminar · Shift correr · Espacio saltar · mouse mirar\n" +
                     "E usar (mantener E: acciones largas) · clic lanzar lo que llevás\n" +
                     "Tab mochila · Q sonda portátil · F linterna\n" +
-                    "1 a 4 o la rueda: barreta, sierra, sonda, martillo · clic golpear\n" +
+                    "1 a 5 o la rueda: barreta, sierra, sonda, martillo, llave · clic golpear\n" +
+                    "Kit de un mueble en la mano: clic instala, rueda gira · llave: moverlo\n" +
                     "En el pupitre (E): W/S potencia y freno, R/F reversor, E soltar\n" +
                     "F5 guardar · F9 cargar · Escape pausa\n" +
                     "F1 panel de pruebas · F2 acelerar el tiempo (pruebas)\n\n" +

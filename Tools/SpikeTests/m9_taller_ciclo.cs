@@ -25,8 +25,7 @@ var wood = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.ItemDe
 var metal = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.ItemDefinition>("Assets/_Project/Data/Items/Metal.asset");
 SurvivalEnTren.Train.FuelSource vehicle = null;
 foreach (var s in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Train.FuelSource>()) if (s.StableId == "fuel_prueba_vehiculo_001") vehicle = s;
-SurvivalEnTren.Building.BuildSite shelfSite = null;
-foreach (var s in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Building.BuildSite>()) if (s.StableId == "obra_tren_estante_001") shelfSite = s;
+bool ShelfOffered() { var b = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Crafting.Workbench>(); return b.Recipes(book).Exists(r => r.Blueprint == shelfPlan); }
 var log = new System.Text.StringBuilder();
 var wait = new UnityEngine.WaitForFixedUpdate();
 UnityEngine.Application.runInBackground = true;
@@ -118,7 +117,7 @@ System.Collections.IEnumerator Run()
     for (int i = 0; i < 30; i++) yield return wait;
     gear.Give(SurvivalEnTren.Equipment.GearId.Crowbar);
     float tank0 = tank.Liters;
-    log.Append($"AL EMPEZAR: sierra {gear.Has(SurvivalEnTren.Equipment.GearId.Saw)}, mochila {backpack.UsedCells} casillas; plano del estante {book.Knows(shelfPlan)}; obra del estante bloqueada={shelfSite.Locked}.");
+    log.Append($"AL EMPEZAR: sierra {gear.Has(SurvivalEnTren.Equipment.GearId.Saw)}, mochila {backpack.UsedCells} casillas; plano del estante {book.Knows(shelfPlan)}; el banco ofrece el estante={ShelfOffered()}.");
 
     // 1) Afuera: desmontar y juntar hasta tener 1 tablón y 3 chapas (sierra 1 + chapa, bidón 2 chapas).
     var targets = new System.Collections.Generic.List<UnityEngine.Component>();
@@ -164,7 +163,7 @@ System.Collections.IEnumerator Run()
     object tSheet = Target();
     sheet.Interact(who);
     yield return Frames(5);
-    log.Append($" PLANO: apuntando la hoja el objetivo era {Name(tSheet)}; ahora el plano del estante {book.Knows(shelfPlan)}, la obra bloqueada={shelfSite.Locked}.");
+    log.Append($" PLANO: apuntando la hoja el objetivo era {Name(tSheet)}; ahora el plano del estante {book.Knows(shelfPlan)}, el banco ofrece el estante={ShelfOffered()}.");
 
     // 3) De vuelta en el tren, al banco: E, sierra, bidón.
     FaceInTrain(new UnityEngine.Vector3(-0.2f, 1.05f, 0f), new UnityEngine.Vector3(-1.1f, 1.9f, 0f));

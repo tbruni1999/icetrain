@@ -1,6 +1,6 @@
 // Prueba del M8 paso 5: el ciclo completo. Salir a la estación y al pallet de afuera, desmontar todo, juntar los bultos
-// (la mochila tiene lugar para unas 30 casillas por viaje: hay que hacer varios viajes), volver al tren, construir la cama y el
-// estante reforzado con lo traído, guardar el resto en los estantes, dormir en la cama terminada y medir la energía.
+// (la mochila tiene lugar para unas 30 casillas por viaje: hay que hacer varios viajes), volver al tren, armar en el banco los
+// kits de la cama y el estante reforzado con lo traído (desde el 2026-10-16) e instalarlos, guardar el resto en los estantes, dormir en la cama terminada y medir la energía.
 // Los viajes se simulan con teletransportes; lo que se prueba es la lógica del ciclo y que no se pierda ni duplique nada.
 // Cómo correrla: escena M2_Conduccion recién puesta en Play (esperar ~12 s),
 //   unity command eval_file --file "Tools/SpikeTests/m8_ciclo_completo.cs" --timeout 60
@@ -17,20 +17,21 @@ var backpack = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Items.Backp
 var vitals = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Survival.PlayerVitals>();
 var clock = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Survival.GameClock>();
 var bed = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Survival.Bed>();
-SurvivalEnTren.Building.BuildSite bedSite = null, shelfSite = null;
-foreach (var s in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Building.BuildSite>())
-{
-    if (s.StableId == "obra_tren_cama_001") bedSite = s;
-    else if (s.StableId == "obra_tren_estante_001") shelfSite = s;
-}
+SurvivalEnTren.Building.BuildSite bedSite = null;
+foreach (var s in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Building.BuildSite>()) if (s.StableId == "obra_tren_cama_001") bedSite = s;
+var bench = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Crafting.Workbench>();
+var carrier = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Interaction.PlayerCarrier>();
+var placer = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Building.PlacementController>();
+var shelfPlan = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Crafting.Blueprint>("Assets/_Project/Data/Crafting/Plano_EstanteReforzado.asset");
+bool shelfPlaced = false;
 SurvivalEnTren.Items.StorageContainer starter = null, reinforced = null;
 foreach (var s in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.StorageContainer>())
 {
     if (s.StableId == "storage_tren_estante_precario_001") starter = s;
     else if (s.StableId == "storage_tren_estante_reforzado_001") reinforced = s;
 }
-// Desde el M9 la obra del estante reforzado pide su plano: se aprende antes (el jugador lo lee de la hoja de la estación).
-UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Crafting.BlueprintBook>().Learn(UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Crafting.Blueprint>("Assets/_Project/Data/Crafting/Plano_EstanteReforzado.asset"));
+// El estante reforzado pide su plano: se aprende antes (el jugador lo lee de la hoja de la estación).
+UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Crafting.BlueprintBook>().Learn(shelfPlan);
 var wood = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.ItemDefinition>("Assets/_Project/Data/Items/Madera.asset");
 var metal = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.ItemDefinition>("Assets/_Project/Data/Items/Metal.asset");
 var cloth = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.ItemDefinition>("Assets/_Project/Data/Items/Tela.asset");
@@ -74,7 +75,7 @@ int[] InWorld()
     for (int k = 0; k < 4; k++)
     {
         u[k] = backpack.CountOf(items[k]) + starter.Grid.CountOf(items[k]);
-        if (reinforced.Grid != null) u[k] += reinforced.Grid.CountOf(items[k]);
+        if (reinforced != null && reinforced.Grid != null) u[k] += reinforced.Grid.CountOf(items[k]);
     }
     foreach (var b in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>()) if (M8Bundle(b))
         for (int k = 0; k < 4; k++) if (b.Item == items[k]) u[k] += b.Count;
@@ -108,7 +109,7 @@ System.Collections.IEnumerator Run()
     for (int i = 0; i < 30; i++) yield return wait;
     gear.Give(SurvivalEnTren.Equipment.GearId.Crowbar);
     var total0 = InWorld();
-    log.Append($"EN EL MUNDO al empezar (bultos + objetos por desmontar): {Show(total0)}. Cama: nivel {bedSite.Level}/{bedSite.Project.PhaseCount}; estante reforzado: nivel {shelfSite.Level}/{shelfSite.Project.PhaseCount}.");
+    log.Append($"EN EL MUNDO al empezar (bultos + objetos por desmontar): {Show(total0)}. Cama: nivel {bedSite.Level}/{bedSite.Project.PhaseCount}; estante reforzado: se arma en el banco (pide chapa ×2 y madera ×6).");
 
     int trips = 0;
     while (trips < 8)
@@ -139,30 +140,14 @@ System.Collections.IEnumerator Run()
         }
         var carried = new[] { backpack.CountOf(wood), backpack.CountOf(metal), backpack.CountOf(cloth), backpack.CountOf(parts) };
 
-        // ---- Vuelta: al tren, aportar a las obras (primero la cama, después el estante), guardar el resto en los estantes.
+        // ---- Vuelta: al tren. El banco usa lo de la mochila y lo de los estantes: arma los kits de la cama (en orden) y el
+        //      estante reforzado cuando alcanza; cada kit se toma y se instala (el estante, contra la pared izquierda).
         motor.TeleportTo(trainBody.position + trainBody.rotation * new UnityEngine.Vector3(0.0f, 1.05f, 4.0f), trainBody);
         for (int i = 0; i < 30; i++) yield return wait;
-        // Lo que ya está guardado en los estantes y las obras todavía piden, se saca a la mochila (lo que entre) antes de aportar.
-        foreach (var shelf in new[] { starter.Grid, reinforced.Grid })
-        {
-            if (shelf == null) continue;
-            foreach (var piece in new System.Collections.Generic.List<SurvivalEnTren.Items.GridItem>(shelf.Items))
-                if (backpack.Grid.FindFreeSpot(piece.Item, out int bx, out int by, out bool brot)) { shelf.Remove(piece); backpack.Grid.TryPlace(piece.Item, bx, by, brot); }
-        }
-        foreach (var site in new[] { bedSite, shelfSite })
-        {
-            int guard = 0;
-            while (P(site).StartsWith("mantener para construir") && guard++ < 40)
-            {
-                int g2 = 0;
-                while (site.Channel(who, 0.55f) && g2++ < 40) { }
-                for (int i = 0; i < 3; i++) yield return wait;
-            }
-        }
         int stored = 0;
         foreach (var piece in new System.Collections.Generic.List<SurvivalEnTren.Items.GridItem>(backpack.Grid.Items))
         {
-            foreach (var shelf in new[] { reinforced.Grid, starter.Grid })
+            foreach (var shelf in new[] { reinforced != null ? reinforced.Grid : null, starter.Grid })
             {
                 if (shelf == null) continue;
                 if (shelf.FindFreeSpot(piece.Item, out int x, out int y, out bool rot))
@@ -174,16 +159,52 @@ System.Collections.IEnumerator Run()
                 }
             }
         }
-        log.Append($" [VIAJE {trips}: se juntó {Show(carried)}; en el tren: cama nivel {bedSite.Level}, estante nivel {shelfSite.Level}, guardó {stored} piezas en los estantes, mochila {backpack.UsedCells}/{backpack.CellCount}]");
+        // Lo que no entra en los estantes se deja en el piso del tren (el banco también lo usa): la mochila vuelve vacía.
+        int dropped = 0;
+        var bundleSettings = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.BackpackSettings>("Assets/_Project/Data/Items/BackpackSettings.asset");
+        foreach (var piece in new System.Collections.Generic.List<SurvivalEnTren.Items.GridItem>(backpack.Grid.Items))
+        {
+            backpack.Grid.Remove(piece);
+            SurvivalEnTren.Items.MaterialBundle.Spawn(bundleSettings, piece.Item, 1, trainBody.position + trainBody.rotation * new UnityEngine.Vector3(0.9f, 1.4f, 0.6f + 0.25f * (dropped % 4)), trainBody.linearVelocity);
+            dropped++;
+        }
+        // El banco arma con lo de la mochila, los estantes y el piso del tren.
+        for (int round = 0; round < 6; round++)
+        {
+            SurvivalEnTren.Crafting.BenchRecipe recipe = null;
+            if (!bedSite.IsComplete && bench.Check(new SurvivalEnTren.Crafting.BenchRecipe(bedSite, bedSite.Level), backpack, gear) == SurvivalEnTren.Crafting.CraftBlock.None) recipe = new SurvivalEnTren.Crafting.BenchRecipe(bedSite, bedSite.Level);
+            else if (!shelfPlaced && bench.Check(new SurvivalEnTren.Crafting.BenchRecipe(shelfPlan), backpack, gear) == SurvivalEnTren.Crafting.CraftBlock.None) recipe = new SurvivalEnTren.Crafting.BenchRecipe(shelfPlan);
+            if (recipe == null) break;
+            bench.StartJob(recipe, backpack, gear);
+            bench.FinishJobNow();
+            for (int i = 0; i < 5; i++) yield return wait;
+            SurvivalEnTren.Building.UpgradeKit kit = null;
+            foreach (var k in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Building.UpgradeKit>()) kit = k;
+            carrier.Pick(kit.GetComponent<SurvivalEnTren.Interaction.Carryable>());
+            for (int i = 0; i < 3; i++) yield return wait;
+            if (recipe.IsSitePhase) { bedSite.Interact(who); for (int i = 0; i < 3; i++) yield return wait; continue; }
+            // El estante: parado en el pasillo, mirando la pared izquierda; el kit viaja con el jugador; clic.
+            motor.TeleportTo(trainBody.position + trainBody.rotation * new UnityEngine.Vector3(0.2f, 1.05f, 2.7f), trainBody);
+            var hp = trainBody.position + trainBody.rotation * new UnityEngine.Vector3(0.2f, 2.3f, 2.7f); kit.transform.position = hp; carrier.Holding.Body.position = hp;
+            var d = (trainBody.position + trainBody.rotation * new UnityEngine.Vector3(-1.7f, 1.9f, 2.7f)) - (motor.transform.position + UnityEngine.Vector3.up * 1.6f);
+            motor.AddYaw(UnityEngine.Mathf.DeltaAngle(motor.transform.eulerAngles.y, UnityEngine.Mathf.Atan2(d.x, d.z) * UnityEngine.Mathf.Rad2Deg));
+            typeof(SurvivalEnTren.Player.PlayerLook).GetField("_pitch", flags).SetValue(look, -UnityEngine.Mathf.Atan2(d.y, new UnityEngine.Vector2(d.x, d.z).magnitude) * UnityEngine.Mathf.Rad2Deg);
+            for (int i = 0; i < 20; i++) yield return wait;
+            shelfPlaced = placer.Confirm();
+            for (int i = 0; i < 5; i++) yield return wait;
+            var placed = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Building.Placeable>();
+            if (placed != null) reinforced = placed.GetComponent<SurvivalEnTren.Items.StorageContainer>();
+        }
+        log.Append($" [VIAJE {trips}: se juntó {Show(carried)}; en el tren: cama nivel {bedSite.Level}, estante reforzado colocado={shelfPlaced}, guardó {stored} piezas en los estantes y dejó {dropped} en el piso del tren]");
     }
 
     // ---- Resultado.
     int outsideBundles = 0;
     foreach (var b in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>()) if (IsOutside(b) && M8Bundle(b)) outsideBundles++;
     int propsLeft = 0; foreach (var p in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.SalvageProp>()) if (M8Prop(p)) propsLeft++;
-    log.Append($" TERMINÓ en {trips} viajes: cama {(bedSite.IsComplete ? "terminada" : "nivel " + bedSite.Level)}, estante reforzado {(shelfSite.IsComplete ? "terminado" : "nivel " + shelfSite.Level)} ({(reinforced.Grid == null ? "sin cuadrícula" : reinforced.Grid.Width + "x" + reinforced.Grid.Height)}), objetos por desmontar {propsLeft}, bultos afuera {outsideBundles}.");
+    log.Append($" TERMINÓ en {trips} viajes: cama {(bedSite.IsComplete ? "terminada" : "nivel " + bedSite.Level)}, estante reforzado {(shelfPlaced ? "colocado" : "no")} ({(reinforced == null || reinforced.Grid == null ? "sin cuadrícula" : reinforced.Grid.Width + "x" + reinforced.Grid.Height)}), objetos por desmontar {propsLeft}, bultos afuera {outsideBundles}.");
     var starterSummary = $"estante precario {starter.Grid.UsedCells}/{starter.Grid.CellCount} casillas ({starter.Grid.Items.Count} piezas)";
-    var reinforcedSummary = reinforced.Grid == null ? "" : $"; estante reforzado {reinforced.Grid.UsedCells}/{reinforced.Grid.CellCount} ({reinforced.Grid.Items.Count} piezas)";
+    var reinforcedSummary = reinforced == null || reinforced.Grid == null ? "" : $"; estante reforzado {reinforced.Grid.UsedCells}/{reinforced.Grid.CellCount} ({reinforced.Grid.Items.Count} piezas)";
     log.Append($" GUARDADO: {starterSummary}{reinforcedSummary}; mochila {backpack.Grid.Items.Count} piezas.");
 
     // ---- Dormir en la cama terminada.
@@ -197,10 +218,10 @@ System.Collections.IEnumerator Run()
 
     // ---- Cuentas: lo que había al empezar (6 tablones + 5 chapas + 5 rollos + 2 componentes) ahora está en las obras o guardado.
     var totalNow = InWorld();
-    int woodUsed = bedSite.ContributedOf(wood) + shelfSite.ContributedOf(wood);
-    int metalUsed = bedSite.ContributedOf(metal) + shelfSite.ContributedOf(metal);
-    int clothUsed = bedSite.ContributedOf(cloth) + shelfSite.ContributedOf(cloth);
-    log.Append($" CUENTAS: había {Show(total0)}; ahora en el mundo (mochila + estantes + bultos) {Show(totalNow)}; aportado a las obras: tablones {woodUsed}, chapas {metalUsed}, rollos {clothUsed}; suma {Show(new[] { totalNow[0] + woodUsed, totalNow[1] + metalUsed, totalNow[2] + clothUsed, totalNow[3] })}; sin duplicar ni perder={totalNow[0] + woodUsed == total0[0] && totalNow[1] + metalUsed == total0[1] && totalNow[2] + clothUsed == total0[2] && totalNow[3] == total0[3]}.");
+    int woodUsed = bedSite.ContributedOf(wood) + (shelfPlaced ? 6 : 0);
+    int metalUsed = bedSite.ContributedOf(metal) + (shelfPlaced ? 2 : 0);
+    int clothUsed = bedSite.ContributedOf(cloth);
+    log.Append($" CUENTAS: había {Show(total0)}; ahora en el mundo (mochila + estantes + bultos) {Show(totalNow)}; usado en la cama y el estante: tablones {woodUsed}, chapas {metalUsed}, rollos {clothUsed}; suma {Show(new[] { totalNow[0] + woodUsed, totalNow[1] + metalUsed, totalNow[2] + clothUsed, totalNow[3] })}; sin duplicar ni perder={totalNow[0] + woodUsed == total0[0] && totalNow[1] + metalUsed == total0[1] && totalNow[2] + clothUsed == total0[2] && totalNow[3] == total0[3]}.");
 
     clock.SpeedMultiplier = 1f;
     UnityEngine.Debug.Log("[Ciclo] " + log);

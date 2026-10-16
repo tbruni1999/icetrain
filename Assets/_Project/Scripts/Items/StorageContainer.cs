@@ -39,6 +39,9 @@ namespace SurvivalEnTren.Items
         public string StableId => stableId;
         public string DisplayName => displayName;
 
+        /// <summary>Un mueble colocado por el jugador recibe su ID al instalarse (Placeable).</summary>
+        public void SetStableId(string id) => stableId = id;
+
         /// <summary>La cuadrícula del mueble (null mientras todavía no sirve para guardar).</summary>
         public ItemGrid Grid
         {

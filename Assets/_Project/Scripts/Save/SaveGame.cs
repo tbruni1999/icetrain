@@ -49,6 +49,10 @@ namespace SurvivalEnTren.Save
         public string probeTarget = "";
         /// <summary>La forja del tren (H4): el fuego y la pieza que se está trabajando.</summary>
         public ForgeState forge = new ForgeState();
+        /// <summary>Lo que el banco de trabajo está armando (mejoras con tiempo, 2026-10-16).</summary>
+        public BenchState bench = new BenchState();
+        /// <summary>Los muebles que el jugador colocó o movió (estantes).</summary>
+        public List<PlaceableState> placeables = new List<PlaceableState>();
     }
 
     [Serializable]
@@ -62,6 +66,7 @@ namespace SurvivalEnTren.Save
         public float health, satiety, energy, warmth;
         public bool crowbar, handPump, saw, suit;
         public bool hammer;
+        public bool wrench;
         public bool flashlightOn;
     }
 
@@ -75,6 +80,26 @@ namespace SurvivalEnTren.Save
         public int pieceAt;
         public float pieceHeat;
         public int pieceHits;
+    }
+
+    [Serializable]
+    public class BenchState
+    {
+        /// <summary>Qué se está armando ("plano:ID" o "obra:ID:fase"); vacío si el banco está libre.</summary>
+        public string job = "";
+        public float minutesLeft;
+    }
+
+    [Serializable]
+    public class PlaceableState
+    {
+        public string id;
+        /// <summary>Qué mueble es (el ID de su plano): para crearlo de nuevo si lo colocó el jugador.</summary>
+        public string key;
+        public bool placedInGame;
+        /// <summary>Relativo al tren (los muebles solo se colocan adentro).</summary>
+        public Vector3 position;
+        public Quaternion rotation;
     }
 
     [Serializable]
@@ -148,6 +173,8 @@ namespace SurvivalEnTren.Save
         public Quaternion rotation;
         /// <summary>Litros si es un bidón; -1 si no.</summary>
         public float liters = -1f;
+        /// <summary>Si es un kit de mejora: cuál ("obra:ID:fase" o "mueble:ID"); vacío si no.</summary>
+        public string kit = "";
     }
 
     [Serializable]

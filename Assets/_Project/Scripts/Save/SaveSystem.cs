@@ -126,6 +126,8 @@ namespace SurvivalEnTren.Save
             if (vitals != null && vitals.IsSleeping) { Say("no se puede guardar mientras dormís"); return false; }
             if (inventory != null && inventory.IsOpen) inventory.Close();
             if (workbench != null && workbench.IsOpen) workbench.Close();
+            var placer = motor.GetComponent<PlacementController>();
+            if (placer != null) placer.CancelAll(); // un mueble a medio mover vuelve a su lugar
             if (carrier != null && carrier.Holding != null) carrier.Drop(false); // lo que está en la mano se guarda donde cae
 
             SaveGame data = Capture();
@@ -167,6 +169,7 @@ namespace SurvivalEnTren.Save
             p.handPump = gear.Has(GearId.HandPump);
             p.saw = gear.Has(GearId.Saw);
             p.hammer = gear.Has(GearId.Hammer);
+            p.wrench = gear.Has(GearId.Wrench);
             var lampNow = motor.GetComponent<PlayerFlashlight>();
             p.flashlightOn = lampNow != null && lampNow.IsOn;
             p.suit = gear.SuitWorn;
@@ -195,6 +198,15 @@ namespace SurvivalEnTren.Save
                 var state = new StorageState { id = storage.StableId };
                 CaptureGrid(storage.Grid, state.items);
                 data.storages.Add(state);
+            }
+            Workbench bench = FindAnyObjectByType<Workbench>();
+            if (bench != null && bench.IsBusy) data.bench = new BenchState { job = bench.JobKey, minutesLeft = bench.JobMinutesLeft };
+            foreach (Placeable placeable in FindObjectsByType<Placeable>())
+            {
+                if (string.IsNullOrEmpty(placeable.StableId)) continue; // una vista previa todavía sin colocar
+                Transform pt = placeable.transform;
+                data.placeables.Add(new PlaceableState { id = placeable.StableId, key = placeable.Key, placedInGame = placeable.PlacedInGame,
+                    position = t.InverseTransformPoint(pt.position), rotation = Quaternion.Inverse(t.rotation) * pt.rotation });
             }
             foreach (BuildSite site in FindObjectsByType<BuildSite>())
                 data.sites.Add(new SiteState { id = site.StableId, level = site.Level, contributed = site.ContributedSnapshot() });
@@ -234,10 +246,12 @@ namespace SurvivalEnTren.Save
                 Vector3 inTrainLocal = t.InverseTransformPoint(where);
                 bool inside = InsideTrain(inTrainLocal);
                 var can = carry.GetComponent<FuelCan>();
+                var kit = carry.GetComponent<UpgradeKit>();
                 data.carryables.Add(new CarryState
                 {
                     key = PathOf(carry.transform),
-                    crafted = carry.name.StartsWith(CraftedCanName),
+                    crafted = carry.name.StartsWith(CraftedCanName) || kit != null,
+                    kit = kit != null ? kit.SaveKey : "",
                     inTrain = inside,
                     position = inside ? inTrainLocal : ToAbsolute(where),
                     rotation = inside ? Quaternion.Inverse(t.rotation) * carry.transform.rotation : carry.transform.rotation,
@@ -325,6 +339,7 @@ namespace SurvivalEnTren.Save
             if (data.player.handPump) gear.Give(GearId.HandPump);
             if (data.player.saw) gear.Give(GearId.Saw);
             if (data.player.hammer) gear.Give(GearId.Hammer);
+            if (data.player.wrench) gear.Give(GearId.Wrench);
             var lampSaved = motor.GetComponent<PlayerFlashlight>();
             if (lampSaved != null) lampSaved.SetOn(data.player.flashlightOn);
             gear.SetSuit(data.player.suit);
@@ -348,6 +363,29 @@ namespace SurvivalEnTren.Save
                 SwitchState state = data.switches.Find(s => s.id == rail.StableId);
                 if (state != null) rail.RestoreState((RailSwitchCondition)state.condition, state.diverging);
             }
+
+            // Los muebles colocados (antes que lo guardado en ellos): los del jugador se crean de nuevo; los demás se mueven.
+            Workbench savedBench = FindAnyObjectByType<Workbench>();
+            foreach (PlaceableState state in data.placeables)
+            {
+                Placeable placeable = null;
+                foreach (Placeable candidate in FindObjectsByType<Placeable>())
+                    if (candidate.StableId == state.id) { placeable = candidate; break; }
+                if (placeable == null && state.placedInGame && savedBench != null)
+                {
+                    GameObject prefab = savedBench.PlaceablePrefab(state.key);
+                    if (prefab == null) continue;
+                    GameObject made = Instantiate(prefab, train.transform);
+                    made.name = prefab.name;
+                    placeable = made.GetComponent<Placeable>();
+                    placeable.AssignId(state.id);
+                }
+                if (placeable == null) continue;
+                placeable.transform.SetParent(train.transform, false);
+                placeable.transform.localPosition = state.position;
+                placeable.transform.localRotation = state.rotation;
+            }
+            if (savedBench != null && data.bench != null && !string.IsNullOrEmpty(data.bench.job)) savedBench.RestoreJob(data.bench.job, data.bench.minutesLeft);
 
             // Mochila y muebles (los muebles ya tienen su tamaño: las obras se restauraron antes).
             RestoreGrid(backpack.Grid, data.backpack);
@@ -403,7 +441,13 @@ namespace SurvivalEnTren.Save
             foreach (CarryState state in data.carryables)
             {
                 Carryable carry = null;
-                if (state.crafted)
+                if (state.crafted && !string.IsNullOrEmpty(state.kit))
+                {
+                    UpgradeKit kit = savedBench != null ? savedBench.CreateKit(state.kit) : null;
+                    if (kit == null) continue;
+                    carry = kit.GetComponent<Carryable>();
+                }
+                else if (state.crafted)
                 {
                     if (jerrycanPrefab == null) continue;
                     GameObject made = Instantiate(jerrycanPrefab);

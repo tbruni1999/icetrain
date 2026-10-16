@@ -160,6 +160,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalEnTren.Interaction.Carryable
   oneHanded: 1
+  throwable: 1
+  heldLow: 0
 --- !u!114 &6749015641003582463
 MonoBehaviour:
   m_ObjectHideFlags: 0

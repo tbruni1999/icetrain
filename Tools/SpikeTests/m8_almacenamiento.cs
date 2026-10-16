@@ -1,6 +1,7 @@
-// Prueba del M8 paso 4: almacenamiento. El estante precario (cuadrícula de 4 x 3) y el estante reforzado (una obra de
-// cuatro fases cuya cuadrícula crece de 4 x 2 a 6 x 4): abrir, pasar piezas (lo largo no entra en lo chico), que se vea
-// lo guardado, que lo guardado se conserve al crecer el estante y que no se pierdan ni dupliquen piezas.
+// Prueba del M8 paso 4: almacenamiento. El estante precario (cuadrícula de 4 x 3) y el estante reforzado (desde el 2026-10-16 un
+// mueble de 6 x 4 que el banco arma con su tiempo y el jugador coloca donde quiere): abrir, pasar piezas (lo largo no entra en
+// lo chico), que se vea lo guardado, que el banco use lo de la mochila y lo del estante del taller, y que no se pierdan ni
+// dupliquen piezas.
 // Cómo correrla: escena M2_Conduccion recién puesta en Play (esperar ~12 s),
 //   unity command eval_file --file "Tools/SpikeTests/m8_almacenamiento.cs" --timeout 60
 // Resultado en la Console, líneas [Almacen].
@@ -20,10 +21,13 @@ foreach (var s in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.Stor
     if (s.StableId == "storage_tren_estante_precario_001") starter = s;
     else if (s.StableId == "storage_tren_estante_reforzado_001") reinforced = s;
 }
-SurvivalEnTren.Building.BuildSite site = null;
-foreach (var s in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Building.BuildSite>()) if (s.StableId == "obra_tren_estante_001") site = s;
-// Desde el M9 la obra del estante reforzado pide su plano: se aprende antes (el jugador lo lee de la hoja de la estación).
-UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Crafting.BlueprintBook>().Learn(UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Crafting.Blueprint>("Assets/_Project/Data/Crafting/Plano_EstanteReforzado.asset"));
+var shelfPlan = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Crafting.Blueprint>("Assets/_Project/Data/Crafting/Plano_EstanteReforzado.asset");
+// El estante reforzado pide su plano: se aprende antes (el jugador lo lee de la hoja de la estación).
+UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Crafting.BlueprintBook>().Learn(shelfPlan);
+var bench = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Crafting.Workbench>();
+var carrier = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Interaction.PlayerCarrier>();
+var placer = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Building.PlacementController>();
+var gear = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Equipment.PlayerGear>();
 var wood = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.ItemDefinition>("Assets/_Project/Data/Items/Madera.asset");
 var metal = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.ItemDefinition>("Assets/_Project/Data/Items/Metal.asset");
 var cloth = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.ItemDefinition>("Assets/_Project/Data/Items/Tela.asset");
@@ -59,10 +63,10 @@ int Total(int k)
 {
     int n = backpack.CountOf(items[k]);
     if (starter.Grid != null) n += starter.Grid.CountOf(items[k]);
-    if (reinforced.Grid != null) n += reinforced.Grid.CountOf(items[k]);
-    if (site != null) { /* lo aportado a la obra ya no es de nadie más: se cuenta aparte */ }
+    if (reinforced != null && reinforced.Grid != null) n += reinforced.Grid.CountOf(items[k]);
     return n;
 }
+int CountCubes(SurvivalEnTren.Items.StorageContainer s) { int c = 0; foreach (var t in s.GetComponentsInChildren<UnityEngine.Transform>(true)) if (t.name.StartsWith("Guardado_") && t.GetComponent<UnityEngine.MeshRenderer>() != null && t.gameObject.activeSelf) c++; return c; }
 void Face(UnityEngine.Vector3 standLocal, UnityEngine.Vector3 lookLocal)
 {
     motor.TeleportTo(trainBody.position + trainBody.rotation * standLocal, trainBody);
@@ -119,65 +123,40 @@ System.Collections.IEnumerator Run()
     foreach (var t in starter.GetComponentsInChildren<UnityEngine.Transform>(true)) if (t.name.StartsWith("Guardado_") && t.GetComponent<UnityEngine.MeshRenderer>() != null && t.gameObject.activeSelf) cubes++;
     log.Append($" SE VE LO GUARDADO: cubos visibles en el estante {cubes} (materiales distintos adentro: {(starter.Grid.CountOf(wood) > 0 ? 1 : 0) + (starter.Grid.CountOf(metal) > 0 ? 1 : 0) + (starter.Grid.CountOf(cloth) > 0 ? 1 : 0)}).");
 
-    // 6) El estante reforzado: obra de 4 fases; sin servir para guardar hasta el primer estante.
-    Face(new UnityEngine.Vector3(0.0f, 1.05f, 2.4f), new UnityEngine.Vector3(-1.4f, 1.6f, 2.4f));
-    for (int i = 0; i < 40; i++) yield return wait;
-    log.Append($" ESTANTE REFORZADO: obra \"{site.Project.DisplayName}\", {site.Project.PhaseCount} fases; nivel {site.Level}; cuadrícula={(reinforced.Grid == null ? "ninguna (todavía no guarda)" : reinforced.Grid.Width + "x" + reinforced.Grid.Height)}; apuntando el objetivo es {Name(Target())}, indicación \"{P(site)}\".");
-    // vaciar la mochila a un estado conocido sin perder piezas: pasar todo al estante precario o dejar en bultos
-    while (backpack.Grid.Items.Count > 0) panel.DropPiece(backpack.Grid.Items[0]);
-    given[0] = given[1] = given[2] = 0; // cuentas desde acá
-    var bundlesBefore = new int[3];
-    foreach (var b in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>()) for (int k = 0; k < 3; k++) if (b.Item == items[k]) bundlesBefore[k] += b.Count;
-    int shelfBefore = starter.Grid.Items.Count;
-    var sizes = new System.Text.StringBuilder();
-    Give(1, 2); for (int w = 0; w < 15; w++) yield return wait; // chapas: soportes
-    var who2 = who;
-    int lv = site.Level; int held = 0; for (int attempt = 0; attempt < 3 && site.Level == lv; attempt++) { KeyE(true); held = 0;
-    while (site.Level == lv && held < 200) { yield return wait; held++; }
-    KeyE(false); for (int i = 0; i < 10; i++) yield return wait; }
-    sizes.Append($"soportes → nivel {site.Level} (cuadrícula {(reinforced.Grid == null ? "ninguna" : reinforced.Grid.Width + "x" + reinforced.Grid.Height)}); ");
-    Give(0, 2); for (int w = 0; w < 15; w++) yield return wait; // estructura
-    lv = site.Level; held = 0; for (int attempt = 0; attempt < 3 && site.Level == lv; attempt++) { KeyE(true); held = 0;
-    while (site.Level == lv && held < 200) { yield return wait; held++; }
-    KeyE(false); for (int i = 0; i < 10; i++) yield return wait; }
-    sizes.Append($"estructura → nivel {site.Level} (cuadrícula {(reinforced.Grid == null ? "ninguna" : reinforced.Grid.Width + "x" + reinforced.Grid.Height)}); ");
-    Give(0, 2); for (int w = 0; w < 15; w++) yield return wait; // primer estante
-    lv = site.Level; held = 0; for (int attempt = 0; attempt < 3 && site.Level == lv; attempt++) { KeyE(true); held = 0;
-    while (site.Level == lv && held < 200) { yield return wait; held++; }
-    KeyE(false); for (int i = 0; i < 10; i++) yield return wait; }
-    sizes.Append($"primer estante → nivel {site.Level} (cuadrícula {(reinforced.Grid == null ? "ninguna" : reinforced.Grid.Width + "x" + reinforced.Grid.Height)}). ");
-    log.Append($" FASES: {sizes}");
+    // 6) El estante reforzado: el banco lo arma con lo de la mochila y lo del estante del taller (no entra todo en la mochila).
+    backpack.Remove(cloth, backpack.CountOf(cloth)); // la tela no se usa acá: fuera de las cuentas
+    for (int g = 0; g < 8 && Total(0) < 6; g++) Give(0, 1);
+    for (int g = 0; g < 4 && Total(1) < 2; g++) Give(1, 1);
+    int wood0 = Total(0), metal0 = Total(1);
+    string fromWhere = $"mochila {backpack.CountOf(wood)} tablones y {backpack.CountOf(metal)} chapas, estante del taller {starter.Grid.CountOf(wood)} tablones y {starter.Grid.CountOf(metal)} chapas";
+    var shelfRecipe = new SurvivalEnTren.Crafting.BenchRecipe(shelfPlan);
+    var block = bench.Check(shelfRecipe, backpack, gear);
+    bool started = bench.StartJob(shelfRecipe, backpack, gear);
+    log.Append($" ESTANTE REFORZADO EN EL BANCO: con {fromWhere}: se puede={block}, empezó={started}, tarda {shelfRecipe.Minutes:0} min; usó tablones {wood0 - Total(0)} y chapas {metal0 - Total(1)}.");
+    bench.FinishJobNow();
+    for (int i = 0; i < 5; i++) yield return wait;
+    SurvivalEnTren.Building.UpgradeKit kit = null;
+    foreach (var k in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Building.UpgradeKit>()) kit = k;
+    carrier.Pick(kit.GetComponent<SurvivalEnTren.Interaction.Carryable>());
 
-    // 7) Ya sirve: con nada que aportar, E abre el estante (la obra delega); guardar 2 chapas (2x2 cada una llenan el 4x2).
-    Give(1, 2);
-    log.Append($" Con el primer estante hecho y sin madera que aportar, la indicación es \"{P(site)}\".");
-    site.Channel(who, 0.02f); // lo mismo que hace E: abre el estante porque no hay nada que aportar
+    // 7) Colocarlo contra la pared izquierda (donde antes estaba la obra) y usarlo.
+    Face(new UnityEngine.Vector3(0.2f, 1.05f, 2.7f), new UnityEngine.Vector3(-1.7f, 1.9f, 2.7f));
+    var held = carrier.Holding; var hp = trainBody.position + trainBody.rotation * new UnityEngine.Vector3(0.2f, 2.3f, 2.7f); held.transform.position = hp; held.Body.position = hp;
+    for (int i = 0; i < 20; i++) yield return wait;
+    bool valid = placer.Valid;
+    bool placed = placer.Confirm();
     for (int i = 0; i < 10; i++) yield return wait;
-    bool openedByDelegate = panel.IsOpen && panel.HasOtherGrid;
-    panel.Close();
-    panel.Open(reinforced.Grid, "ESTANTE REFORZADO");
+    var placeable = UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Building.Placeable>();
+    reinforced = placeable != null ? placeable.GetComponent<SurvivalEnTren.Items.StorageContainer>() : null;
+    log.Append($" COLOCADO contra la pared: entraba={valid}, colocado={placed}; cuadrícula {reinforced?.Grid?.Width}x{reinforced?.Grid?.Height}; indicación \"{P(reinforced)}\".");
+    for (int g = 0; g < 4 && backpack.CountOf(metal) < 2; g++) Give(1, 1);
+    reinforced.Interact(who);
+    for (int i = 0; i < 10; i++) yield return wait;
+    bool opened = panel.IsOpen && panel.HasOtherGrid;
     yield return Tap(UnityEngine.InputSystem.Key.Delete); // pasa las chapas
     for (int i = 0; i < 10; i++) yield return wait;
-    int metalInShelf = reinforced.Grid.CountOf(metal);
     yield return Tap(UnityEngine.InputSystem.Key.Tab);
-    log.Append($" Abrió por la obra={openedByDelegate}; pasó {metalInShelf} chapas al estante de {reinforced.Grid.Width}x{reinforced.Grid.Height} (llenaron las 8 casillas: {reinforced.Grid.UsedCells}/{reinforced.Grid.CellCount}).");
-
-    // 8) Cuarta fase: el estante crece a 6x4 y lo guardado se conserva en su lugar.
-    var chapasPositions = new System.Text.StringBuilder();
-    foreach (var g in reinforced.Grid.Items) chapasPositions.Append($"({g.X},{g.Y}) ");
-    Give(0, 2); for (int w = 0; w < 15; w++) yield return wait;
-    lv = site.Level; held = 0; for (int attempt = 0; attempt < 3 && site.Level == lv; attempt++) { KeyE(true); held = 0;
-    while (site.Level == lv && held < 200) { yield return wait; held++; }
-    KeyE(false); for (int i = 0; i < 10; i++) yield return wait; }
-    var after = new System.Text.StringBuilder();
-    foreach (var g in reinforced.Grid.Items) after.Append($"({g.X},{g.Y}) ");
-    log.Append($" SEGUNDO ESTANTE: nivel {site.Level} (completa={site.IsComplete}), cuadrícula {reinforced.Grid.Width}x{reinforced.Grid.Height}; las chapas guardadas siguen en {after} (antes {chapasPositions}); ahora hay lugar para {reinforced.Grid.CellCount - reinforced.Grid.UsedCells} casillas más; indicación \"{P(site)}\".");
-
-    // 9) Cuentas: lo dado a la mochila = lo que queda en la mochila + estantes + la obra (4+... aportado) + bultos nuevos.
-    int woodInSite = 2 + 2 + 2, metalInSite = 2;
-    int bundlesWood = 0, bundlesMetal = 0, bundlesCloth = 0;
-    foreach (var b in UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Items.MaterialBundle>()) { if (b.Item == wood) bundlesWood += b.Count; if (b.Item == metal) bundlesMetal += b.Count; if (b.Item == cloth) bundlesCloth += b.Count; }
-    log.Append($" CUENTAS (desde que se vació la mochila): madera dada {given[0]} = en la mochila {backpack.CountOf(wood)} + en la obra {woodInSite}; chapas dadas {given[1]} = en la mochila {backpack.CountOf(metal)} + en el estante reforzado {reinforced.Grid.CountOf(metal)} + en la obra {metalInSite}.");
+    log.Append($" ABRIR con E: abrió={opened}; chapas pasadas al estante reforzado {reinforced.Grid.CountOf(metal)} ({reinforced.Grid.UsedCells}/{reinforced.Grid.CellCount} casillas, quedan {reinforced.Grid.CellCount - reinforced.Grid.UsedCells}); cubos que se ven {CountCubes(reinforced)}.");
 
     panel.Close();
     UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);
