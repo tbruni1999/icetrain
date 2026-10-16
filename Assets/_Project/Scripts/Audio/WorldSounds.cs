@@ -26,7 +26,7 @@ namespace SurvivalEnTren.Audio
         [SerializeField] private Transform listener;
 
         private AudioClip _lever, _switch, _door, _ice, _build, _salvage, _paper, _craft;
-        private AudioClip _hitWood, _hitMetal, _hitCloth, _hitElectric, _hitIce;
+        private AudioClip _hitWood, _hitMetal, _hitCloth, _hitElectric, _hitIce, _anvilHot, _anvilCold;
 
         /// <summary>Cuántos sonidos de cosas sonaron (lo usan las pruebas).</summary>
         public int Played { get; private set; }
@@ -48,6 +48,8 @@ namespace SurvivalEnTren.Audio
             _hitCloth = ProceduralClips.Thud("Golpe_Tela", 0.14f, 113);
             _hitElectric = ProceduralClips.Clank("Golpe_Tablero", 690f, 0.2f, 127);
             _hitIce = ProceduralClips.Crack("Golpe_Hielo", 0.22f, 131);
+            _anvilHot = ProceduralClips.Clank("Yunque_Caliente", 610f, 0.45f, 137);
+            _anvilCold = ProceduralClips.Clank("Yunque_Frio", 880f, 0.3f, 139);
 
             if (controls != null) controls.Changed += () => Play(_lever, cab != null ? cab.position : listener.position, 0.5f, "palanca");
             foreach (RailSwitch rail in FindObjectsByType<RailSwitch>())
@@ -82,6 +84,13 @@ namespace SurvivalEnTren.Audio
                 captured.Crafted += () => Play(_craft, captured.transform.position, 0.8f, "banco");
             }
             if (book != null) book.Changed += () => Play(_paper, listener.position, 0.6f, "plano");
+            // La forja (H4): el martillo en el yunque (en caliente suena distinto que en frío) y la planchuela terminada.
+            foreach (Forge forge in FindObjectsByType<Forge>())
+            {
+                Forge captured = forge;
+                captured.Hammered += (point, hot) => Play(hot ? _anvilHot : _anvilCold, point, 0.8f, hot ? "yunque" : "yunque en frío");
+                captured.ForgedOne += () => Play(_craft, captured.AnvilSlot.position, 0.8f, "planchuela");
+            }
         }
 
         private AudioClip HitClip(SalvageSurface surface) =>

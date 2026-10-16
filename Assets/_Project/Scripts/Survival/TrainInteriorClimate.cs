@@ -41,6 +41,8 @@ namespace SurvivalEnTren.Survival
         public float InteriorTemperatureC { get; private set; }
         /// <summary>La calefacción está encendida (interruptor). Con el tanque vacío no calienta aunque esté encendida.</summary>
         public bool HeaterOn { get; set; } = true;
+        /// <summary>Calor de otras fuentes (la forja, H4), en °C por hora: se suma a la calefacción y no gasta su combustible.</summary>
+        public float ExtraHeatCPerHour { get; set; }
         /// <summary>La calefacción está encendida pero sin combustible (no calienta).</summary>
         public bool FuelStarved { get; private set; }
         /// <summary>Cuántas puertas del tren están abiertas ahora (se cuenta en el momento: el sonido lo usa aunque el tiempo esté quieto).</summary>
@@ -96,7 +98,7 @@ namespace SurvivalEnTren.Survival
                 }
             }
             float loss = (wallLossPerHour + openDoorLossPerHour * openDoors) * (t - outside);
-            InteriorTemperatureC = t + (heating - loss) * hours;
+            InteriorTemperatureC = t + (heating + ExtraHeatCPerHour - loss) * hours;
         }
 
         /// <summary>¿Este punto del mundo está dentro del espacio interior del tren?</summary>

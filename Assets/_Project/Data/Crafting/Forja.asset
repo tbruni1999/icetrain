@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4cff2a7096f1bc49859bf9f17595052, type: 3}
+  m_Name: Forja
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalEnTren.Crafting.ForgeSettings
+  rawItem: {fileID: 11400000, guid: 459bee3c699ede349aecfebe9e6eb5db, type: 2}
+  forgedItem: {fileID: 11400000, guid: 22e21c9583deadd4b97ca1f01ea7db05, type: 2}
+  woodItem: {fileID: 11400000, guid: 99c9953acd394a8458acded756b3b3ac, type: 2}
+  woodHoursPerPlank: 0.4
+  maxWoodHours: 2
+  dieselLitersPerHour: 2
+  heatUpPerHour: 4
+  coolDownPerHour: 2
+  cabinHeatCPerHour: 16
+  pieceHeatPerHour: 6
+  pieceCoolPerHour: 4
+  workHeat: 0.6
+  hitsToForge: 8
+  heatLossPerHit: 0.03

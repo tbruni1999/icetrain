@@ -9,7 +9,9 @@ namespace SurvivalEnTren.Equipment
     {
         Crowbar,
         HandPump,
-        Saw
+        Saw,
+        /// <summary>El martillo de la forja (H4): se fabrica en el banco y se usa en el yunque.</summary>
+        Hammer
     }
 
     /// <summary>
@@ -25,6 +27,7 @@ namespace SurvivalEnTren.Equipment
         private bool _crowbar;
         private bool _handPump;
         private bool _saw;
+        private bool _hammer;
 
         public bool SuitWorn { get; private set; }
 
@@ -38,6 +41,7 @@ namespace SurvivalEnTren.Equipment
                 case GearId.Crowbar: return _crowbar;
                 case GearId.HandPump: return _handPump;
                 case GearId.Saw: return _saw;
+                case GearId.Hammer: return _hammer;
                 default: return false;
             }
         }
@@ -49,6 +53,7 @@ namespace SurvivalEnTren.Equipment
                 case GearId.Crowbar: _crowbar = true; break;
                 case GearId.HandPump: _handPump = true; break;
                 case GearId.Saw: _saw = true; break;
+                case GearId.Hammer: _hammer = true; break;
             }
             Changed?.Invoke();
         }

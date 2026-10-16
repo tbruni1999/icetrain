@@ -21,6 +21,22 @@ namespace SurvivalEnTren.EditorTools
             EnsureFolder("Assets/_Project/Data", "Equipment");
             ToolSettings settings = LoadOrCreateAsset<ToolSettings>(ToolSettingsPath);
             Transform head = motor.transform.Find("Cabeza");
+            // H4: el martillo en la casilla 4 (si el archivo es de antes, se le agrega; lo demás no se pisa).
+            if (System.Array.FindIndex(settings.Slots, s => s.kind == HandSlotKind.Gear && s.gear == GearId.Hammer) < 0)
+            {
+                var slotsSo = new SerializedObject(settings);
+                var slotList = slotsSo.FindProperty("slots");
+                slotList.arraySize++;
+                SerializedProperty hammerSlot = slotList.GetArrayElementAtIndex(slotList.arraySize - 1);
+                hammerSlot.FindPropertyRelative("label").stringValue = "MARTILLO";
+                hammerSlot.FindPropertyRelative("kind").enumValueIndex = (int)HandSlotKind.Gear;
+                hammerSlot.FindPropertyRelative("gear").enumValueIndex = (int)GearId.Hammer;
+                hammerSlot.FindPropertyRelative("swingSeconds").floatValue = 0.6f;
+                hammerSlot.FindPropertyRelative("hitAt").floatValue = 0.45f;
+                hammerSlot.FindPropertyRelative("reachMeters").floatValue = 2.0f;
+                slotsSo.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(settings);
+            }
 
             // Barreta: hierro hexagonal de 75 cm con la uña doblada hacia adelante arriba (sin arte todavía: pedida al chat de arte).
             Material steel = LibraryMaterial("MT_AceroOscuro") ?? Mat("Barreta_Acero", new Color(0.18f, 0.19f, 0.2f));
@@ -57,7 +73,15 @@ namespace SurvivalEnTren.EditorTools
                 BoxMinMax("Mango", saw, new Vector3(-0.02f, -0.06f, -0.04f), new Vector3(0.02f, 0.06f, 0.08f), Mat("Cama_Madera", new Color(0.55f, 0.4f, 0.24f)), false);
             }
 
-            foreach (Transform model in new[] { crowbar, saw })
+            // Martillo (H4): mango de madera y cabeza de acero (sin arte todavía).
+            var hammer = Group("Mano_Martillo", head);
+            hammer.localPosition = new Vector3(0.3f, -0.42f, 0.42f);
+            hammer.localRotation = Quaternion.Euler(30f, -14f, -10f);
+            Material handle = LibraryMaterial("MT_Madera") ?? Mat("Martillo_Mango", new Color(0.55f, 0.4f, 0.24f));
+            BoxMinMax("Mango", hammer, new Vector3(-0.014f, -0.04f, -0.014f), new Vector3(0.014f, 0.34f, 0.014f), handle, false);
+            BoxMinMax("Cabeza", hammer, new Vector3(-0.025f, 0.3f, -0.07f), new Vector3(0.025f, 0.36f, 0.06f), steel, false);
+
+            foreach (Transform model in new[] { crowbar, saw, hammer })
             {
                 foreach (Renderer r in model.GetComponentsInChildren<Renderer>(true))
                 {
@@ -86,7 +110,7 @@ namespace SurvivalEnTren.EditorTools
             for (int i = 0; i < slots.Length; i++)
             {
                 Transform model = slots[i].kind != HandSlotKind.Gear ? null
-                    : slots[i].gear == GearId.Crowbar ? crowbar : slots[i].gear == GearId.Saw ? saw : null;
+                    : slots[i].gear == GearId.Crowbar ? crowbar : slots[i].gear == GearId.Saw ? saw : slots[i].gear == GearId.Hammer ? hammer : null;
                 models.GetArrayElementAtIndex(i).objectReferenceValue = model;
             }
             var keys = so.FindProperty("slotKeys");

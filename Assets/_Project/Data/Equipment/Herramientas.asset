@@ -31,6 +31,12 @@ MonoBehaviour:
     swingSeconds: 0
     hitAt: 0
     reachMeters: 0
+  - label: MARTILLO
+    kind: 0
+    gear: 3
+    swingSeconds: 0.6
+    hitAt: 0.45
+    reachMeters: 2
   raiseSpeed: 4
   windupDegrees: 30
   strikeDegrees: 75

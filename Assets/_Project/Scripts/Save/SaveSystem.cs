@@ -166,6 +166,7 @@ namespace SurvivalEnTren.Save
             p.crowbar = gear.Has(GearId.Crowbar);
             p.handPump = gear.Has(GearId.HandPump);
             p.saw = gear.Has(GearId.Saw);
+            p.hammer = gear.Has(GearId.Hammer);
             p.suit = gear.SuitWorn;
             data.blueprints.AddRange(book.LearnedIds);
             CaptureGrid(backpack.Grid, data.backpack);
@@ -180,6 +181,10 @@ namespace SurvivalEnTren.Save
             tr.brake = controls.BrakeNotch;
             tr.fuelLiters = tank.Liters;
             tr.interiorC = climate.InteriorTemperatureC;
+            Forge forge = FindAnyObjectByType<Forge>();
+            if (forge != null)
+                data.forge = new ForgeState { present = true, woodHours = forge.WoodHours, valveOpen = forge.ValveOpen, temperature = forge.Temperature,
+                    pieceAt = (int)forge.PieceAt, pieceHeat = forge.PieceHeat, pieceHits = forge.PieceHits };
 
             // Muebles, obras y cambios de vía.
             foreach (StorageContainer storage in FindObjectsByType<StorageContainer>())
@@ -317,6 +322,7 @@ namespace SurvivalEnTren.Save
             if (data.player.crowbar) gear.Give(GearId.Crowbar);
             if (data.player.handPump) gear.Give(GearId.HandPump);
             if (data.player.saw) gear.Give(GearId.Saw);
+            if (data.player.hammer) gear.Give(GearId.Hammer);
             gear.SetSuit(data.player.suit);
             foreach (SuitRack rack in FindObjectsByType<SuitRack>()) rack.Sync(gear.SuitWorn);
             foreach (GearPickup pickup in FindObjectsByType<GearPickup>())
@@ -364,6 +370,9 @@ namespace SurvivalEnTren.Save
             tank.Draw(tank.Liters);
             tank.Add(data.train.fuelLiters);
             climate.RestoreTemperature(data.train.interiorC);
+            Forge savedForge = FindAnyObjectByType<Forge>();
+            if (savedForge != null && data.forge != null && data.forge.present)
+                savedForge.Restore(data.forge.woodHours, data.forge.valveOpen, data.forge.temperature, (ForgePieceAt)data.forge.pieceAt, data.forge.pieceHeat, data.forge.pieceHits);
             Transform t = train.transform;
             Rigidbody trainBody = train.GetComponent<Rigidbody>();
 

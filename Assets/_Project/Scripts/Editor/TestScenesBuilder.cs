@@ -253,6 +253,7 @@ namespace SurvivalEnTren.EditorTools
                 BuildSurvival(motor, train, overlay, palette);
                 BuildPortableProbe(motor, train, palette);
                 BuildToolBelt(motor, train); // herramientas en la mano (H1, TestScenesBuilder.Tools.cs)
+                BuildForge(motor, train); // la forja del tren (H4, TestScenesBuilder.Forge.cs)
                 BuildSaveSystem(motor, train);
                 BuildPresentation(motor, train, unknownRoute);
                 StylePlaces(train); // producción P2: los lugares con los materiales de la librería (TestScenesBuilder.Places.cs)
@@ -493,6 +494,8 @@ namespace SurvivalEnTren.EditorTools
         private sealed class MaterialSet
         {
             public ItemDefinition Wood, Metal, Cloth, Parts;
+            /// <summary>El metal trabajado de la forja (H4): la planchuela.</summary>
+            public ItemDefinition Bar;
             /// <summary>La pieza especial del M10 (aguja de cambio): no es un material, pero vive en el mismo lugar de datos.</summary>
             public ItemDefinition SwitchPoint;
         }
@@ -510,6 +513,7 @@ namespace SurvivalEnTren.EditorTools
                 Cloth = LoadOrCreateItem("Tela", "item_tela", "tela", "rollo de tela", 0.8f, new Vector2Int(1, 2), new Color(0.55f, 0.62f, 0.72f), DrawClothIcon),
                 Parts = LoadOrCreateItem("Componentes", "item_componentes", "componentes", "componente", 0.3f, new Vector2Int(1, 1), new Color(0.3f, 0.7f, 0.45f), DrawChipIcon),
                 SwitchPoint = LoadOrCreateItem("AgujaCambio", "item_aguja_cambio", "aguja de cambio", "aguja de cambio", 5f, new Vector2Int(1, 3), new Color(0.78f, 0.45f, 0.18f), DrawSwitchPointIcon),
+                Bar = LoadOrCreateItem("Planchuela", "item_planchuela", "planchuela", "planchuela", 1.5f, new Vector2Int(1, 3), new Color(0.35f, 0.37f, 0.42f), DrawBarIcon),
             };
         }
 
@@ -582,6 +586,20 @@ namespace SurvivalEnTren.EditorTools
             for (int k = 0; k < 6; k++) FillRect(t, 14 + k * 5, 12, 2, t.height - 24, k % 2 == 0 ? light : dark);
             FillDisc(t, t.width / 2, 18, 3, new Color(0.15f, 0.12f, 0.1f));
             FillDisc(t, t.width / 2, t.height - 18, 3, new Color(0.15f, 0.12f, 0.1f));
+        }
+
+        // Planchuela (H4): una barra plana de hierro forjado, con marcas de martillo y los extremos más oscuros.
+        private static void DrawBarIcon(Texture2D t, Color c)
+        {
+            Color dark = c * 0.55f; dark.a = 1f;
+            Color light = Color.Lerp(c, Color.white, 0.3f);
+            int w = t.width / 2, x = (t.width - w) / 2;
+            FillRect(t, x - 2, 6, w + 4, t.height - 12, dark);
+            FillRect(t, x, 9, w, t.height - 18, c);
+            FillRect(t, x + 3, 12, 3, t.height - 24, light);
+            for (int k = 0; k < 5; k++) FillDisc(t, x + w / 2 + (k % 2 == 0 ? 2 : -2), 24 + k * (t.height - 48) / 4, 3, dark);
+            FillRect(t, x, 9, w, 7, dark);
+            FillRect(t, x, t.height - 16, w, 7, dark);
         }
 
         // Chapa: lámina gris con borde, remaches y un brillo en diagonal.
@@ -771,6 +789,7 @@ namespace SurvivalEnTren.EditorTools
                 {
                     BoxMinMax("Restos_Metalicos", marker, new Vector3(-1.5f, 0f, -3.5f), new Vector3(1.5f, 2.2f, 3.5f), p.Track);
                     BuildRailWorkshop(marker, p); // M11: el taller ferroviario al lado de los restos (la puerta mira a la vía)
+                    BuildScrapHeaps(marker, p); // H4: restos de chatarra (metal para la forja)
                     // El metal interfiere la sonda portátil de cerca (sección 13.2), para probar las interferencias.
                     var zone = new SerializedObject(marker.gameObject.AddComponent<ProbeInterference>());
                     zone.FindProperty("radiusMeters").floatValue = 40f;
@@ -1189,7 +1208,7 @@ namespace SurvivalEnTren.EditorTools
 
         private sealed class BlueprintSet
         {
-            public Blueprint Saw, Jerrycan, ShelfProject;
+            public Blueprint Saw, Jerrycan, ShelfProject, Hammer;
         }
 
         // Los tres planos de la V1 como archivos de datos (se crean una sola vez; si se ajustan, no se pisan).
@@ -1207,6 +1226,9 @@ namespace SurvivalEnTren.EditorTools
                 ShelfProject = LoadOrCreateBlueprint("EstanteReforzado", "plano_estante_reforzado", "estante reforzado",
                     "Un estante de verdad contra la pared del taller: se construye por fases.", false, BlueprintKind.Project,
                     new (ItemDefinition, int)[0], new GearId[0], 0.5f, CraftOutputKind.Gear, GearId.Saw, ""),
+                Hammer = LoadOrCreateBlueprint("Martillo", "plano_martillo", "martillo",
+                    "Para trabajar el metal al rojo en el yunque de la forja (H4).", true, BlueprintKind.Craft,
+                    new[] { (materials.Wood, 1), (materials.Metal, 1) }, new GearId[0], 6f, CraftOutputKind.Gear, GearId.Hammer, "queda al cinto: casilla 4"),
             };
         }
 
@@ -1238,7 +1260,7 @@ namespace SurvivalEnTren.EditorTools
             SetReference(workbench, "jerrycanPrefab", BuildJerrycanPrefab(p));
             var so = new SerializedObject(workbench);
             var catalog = so.FindProperty("catalog");
-            Blueprint[] recipes = { plans.Saw, plans.Jerrycan };
+            Blueprint[] recipes = { plans.Saw, plans.Jerrycan, plans.Hammer };
             catalog.arraySize = recipes.Length;
             for (int i = 0; i < recipes.Length; i++) catalog.GetArrayElementAtIndex(i).objectReferenceValue = recipes[i];
             so.ApplyModifiedPropertiesWithoutUndo();

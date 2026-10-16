@@ -47,6 +47,8 @@ namespace SurvivalEnTren.Save
         public List<ProgressEntry> fuelSources = new List<ProgressEntry>();
         /// <summary>La señal fijada en la sonda (ID), o vacío.</summary>
         public string probeTarget = "";
+        /// <summary>La forja del tren (H4): el fuego y la pieza que se está trabajando.</summary>
+        public ForgeState forge = new ForgeState();
     }
 
     [Serializable]
@@ -59,6 +61,19 @@ namespace SurvivalEnTren.Save
         public float pitch;
         public float health, satiety, energy, warmth;
         public bool crowbar, handPump, saw, suit;
+        public bool hammer;
+    }
+
+    [Serializable]
+    public class ForgeState
+    {
+        public bool present;
+        public float woodHours;
+        public bool valveOpen;
+        public float temperature;
+        public int pieceAt;
+        public float pieceHeat;
+        public int pieceHits;
     }
 
     [Serializable]

@@ -83,6 +83,7 @@ namespace SurvivalEnTren.Crafting
                 case GearId.Crowbar: return "barreta";
                 case GearId.HandPump: return "bomba manual";
                 case GearId.Saw: return "sierra manual";
+                case GearId.Hammer: return "martillo";
                 default: return gear.ToString();
             }
         }
