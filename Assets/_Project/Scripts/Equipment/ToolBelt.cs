@@ -27,6 +27,8 @@ namespace SurvivalEnTren.Equipment
         [SerializeField] private SurvivalEnTren.Survival.PlayerVitals vitals;
         [Tooltip("Mientras se coloca un mueble, la rueda lo gira y el clic lo deja: la barra no los usa.")]
         [SerializeField] private SurvivalEnTren.Building.PlacementController placement;
+        [Tooltip("Las manos en primera persona: el empujón de la vista al pegar y cómo se guarda la herramienta.")]
+        [SerializeField] private ViewmodelRig rig;
         [Tooltip("La cabeza (cámara): de acá sale el golpe.")]
         [SerializeField] private Transform head;
         [Tooltip("El modelo de cada casilla en la mano (hijo de la cabeza), en el mismo orden que las casillas. Vacío en la de la sonda.")]
@@ -44,6 +46,9 @@ namespace SurvivalEnTren.Equipment
         private float _swing = -1f;        // progreso del golpe (0..1), -1 = sin golpe
         private bool _struck;              // ya pegó en este golpe
         private float _impactPause;
+        private enum ImpactKind { None, Useful, Rebound }
+        private ImpactKind _impact;
+        private float _shake;              // temblor de la herramienta después de un rebote (1 = recién)
         private Vector3[] _restPositions;
         private Quaternion[] _restRotations;
         private AudioSource _audio;
@@ -142,6 +147,7 @@ namespace SurvivalEnTren.Equipment
             _swing = 0f;
             _struck = false;
             _impactPause = 0f;
+            _impact = ImpactKind.None;
             Swings++;
             _audio.PlayOneShot(_whoosh, 0.35f);
             return true;
@@ -190,22 +196,55 @@ namespace SurvivalEnTren.Equipment
                 bool shown = i == _selected && _raise > 0f;
                 if (model.gameObject.activeSelf != shown) model.gameObject.SetActive(shown);
                 if (!shown) continue;
+                // Guardada: abajo y girada (sube desde abajo al sacarla). En la mano: la pose del golpe y el temblor del rebote.
                 float lowered = 1f - Mathf.SmoothStep(0f, 1f, _raise);
-                model.localPosition = _restPositions[i] + Vector3.down * (0.35f * lowered);
-                model.localRotation = _restRotations[i] * Quaternion.Euler(SwingAngle(), 0f, 0f);
+                Vector3 lowPos = rig != null ? rig.Settings.LoweredOffset : new Vector3(0f, -0.35f, 0f);
+                Vector3 lowRot = rig != null ? rig.Settings.LoweredRotation : Vector3.zero;
+                SwingPose(settings.Slots[i], out Vector3 swingPos, out Vector3 swingRot);
+                _shake = Mathf.MoveTowards(_shake, 0f, Time.deltaTime * 4f);
+                Vector3 tremble = _shake > 0f ? new Vector3(Mathf.Sin(Time.time * 97f), Mathf.Sin(Time.time * 131f), 0f) * (0.006f * _shake) : Vector3.zero;
+                model.localPosition = _restPositions[i] + lowPos * lowered + swingPos + tremble;
+                // El golpe gira alrededor del puño en los ejes de la vista (derecha, arriba, adelante); guardada, en los del modelo.
+                model.localRotation = Quaternion.Euler(swingRot) * _restRotations[i] * Quaternion.Euler(lowRot * lowered);
             }
         }
 
-        // Levantar (echarse atrás), bajar hasta pegar, volver. Ángulo alrededor del eje X del modelo (+ = hacia adelante y abajo).
-        private float SwingAngle()
+        // La pose del golpe en este momento (corrimiento y giro respecto del descanso):
+        // cargar despacio (y frenar arriba), bajar acelerando hasta pegar, y volver. Después de pegar: si pegó en algo que sirve,
+        // un rebotito; si rebotó (herramienta equivocada o algo duro), un rebote grande para atrás; si no pegó en nada, la
+        // herramienta sigue de largo un poco antes de volver.
+        private void SwingPose(ToolSlot s, out Vector3 position, out Vector3 rotation)
         {
-            if (!IsSwinging) return 0f;
-            ToolSlot s = settings.Slots[_selected];
-            float windupEnd = s.hitAt * 0.55f;
+            position = Vector3.zero;
+            rotation = Vector3.zero;
+            if (!IsSwinging) return;
             float t = _swing;
-            if (t < windupEnd) return -settings.WindupDegrees * Mathf.SmoothStep(0f, 1f, t / windupEnd);
-            if (t < s.hitAt) return Mathf.Lerp(-settings.WindupDegrees, settings.StrikeDegrees, (t - windupEnd) / (s.hitAt - windupEnd));
-            return Mathf.Lerp(settings.StrikeDegrees, 0f, Mathf.SmoothStep(0f, 1f, (t - s.hitAt) / (1f - s.hitAt)));
+            float windupEnd = s.hitAt * 0.62f;
+            if (t < windupEnd)
+            {
+                float k = Mathf.SmoothStep(0f, 1f, t / windupEnd);
+                position = s.windupPosition * k;
+                rotation = s.windupRotation * k;
+                return;
+            }
+            if (t < s.hitAt)
+            {
+                float u = (t - windupEnd) / Mathf.Max(0.001f, s.hitAt - windupEnd);
+                float e = u * u * u; // acelera: el peso de la herramienta
+                position = Vector3.Lerp(s.windupPosition, s.strikePosition, e);
+                rotation = Vector3.Lerp(s.windupRotation, s.strikeRotation, e);
+                return;
+            }
+            float r = Mathf.Clamp01((t - s.hitAt) / Mathf.Max(0.001f, 1f - s.hitAt));
+            float back = Mathf.SmoothStep(0f, 1f, r);
+            position = Vector3.Lerp(s.strikePosition, Vector3.zero, back);
+            rotation = Vector3.Lerp(s.strikeRotation, Vector3.zero, back);
+            float bump = Mathf.Sin(r * Mathf.PI);
+            Vector3 towardWindupPos = s.windupPosition - s.strikePosition;
+            Vector3 towardWindupRot = s.windupRotation - s.strikeRotation;
+            float amount = _impact == ImpactKind.Rebound ? 0.3f : _impact == ImpactKind.Useful ? 0.08f : -0.15f; // negativo: sigue de largo
+            position += towardWindupPos * (amount * bump);
+            rotation += towardWindupRot * (amount * bump);
         }
 
         private void AdvanceSwing(float dt)
@@ -223,7 +262,12 @@ namespace SurvivalEnTren.Equipment
 
         private void Strike(ToolSlot s)
         {
-            if (!TryFindTarget(s.reachMeters, out RaycastHit hit)) return;
+            if (!TryFindTarget(s.reachMeters, out RaycastHit hit))
+            {
+                _impact = ImpactKind.None; // al aire: sigue de largo
+                if (rig != null) rig.AddKick(new Vector3(s.kickDegrees * 0.25f, 0f, 0f), false);
+                return;
+            }
             var info = new ToolHit(s.gear, hit.point, hit.normal, hit.collider, this);
             IToolTarget target = hit.collider.GetComponentInParent<IToolTarget>();
             bool useful = target != null && target.OnToolHit(in info);
@@ -231,7 +275,19 @@ namespace SurvivalEnTren.Equipment
             LastHitName = hit.collider.name;
             LastHitUseful = useful;
             if (useful && vitals != null) vitals.Tire(settings.EnergyPerHit);
-            _impactPause = settings.ImpactPauseSeconds;
+            // Que se sienta: una frenada contra lo que golpeó (más larga si rebota), un empujón de la vista y, si rebota, temblor.
+            bool rebound = !useful;
+            _impact = rebound ? ImpactKind.Rebound : ImpactKind.Useful;
+            _impactPause = settings.ImpactPauseSeconds * (rebound ? 1.6f : 1f);
+            if (rebound) _shake = 1f;
+            if (rig != null)
+            {
+                float side = UnityEngine.Random.Range(-1f, 1f);
+                Vector3 kick = rebound
+                    ? new Vector3(-s.kickDegrees * 0.6f, side * s.kickDegrees * 0.5f, side * s.kickDegrees * 0.4f)
+                    : new Vector3(s.kickDegrees, side * s.kickDegrees * 0.2f, side * s.kickDegrees * 0.3f);
+                rig.AddKick(kick, rebound);
+            }
             _audio.PlayOneShot(useful || target == null ? _thud : _clank, 0.6f);
             Struck?.Invoke(info, useful);
         }

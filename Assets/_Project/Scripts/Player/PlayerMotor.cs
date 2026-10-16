@@ -64,6 +64,8 @@ namespace SurvivalEnTren.Player
         public bool HasMoveInput { get; private set; }
         /// <summary>Velocidad real del jugador en el mundo en el último tic (incluye viajar con el tren), en m/s.</summary>
         public Vector3 Velocity { get; private set; }
+        /// <summary>A qué velocidad camina el jugador por sus propios medios (sin contar el tren ni la caída), en m/s.</summary>
+        public Vector3 WalkVelocity { get; private set; }
         /// <summary>Si es true, el jugador no camina ni salta (por ejemplo, mientras maneja el tren). Sigue viajando con lo que pisa.</summary>
         public bool MovementLocked { get; set; }
         /// <summary>Multiplica la velocidad de caminar y correr (por ejemplo, al llevar algo pesado). 1 = normal.</summary>
@@ -144,6 +146,7 @@ namespace SurvivalEnTren.Player
             IsRunning = running && _body.isGrounded;
             float speed = (running ? settings.RunSpeedMetersPerSecond : settings.WalkSpeedMetersPerSecond) * SpeedMultiplier * FatigueMultiplier;
             Vector3 walk = Vector3.ClampMagnitude(transform.right * input.x + transform.forward * input.y, 1f) * speed;
+            WalkVelocity = walk;
 
             if (_body.isGrounded)
             {

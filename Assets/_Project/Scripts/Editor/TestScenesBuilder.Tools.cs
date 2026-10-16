@@ -54,23 +54,28 @@ namespace SurvivalEnTren.EditorTools
                 EditorUtility.SetDirty(settings);
             }
 
+            // Las manos en primera persona (2026-10-16): su raíz, su capa y su cámara aparte (BuildViewmodel, abajo).
+            ViewmodelRig rig = BuildViewmodel(head, motor);
+            Transform hands = rig.Root;
+            MigrateSwingPoses(settings);
+
             // Barreta: hierro hexagonal de 75 cm con la uña doblada hacia adelante arriba (sin arte todavía: pedida al chat de arte).
             Material steel = LibraryMaterial("MT_AceroOscuro") ?? Mat("Barreta_Acero", new Color(0.18f, 0.19f, 0.2f));
             Material paint = LibraryMaterial("MT_PinturaRoja") ?? Mat("Barreta_Pintura", new Color(0.6f, 0.12f, 0.08f));
-            var crowbar = Group("Mano_Barreta", head);
-            crowbar.localPosition = new Vector3(0.33f, -0.47f, 0.44f);
-            crowbar.localRotation = Quaternion.Euler(30f, -14f, -10f);
-            BoxMinMax("Hierro", crowbar, new Vector3(-0.012f, -0.05f, -0.012f), new Vector3(0.012f, 0.62f, 0.012f), steel, false);
-            BoxMinMax("Pintura", crowbar, new Vector3(-0.013f, -0.05f, -0.013f), new Vector3(0.013f, 0.16f, 0.013f), paint, false); // el mango pintado
-            var claw = Group("Una", crowbar);
-            claw.localPosition = new Vector3(0f, 0.62f, 0f);
-            claw.localRotation = Quaternion.Euler(55f, 0f, 0f);
-            BoxMinMax("Curva", claw, new Vector3(-0.012f, -0.01f, -0.012f), new Vector3(0.012f, 0.11f, 0.012f), steel, false);
-            BoxMinMax("Punta", claw, new Vector3(-0.016f, 0.1f, -0.004f), new Vector3(0.016f, 0.14f, 0.008f), steel, false);
+            var crowbar = Group("Mano_Barreta", hands);
+            // En diagonal delante del cuerpo, con las dos manos: la derecha abajo, la izquierda más arriba y al centro; la uña adelante.
+            crowbar.localPosition = new Vector3(0.22f, -0.33f, 0.44f);
+            Vector3 crowbarDir = new Vector3(-0.5f, 0.75f, 0.45f).normalized;
+            crowbar.localRotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(Vector3.forward, crowbarDir), crowbarDir);
+            if (!ArtTool(crowbar, "Barreta")) // desde el 2026-10-16, el modelo de Fuentes/Scripts_Manos (hasta el arte final)
+            {
+                BoxMinMax("Hierro", crowbar, new Vector3(-0.012f, -0.05f, -0.012f), new Vector3(0.012f, 0.62f, 0.012f), steel, false);
+                BoxMinMax("Pintura", crowbar, new Vector3(-0.013f, -0.05f, -0.013f), new Vector3(0.013f, 0.16f, 0.013f), paint, false);
+            }
 
             // Sierra: la del arte del vagón (la misma que cuelga en el taller), con la hoja hacia adelante.
-            var saw = Group("Mano_Sierra", head);
-            saw.localPosition = new Vector3(0.26f, -0.26f, 0.38f);
+            var saw = Group("Mano_Sierra", hands);
+            saw.localPosition = new Vector3(0.22f, -0.19f, 0.42f);
             saw.localRotation = Quaternion.Euler(14f, -12f, 0f);
             GameObject wagonArt = InstantiateArt(WagonArtPath, saw);
             Transform artSaw = wagonArt != null ? wagonArt.transform.Find("Sierra") : null;
@@ -90,21 +95,27 @@ namespace SurvivalEnTren.EditorTools
             }
 
             // Martillo (H4): mango de madera y cabeza de acero (sin arte todavía).
-            var hammer = Group("Mano_Martillo", head);
-            hammer.localPosition = new Vector3(0.3f, -0.42f, 0.42f);
+            var hammer = Group("Mano_Martillo", hands);
+            hammer.localPosition = new Vector3(0.24f, -0.27f, 0.45f);
             hammer.localRotation = Quaternion.Euler(30f, -14f, -10f);
             Material handle = LibraryMaterial("MT_Madera") ?? Mat("Martillo_Mango", new Color(0.55f, 0.4f, 0.24f));
-            BoxMinMax("Mango", hammer, new Vector3(-0.014f, -0.04f, -0.014f), new Vector3(0.014f, 0.34f, 0.014f), handle, false);
-            BoxMinMax("Cabeza", hammer, new Vector3(-0.025f, 0.3f, -0.07f), new Vector3(0.025f, 0.36f, 0.06f), steel, false);
+            if (!ArtTool(hammer, "Martillo"))
+            {
+                BoxMinMax("Mango", hammer, new Vector3(-0.014f, -0.04f, -0.014f), new Vector3(0.014f, 0.34f, 0.014f), handle, false);
+                BoxMinMax("Cabeza", hammer, new Vector3(-0.025f, 0.3f, -0.07f), new Vector3(0.025f, 0.36f, 0.06f), steel, false);
+            }
 
             // Llave de montaje (2026-10-16): una llave fija larga, de acero, con una boca en cada punta (sin arte todavía).
-            var wrench = Group("Mano_Llave", head);
-            wrench.localPosition = new Vector3(0.3f, -0.42f, 0.42f);
+            var wrench = Group("Mano_Llave", hands);
+            wrench.localPosition = new Vector3(0.24f, -0.25f, 0.42f);
             wrench.localRotation = Quaternion.Euler(30f, -14f, -10f);
-            BoxMinMax("Cuerpo", wrench, new Vector3(-0.012f, -0.03f, -0.005f), new Vector3(0.012f, 0.3f, 0.005f), steel, false);
-            BoxMinMax("Boca_A_1", wrench, new Vector3(-0.03f, 0.3f, -0.006f), new Vector3(-0.012f, 0.35f, 0.006f), steel, false);
-            BoxMinMax("Boca_A_2", wrench, new Vector3(0.012f, 0.3f, -0.006f), new Vector3(0.03f, 0.35f, 0.006f), steel, false);
-            BoxMinMax("Boca_B", wrench, new Vector3(-0.025f, -0.06f, -0.006f), new Vector3(0.025f, -0.03f, 0.006f), steel, false);
+            if (!ArtTool(wrench, "Llave"))
+            {
+                BoxMinMax("Cuerpo", wrench, new Vector3(-0.012f, -0.03f, -0.005f), new Vector3(0.012f, 0.3f, 0.005f), steel, false);
+                BoxMinMax("Boca_B", wrench, new Vector3(-0.025f, -0.06f, -0.006f), new Vector3(0.025f, -0.03f, 0.006f), steel, false);
+            }
+            // La sierra del arte no trae agarre: va en su pivote (el puño).
+            if (saw.Find("Agarre_Derecha") == null) Group("Agarre_Derecha", saw);
 
             foreach (Transform model in new[] { crowbar, saw, hammer, wrench })
             {
@@ -125,6 +136,9 @@ namespace SurvivalEnTren.EditorTools
             SetReference(belt, "interactor", motor.GetComponent<PlayerInteractor>());
             SetReference(belt, "vitals", motor.GetComponent<SurvivalEnTren.Survival.PlayerVitals>());
             SetReference(belt, "head", head);
+            SetReference(belt, "rig", rig);
+            int handsLayer = LayerMask.NameToLayer(HandsLayerName);
+            foreach (Transform t in hands.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = handsLayer;
             SetReference(belt, "use", FindActionReference("Player/UseTool"));
             SetReference(belt, "scroll", FindActionReference("Player/ToolScroll"));
             var so = new SerializedObject(belt);
@@ -154,6 +168,12 @@ namespace SurvivalEnTren.EditorTools
             SetReference(placer, "okMaterial", PreviewMaterial("Colocar_Bien", new Color(0.92f, 0.95f, 1f, 0.3f)));
             SetReference(placer, "badMaterial", PreviewMaterial("Colocar_Mal", new Color(1f, 0.32f, 0.25f, 0.34f)));
             SetReference(belt, "placement", placer);
+
+            // Los brazos (2026-10-16): siguen a la herramienta o a lo que se carga.
+            var toolModels = new Transform[slots.Length];
+            for (int i = 0; i < slots.Length; i++) toolModels[i] = (Transform)models.GetArrayElementAtIndex(i).objectReferenceValue;
+            BuildArms(head, hands, belt, toolModels, motor);
+            foreach (Transform t in hands.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = handsLayer;
 
             var hud = motor.gameObject.AddComponent<ToolBarHud>();
             SetReference(hud, "belt", belt);

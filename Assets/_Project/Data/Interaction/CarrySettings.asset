@@ -15,7 +15,7 @@ MonoBehaviour:
   maxCarryMassKg: 25
   walkSlowdownPerKg: 0.02
   minWalkSpeedFactor: 0.45
-  holdDistanceMeters: 1.1
+  holdDistanceMeters: 0.75
   dropIfSeparatedMeters: 1.2
   maxFollowSpeedMetersPerSecond: 12
   throwSpeedMetersPerSecond: 7

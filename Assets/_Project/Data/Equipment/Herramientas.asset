@@ -19,30 +19,60 @@ MonoBehaviour:
     swingSeconds: 0.75
     hitAt: 0.42
     reachMeters: 2.2
+    windupPosition: {x: 0.1, y: 0.22, z: 0.02}
+    windupRotation: {x: -55, y: 0, z: -25}
+    strikePosition: {x: -0.12, y: -0.04, z: 0.2}
+    strikeRotation: {x: 35, y: 0, z: 15}
+    kickDegrees: 2.5
+    twoHanded: 1
   - label: SIERRA
     kind: 0
     gear: 2
     swingSeconds: 0.6
     hitAt: 0.45
     reachMeters: 2
+    windupPosition: {x: 0, y: 0.02, z: -0.14}
+    windupRotation: {x: -5, y: 0, z: 0}
+    strikePosition: {x: 0, y: -0.04, z: 0.2}
+    strikeRotation: {x: 8, y: 0, z: 0}
+    kickDegrees: 0.6
+    twoHanded: 0
   - label: SONDA
     kind: 1
     gear: 0
     swingSeconds: 0
     hitAt: 0
     reachMeters: 0
+    windupPosition: {x: 0, y: 0, z: 0}
+    windupRotation: {x: 0, y: 0, z: 0}
+    strikePosition: {x: 0, y: 0, z: 0}
+    strikeRotation: {x: 0, y: 0, z: 0}
+    kickDegrees: 0
+    twoHanded: 0
   - label: MARTILLO
     kind: 0
     gear: 3
     swingSeconds: 0.6
     hitAt: 0.45
     reachMeters: 2
+    windupPosition: {x: 0.04, y: 0.22, z: -0.08}
+    windupRotation: {x: -75, y: 0, z: -10}
+    strikePosition: {x: -0.04, y: -0.05, z: 0.16}
+    strikeRotation: {x: 50, y: 0, z: 5}
+    kickDegrees: 1.6
+    twoHanded: 0
   - label: LLAVE
     kind: 0
     gear: 4
     swingSeconds: 0.5
     hitAt: 0.4
     reachMeters: 2.4
+    windupPosition: {x: 0.02, y: 0.04, z: -0.04}
+    windupRotation: {x: 0, y: 0, z: 30}
+    strikePosition: {x: -0.02, y: -0.02, z: 0.12}
+    strikeRotation: {x: 20, y: 0, z: -35}
+    kickDegrees: 0.8
+    twoHanded: 0
   raiseSpeed: 4
   windupDegrees: 30
   strikeDegrees: 75

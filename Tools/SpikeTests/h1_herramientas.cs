@@ -21,8 +21,9 @@ var wait = new UnityEngine.WaitForFixedUpdate();
 UnityEngine.Application.runInBackground = true;
 // Los modelos arrancan apagados: buscarlos por la cabeza.
 var headT = motor.transform.Find("Cabeza");
-var crowbarT = headT.Find("Mano_Barreta");
-var sawT = headT.Find("Mano_Sierra");
+var handsT = headT.Find("Manos") ?? headT; // desde el 2026-10-16 los modelos de la mano viven en la raíz de las manos
+var crowbarT = handsT.Find("Mano_Barreta");
+var sawT = handsT.Find("Mano_Sierra");
 
 System.Collections.IEnumerator Frames(int n) { for (int i = 0; i < n; i++) yield return wait; }
 string Name(int slot) => slot < 0 ? "manos libres" : belt.Settings.Slots[slot].label;
@@ -76,10 +77,11 @@ System.Collections.IEnumerator Run()
     bool started = belt.TrySwing();
     bool twice = belt.TrySwing();
     float maxAngle = 0f;
+    var restRotation = crowbarT.localRotation;
     for (int i = 0; i < 60; i++)
     {
         yield return wait;
-        float a = UnityEngine.Quaternion.Angle(crowbarT.localRotation, UnityEngine.Quaternion.Euler(30f, -14f, -10f));
+        float a = UnityEngine.Quaternion.Angle(crowbarT.localRotation, restRotation);
         maxAngle = UnityEngine.Mathf.Max(maxAngle, a);
     }
     log.Append($" GOLPE A LA PARED: empezó={started}, otro encima={twice} (debe ser False); golpes {belt.Swings}, pegó {belt.HitCount} vez en \"{belt.LastHitName}\" (sirvió={belt.LastHitUseful}: la pared no se desarma); la barreta giró hasta {maxAngle:0}°; terminó={!belt.IsSwinging}.");

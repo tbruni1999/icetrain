@@ -19,7 +19,7 @@ namespace SurvivalEnTren.Interaction
         [SerializeField, Range(0.1f, 1f)] private float minWalkSpeedFactor = 0.45f;
 
         [Tooltip("A qué distancia delante de los ojos se sostiene el objeto, en metros.")]
-        [SerializeField, Range(0.5f, 2f)] private float holdDistanceMeters = 1.1f;
+        [SerializeField, Range(0.5f, 2f)] private float holdDistanceMeters = 0.75f;
 
         [Tooltip("Dónde se sostiene un objeto de una mano (un bidón), respecto de los ojos y girado con el cuerpo: " +
                  "derecha, arriba y adelante, en metros. Va a la cadera para no tapar la vista ni ensanchar al jugador en una puerta.")]

@@ -72,6 +72,9 @@ namespace SurvivalEnTren.Player
             _pitch = Mathf.Clamp(_pitch - delta.y, -settings.MaxPitchDegrees, settings.MaxPitchDegrees);
         }
 
+        /// <summary>Un empujón que se suma a la mirada (el golpe de una herramienta, ViewmodelRig). Identidad = nada.</summary>
+        public Quaternion Kick { get; set; } = Quaternion.identity;
+
         private void LateUpdate()
         {
             Quaternion body = motor.RenderBodyRotation;
@@ -90,7 +93,7 @@ namespace SurvivalEnTren.Player
             _stepSmoothing *= Mathf.Exp(-motor.Settings.StepSmoothingSpeed * Time.deltaTime);
 
             Vector3 eye = feet + Vector3.up * (motor.Settings.EyeHeightMeters + _stepSmoothing);
-            head.SetPositionAndRotation(eye, body * Quaternion.Euler(_pitch, 0f, 0f));
+            head.SetPositionAndRotation(eye, body * Quaternion.Euler(_pitch, 0f, 0f) * Kick);
         }
 
         private static void LockCursor()

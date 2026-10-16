@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e90894d6ebdcfe84598d940d62940b43, type: 3}
+  m_Name: Manos
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalEnTren.Equipment.ViewmodelSettings
+  fieldOfView: 70
+  bobVertical: 0.012
+  bobHorizontal: 0.009
+  stepLengthMeters: 0.75
+  runBobMultiplier: 1.7
+  swayFollowSpeed: 11
+  swayMaxDegrees: 5
+  kickStiffness: 220
+  kickDamping: 20
+  reboundKickMultiplier: 1.8
+  loweredOffset: {x: 0.05, y: -0.42, z: -0.05}
+  loweredRotation: {x: 35, y: 0, z: 15}

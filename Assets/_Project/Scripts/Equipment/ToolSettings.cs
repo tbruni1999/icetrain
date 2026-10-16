@@ -26,6 +26,19 @@ namespace SurvivalEnTren.Equipment
         [Range(0.1f, 0.9f)] public float hitAt;
         [Tooltip("Hasta dónde llega el golpe desde los ojos, en metros.")]
         [Range(0.5f, 3f)] public float reachMeters;
+        [Header("Cómo se mueve el golpe (respecto del descanso, en los ejes de la vista: derecha, arriba, adelante; gira alrededor del puño)")]
+        [Tooltip("Hasta dónde se lleva atrás al cargar el golpe: corrimiento en metros (derecha, arriba, adelante).")]
+        public Vector3 windupPosition;
+        [Tooltip("Giro al cargar el golpe, en grados (negativo en X = hacia atrás, por encima del hombro).")]
+        public Vector3 windupRotation;
+        [Tooltip("Dónde termina al pegar: corrimiento en metros.")]
+        public Vector3 strikePosition;
+        [Tooltip("Giro al pegar, en grados.")]
+        public Vector3 strikeRotation;
+        [Tooltip("Cuánto empuja la vista un golpe que pega, en grados.")]
+        [Range(0f, 10f)] public float kickDegrees;
+        [Tooltip("Se agarra con las dos manos (la barreta): se ve también la mano izquierda.")]
+        public bool twoHanded;
     }
 
     /// <summary>
