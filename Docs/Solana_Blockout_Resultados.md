@@ -27,7 +27,7 @@ Solana es un shopping de cinco niveles (subsuelo a azotea, 128 × 70 m) enterrad
 - ¿El jugador empieza con **linterna**? (Solana se vuelve oscuro de verdad abajo.)
 - ¿Cuánto **ruido** hacen la manivela, el volante y el cabrestante? (Afecta a los lobos.) ¿Hay **bengalas**?
 - ¿El túnel y el muelle son **atajos permanentes** o proyectos caros?
-- ¿**RED BLANCA** se traduce en los carteles (WHITE NETWORK)?
+- ~~¿RED BLANCA se traduce?~~ DECIDIDO (Tomi, 2026-10-16): en inglés, WHITE NETWORK. Linterna: sí, en el pecho con F. La V1 pasa a POIs medianos.
 - ¿La V1 cambia sus lugares chicos por **Medianos** (cocheras, complejo de emergencias, torre mirador)?
 - ¿La **altura de la nieve** es igual en todas las regiones? ¿Los 45 km y los 40 km/h de región sirven?
 - ¿Hay **osos**? ¿Otros Mega (aeropuerto, estadio, parque con noria)?

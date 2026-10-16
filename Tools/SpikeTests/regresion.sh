@@ -45,6 +45,7 @@ run m13_menu_y_final MenuFinal $M2
 run h1_herramientas Herramientas $M2
 run h2_hielo_a_golpes HieloGolpes $M2
 run h4_forja Forja $M2
+run h5_linterna Linterna $M2
 run s1_solana_recorridos Solana Assets/_Project/Scenes/Pruebas/Solana_Blockout.unity
 run p1_nieve Nieve $M2
 run p1_escarcha Escarcha $M2

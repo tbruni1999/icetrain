@@ -62,6 +62,7 @@ namespace SurvivalEnTren.Save
         public float health, satiety, energy, warmth;
         public bool crowbar, handPump, saw, suit;
         public bool hammer;
+        public bool flashlightOn;
     }
 
     [Serializable]

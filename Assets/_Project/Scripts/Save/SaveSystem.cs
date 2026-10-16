@@ -167,6 +167,8 @@ namespace SurvivalEnTren.Save
             p.handPump = gear.Has(GearId.HandPump);
             p.saw = gear.Has(GearId.Saw);
             p.hammer = gear.Has(GearId.Hammer);
+            var lampNow = motor.GetComponent<PlayerFlashlight>();
+            p.flashlightOn = lampNow != null && lampNow.IsOn;
             p.suit = gear.SuitWorn;
             data.blueprints.AddRange(book.LearnedIds);
             CaptureGrid(backpack.Grid, data.backpack);
@@ -323,6 +325,8 @@ namespace SurvivalEnTren.Save
             if (data.player.handPump) gear.Give(GearId.HandPump);
             if (data.player.saw) gear.Give(GearId.Saw);
             if (data.player.hammer) gear.Give(GearId.Hammer);
+            var lampSaved = motor.GetComponent<PlayerFlashlight>();
+            if (lampSaved != null) lampSaved.SetOn(data.player.flashlightOn);
             gear.SetSuit(data.player.suit);
             foreach (SuitRack rack in FindObjectsByType<SuitRack>()) rack.Sync(gear.SuitWorn);
             foreach (GearPickup pickup in FindObjectsByType<GearPickup>())

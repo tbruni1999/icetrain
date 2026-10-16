@@ -1808,6 +1808,25 @@ namespace SurvivalEnTren.EditorTools
             SetReference(interactor, "interact", FindActionReference("Player/Interact"));
             SetReference(interactor, "settings", LoadOrCreateAsset<InteractionSettings>(InteractionSettingsPath));
 
+            // La linterna en el pecho (decisión de Tomi del 2026-10-16): F la prende y la apaga; deja las manos libres.
+            var lampObject = new GameObject("Linterna");
+            lampObject.transform.SetParent(player.transform, false);
+            lampObject.transform.localPosition = head.transform.localPosition + new Vector3(0.12f, -0.38f, 0.12f);
+            var lamp = lampObject.AddComponent<Light>();
+            lamp.type = LightType.Spot;
+            lamp.color = new Color(1f, 0.95f, 0.85f);
+            lamp.intensity = 14f; // con la caída por distancia de URP: ilumina bien hasta ~10 m
+            lamp.range = 26f;
+            lamp.spotAngle = 62f;
+            lamp.innerSpotAngle = 30f;
+            lamp.shadows = LightShadows.Soft; // sección 9 de Solana: la linterna y el fuego son las luces con sombra
+            lamp.enabled = false;
+            var flashlight = player.AddComponent<SurvivalEnTren.Equipment.PlayerFlashlight>();
+            SetReference(flashlight, "head", head.transform);
+            SetReference(flashlight, "interactor", interactor);
+            SetReference(flashlight, "toggle", FindActionReference("Player/ToggleFlashlight"));
+            SetReference(flashlight, "lamp", lamp);
+
             var carrier = player.AddComponent<PlayerCarrier>();
             SetReference(carrier, "motor", motor);
             SetReference(carrier, "look", look);
