@@ -1,5 +1,5 @@
 // Prueba de los brazos en primera persona y del golpe con peso (pedido de Tomi del 2026-10-16). Con las manos libres no se ven;
-// con la barreta, las dos manos en sus agarres; con el martillo, una; cargando una caja, las dos abiertas; según el traje cambian
+// con la barreta (con una mano desde el 2026-10-16) y el martillo, una mano en el mango; el balanceo va al ritmo de los pasos (caminando y corriendo); cargando una caja, las dos abiertas; según el traje cambian
 // las mangas y los guantes; la cámara principal no dibuja las manos (las dibuja la suya, encima); un golpe contra la pared empuja
 // la vista y vuelve; las manos se balancean al caminar y se quedan un poco atrás al girar.
 // Cómo correrla: escena M2_Conduccion recién puesta en Play (esperar ~12 s),
@@ -51,7 +51,7 @@ System.Collections.IEnumerator Run()
     belt.Select(0);
     for (int i = 0; i < 100 && !belt.IsRaised; i++) yield return wait;
     yield return Frames(5);
-    log.Append($" BARRETA (con el traje): pose \"{arms.Pose}\", manos {ActiveHands()} ({ActiveSleeves()}); la mano más cerca de cada agarre: derecha a {GripGap("Agarre_Derecha"):0.0} cm, izquierda a {GripGap("Agarre_Izquierda"):0.0} cm.");
+    log.Append($" BARRETA (con el traje): pose \"{arms.Pose}\", manos {ActiveHands()} ({ActiveSleeves()}); la mano a {GripGap("Agarre_Derecha"):0.0} cm del agarre.");
     gear.SetSuit(false);
     yield return Frames(3);
     log.Append($" SIN EL TRAJE: {ActiveSleeves()}.");
@@ -74,6 +74,41 @@ System.Collections.IEnumerator Run()
     float lag = UnityEngine.Quaternion.Angle(root.localRotation, UnityEngine.Quaternion.identity);
     yield return Frames(40);
     log.Append($" GIRAR 25°: las manos quedaron {lag:0.0}° atrás; al rato {UnityEngine.Quaternion.Angle(root.localRotation, UnityEngine.Quaternion.identity):0.0}°.");
+
+    // El ritmo del balanceo: caminando y corriendo de verdad (W y Shift), se cuentan los pasos (cada bajada de las manos).
+    var inputSettings = UnityEngine.InputSystem.InputSystem.settings;
+    var oldBehavior = inputSettings.editorInputBehaviorInPlayMode; var oldBackground = inputSettings.backgroundBehavior;
+    inputSettings.editorInputBehaviorInPlayMode = UnityEngine.InputSystem.InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
+    inputSettings.backgroundBehavior = UnityEngine.InputSystem.InputSettings.BackgroundBehavior.IgnoreFocus;
+    var keyboard = UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>("PruebaTeclado");
+    var cadence = new float[2]; var speeds = new float[2]; var runPose = new float[2];
+    for (int mode = 0; mode < 2; mode++)
+    {
+        motor.TeleportTo(body.position + body.rotation * new UnityEngine.Vector3(0f, 1.05f, -8.5f), body);
+        motor.SetYaw(train.transform.eulerAngles.y); // hacia la cabina: 17 m de pasillo
+        yield return Frames(10);
+        var keys = mode == 0 ? new UnityEngine.InputSystem.LowLevel.KeyboardState(UnityEngine.InputSystem.Key.W)
+                             : new UnityEngine.InputSystem.LowLevel.KeyboardState(UnityEngine.InputSystem.Key.W, UnityEngine.InputSystem.Key.LeftShift);
+        UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard, keys);
+        float t = 0f, lastY = 0f, lastDy = 0f, firstDip = -1f, lastDip = -1f, dist = 0f; int dips = 0;
+        var start = motor.transform.position;
+        while (t < 2.0f)
+        {
+            yield return null; t += UnityEngine.Time.deltaTime;
+            float y = root.localPosition.y, dy = y - lastY;
+            if (t > 0.5f && lastDy < 0f && dy >= 0f) { dips++; if (firstDip < 0f) firstDip = t; lastDip = t; }
+            lastY = y; lastDy = dy;
+            runPose[mode] = rig.RunWeight;
+        }
+        dist = UnityEngine.Vector3.Distance(start, motor.transform.position);
+        UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard, new UnityEngine.InputSystem.LowLevel.KeyboardState());
+        cadence[mode] = dips > 1 ? (dips - 1) / (lastDip - firstDip) : 0f;
+        speeds[mode] = dist / 2.0f;
+        yield return Frames(30);
+    }
+    UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);
+    inputSettings.editorInputBehaviorInPlayMode = oldBehavior; inputSettings.backgroundBehavior = oldBackground;
+    log.Append($" RITMO: caminando a {speeds[0]:0.0} m/s, {cadence[0]:0.0} pasos por segundo; corriendo a {speeds[1]:0.0} m/s, {cadence[1]:0.0} pasos por segundo (pose de correr {runPose[1]:0.0}).");
 
     // El martillo: una mano.
     belt.Select(3);

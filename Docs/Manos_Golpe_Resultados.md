@@ -83,3 +83,25 @@ Ver `Docs/Manos_Pedido_Arte.md`: medidas, orígenes, vacíos, nombres de objetos
 - Golpes distintos al azar (dos o tres variantes por herramienta).
 - Sonido de esfuerzo al cargar el golpe.
 - El arte final de todo.
+
+## Segunda vuelta (2026-10-16, después de que Tomi lo probara)
+Tomi: "que la barreta la agarre con una mano; además al correr la animación queda rara, como si fuera en velocidad x2".
+
+- **La barreta va con una mano** (DECISIÓN de Tomi):
+  - se sostiene como un garrote, del lado derecho, con la uña arriba y adelante: no tapa el centro de la vista;
+  - el golpe sube sobre el hombro derecho y baja en diagonal hacia el centro;
+  - la casilla dejó de ser "de dos manos" en `Data/Equipment/Herramientas.asset`.
+- **El ritmo al caminar y correr**:
+  - **Qué pasaba**: el balanceo avanzaba por metros, con un paso de 75 cm. El jugador camina a 3,5 m/s y corre a 6,5 m/s, así que daba unos 4,7 pasos por segundo caminando y casi 9 corriendo. Por eso parecía a velocidad doble.
+  - **Ahora** sigue un ritmo de pasos de persona: 1,9 por segundo caminando y 2,7 corriendo, con un poco más de balanceo al correr.
+  - **Pose de correr**: corriendo, la herramienta baja, se acerca y se inclina, como en los juegos en primera persona.
+  - Los valores están en `Data/Equipment/Manos.asset`.
+- **El agarre y el encuadre**:
+  - las herramientas de una mano (barreta, martillo, llave, sierra) subieron para que la mano se vea entera;
+  - los hombros bajaron y fueron más atrás: el antebrazo entra en diagonal desde la esquina, en vez de verse de punta.
+- **Barreta nueva con el kit de arte del proyecto** (skill de props, categoría A: de mano, sin nieve, pivote en el agarre). La hizo `Fuentes/Scripts_Manos/barreta_mr04.py`:
+  - una sola pieza continua: punta de cincel aplanada y doblada unos 12°, hierro hexagonal de 22 mm, cuello de ganso de 150°, uña aplanada partida en V;
+  - **la cinta negra del mango** (`MT_Goma`), donde va la mano: la guía de arte la sugiere para los objetos de mano;
+  - el cuerpo en pintura roja y las puntas de metal gastado;
+  - 568 triángulos (el límite de un objeto de mano es 1.500), malla cerrada, sin caras rotas.
+- **Pruebas**: `h7_brazos` mide ahora el ritmo caminando y corriendo de verdad (con W y Shift): 1,9 y 2,7 pasos por segundo, pose de correr 1,0. La barreta va con una mano, a 0,0 cm del agarre. `h1_herramientas` y `m7_desmontaje` pasan igual que antes.

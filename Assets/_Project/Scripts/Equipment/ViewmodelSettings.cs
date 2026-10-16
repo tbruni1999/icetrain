@@ -19,10 +19,20 @@ namespace SurvivalEnTren.Equipment
         [SerializeField, Range(0f, 0.05f)] private float bobVertical = 0.012f;
         [Tooltip("Cuánto va de lado a lado con cada paso, en metros.")]
         [SerializeField, Range(0f, 0.05f)] private float bobHorizontal = 0.009f;
-        [Tooltip("Largo de un paso, en metros (un ciclo de lado a lado son dos pasos).")]
-        [SerializeField, Range(0.3f, 1.5f)] private float stepLengthMeters = 0.75f;
+        [Tooltip("Pasos por segundo caminando (el ritmo del balanceo; una persona camina a unos 2 pasos por segundo).")]
+        [SerializeField, Range(0.5f, 5f)] private float walkStepsPerSecond = 1.9f;
+        [Tooltip("Pasos por segundo corriendo (corriendo se dan pasos más largos, no muchos más: menos de 3 por segundo).")]
+        [SerializeField, Range(0.5f, 5f)] private float runStepsPerSecond = 2.7f;
         [Tooltip("Cuánto más se balancea corriendo.")]
-        [SerializeField, Range(1f, 3f)] private float runBobMultiplier = 1.7f;
+        [SerializeField, Range(1f, 3f)] private float runBobMultiplier = 1.35f;
+
+        [Header("Corriendo")]
+        [Tooltip("Corriendo, la herramienta baja y se acerca un poco (metros: derecha, arriba, adelante).")]
+        [SerializeField] private Vector3 runOffset = new Vector3(0.02f, -0.05f, -0.03f);
+        [Tooltip("Corriendo, la herramienta se inclina (grados).")]
+        [SerializeField] private Vector3 runRotation = new Vector3(12f, -10f, 8f);
+        [Tooltip("Qué tan rápido entra y sale la pose de correr (1 = un segundo).")]
+        [SerializeField, Range(1f, 20f)] private float runBlendSpeed = 6f;
 
         [Header("Retraso al girar")]
         [Tooltip("Qué tan rápido alcanzan las manos a la mirada (más alto = más pegadas).")]
@@ -46,7 +56,11 @@ namespace SurvivalEnTren.Equipment
         public float FieldOfView => fieldOfView;
         public float BobVertical => bobVertical;
         public float BobHorizontal => bobHorizontal;
-        public float StepLengthMeters => stepLengthMeters;
+        public float WalkStepsPerSecond => walkStepsPerSecond;
+        public float RunStepsPerSecond => runStepsPerSecond;
+        public Vector3 RunOffset => runOffset;
+        public Vector3 RunRotation => runRotation;
+        public float RunBlendSpeed => runBlendSpeed;
         public float RunBobMultiplier => runBobMultiplier;
         public float SwayFollowSpeed => swayFollowSpeed;
         public float SwayMaxDegrees => swayMaxDegrees;

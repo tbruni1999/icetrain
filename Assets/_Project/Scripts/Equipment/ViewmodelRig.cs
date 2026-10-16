@@ -24,6 +24,7 @@ namespace SurvivalEnTren.Equipment
         private Quaternion _restRotation;
         private float _stepPhase;
         private float _bobWeight;
+        private float _runWeight;
         private Quaternion _lagged = Quaternion.identity;
         private Quaternion _lastHead = Quaternion.identity;
         private Vector3 _kick, _kickVelocity;
@@ -32,6 +33,10 @@ namespace SurvivalEnTren.Equipment
         public ViewmodelSettings Settings => settings;
         /// <summary>El empujón de cámara ahora (grados: arriba-abajo, izquierda-derecha, inclinación).</summary>
         public Vector3 KickDegrees => _kick;
+        /// <summary>Cuántos pasos por segundo marca el balanceo ahora (para las pruebas).</summary>
+        public float StepsPerSecond => Mathf.Lerp(settings.WalkStepsPerSecond, settings.RunStepsPerSecond, _runWeight);
+        /// <summary>Qué tanto está en pose de correr (0 a 1).</summary>
+        public float RunWeight => _runWeight;
 
         private void Awake()
         {
@@ -58,19 +63,21 @@ namespace SurvivalEnTren.Equipment
             _kick += _kickVelocity * dt;
             if (look != null) look.Kick = Quaternion.Euler(_kick);
 
-            // Balanceo al caminar: avanza con lo que se camina (no con el tren: con la intención de caminar).
+            // Balanceo al caminar: al ritmo de los pasos de una persona (no de los metros: el jugador camina rápido y corriendo
+            // daba casi 9 pasos por segundo). Cuenta la intención de caminar, no el tren.
             Vector3 walk = motor.WalkVelocity;
             float speed = new Vector2(walk.x, walk.z).magnitude;
             bool walking = motor.IsGrounded && speed > 0.2f;
             _bobWeight = Mathf.MoveTowards(_bobWeight, walking ? 1f : 0f, dt * 4f);
-            _stepPhase += speed * dt / settings.StepLengthMeters * Mathf.PI;
+            _runWeight = Mathf.MoveTowards(_runWeight, walking && motor.IsRunning ? 1f : 0f, dt * settings.RunBlendSpeed);
+            float stepsPerSecond = Mathf.Lerp(settings.WalkStepsPerSecond, settings.RunStepsPerSecond, _runWeight);
+            if (walking) _stepPhase += stepsPerSecond * dt * Mathf.PI; // medio ciclo de lado a lado por paso
         }
 
         private void LateUpdate()
         {
             if (root == null || Time.deltaTime <= 0f) return;
-            float run = motor.IsRunning ? settings.RunBobMultiplier : 1f;
-            float w = _bobWeight * run;
+            float w = _bobWeight * Mathf.Lerp(1f, settings.RunBobMultiplier, _runWeight);
             Vector3 bob = new Vector3(Mathf.Sin(_stepPhase) * settings.BobHorizontal, -Mathf.Abs(Mathf.Cos(_stepPhase)) * settings.BobVertical, 0f) * w;
 
             // Retraso al girar: las manos siguen a la cabeza con un poco de demora (en espacio de la cabeza).
@@ -82,8 +89,10 @@ namespace SurvivalEnTren.Equipment
             float angle = Quaternion.Angle(Quaternion.identity, _lagged);
             if (angle > settings.SwayMaxDegrees) _lagged = Quaternion.Slerp(Quaternion.identity, _lagged, settings.SwayMaxDegrees / angle);
 
-            root.localPosition = _restPosition + bob;
-            root.localRotation = _lagged * _restRotation;
+            // Corriendo: la herramienta baja, se acerca y se inclina un poco.
+            float r = Mathf.SmoothStep(0f, 1f, _runWeight);
+            root.localPosition = _restPosition + bob + settings.RunOffset * r;
+            root.localRotation = _lagged * _restRotation * Quaternion.Euler(settings.RunRotation * r);
         }
     }
 }

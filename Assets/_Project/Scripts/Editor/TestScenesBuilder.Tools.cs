@@ -63,9 +63,10 @@ namespace SurvivalEnTren.EditorTools
             Material steel = LibraryMaterial("MT_AceroOscuro") ?? Mat("Barreta_Acero", new Color(0.18f, 0.19f, 0.2f));
             Material paint = LibraryMaterial("MT_PinturaRoja") ?? Mat("Barreta_Pintura", new Color(0.6f, 0.12f, 0.08f));
             var crowbar = Group("Mano_Barreta", hands);
-            // En diagonal delante del cuerpo, con las dos manos: la derecha abajo, la izquierda más arriba y al centro; la uña adelante.
-            crowbar.localPosition = new Vector3(0.22f, -0.33f, 0.44f);
-            Vector3 crowbarDir = new Vector3(-0.5f, 0.75f, 0.45f).normalized;
+            // Con una mano (decisión de Tomi del 2026-10-16), como un garrote: la derecha abajo a la derecha, la barra hacia
+            // arriba, adelante y apenas al centro, la uña adelante.
+            crowbar.localPosition = new Vector3(0.2f, -0.2f, 0.42f);
+            Vector3 crowbarDir = new Vector3(0.18f, 0.62f, 0.76f).normalized;
             crowbar.localRotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(Vector3.forward, crowbarDir), crowbarDir);
             if (!ArtTool(crowbar, "Barreta")) // desde el 2026-10-16, el modelo de Fuentes/Scripts_Manos (hasta el arte final)
             {
@@ -75,7 +76,7 @@ namespace SurvivalEnTren.EditorTools
 
             // Sierra: la del arte del vagón (la misma que cuelga en el taller), con la hoja hacia adelante.
             var saw = Group("Mano_Sierra", hands);
-            saw.localPosition = new Vector3(0.22f, -0.19f, 0.42f);
+            saw.localPosition = new Vector3(0.2f, -0.16f, 0.42f);
             saw.localRotation = Quaternion.Euler(14f, -12f, 0f);
             GameObject wagonArt = InstantiateArt(WagonArtPath, saw);
             Transform artSaw = wagonArt != null ? wagonArt.transform.Find("Sierra") : null;
@@ -96,8 +97,9 @@ namespace SurvivalEnTren.EditorTools
 
             // Martillo (H4): mango de madera y cabeza de acero (sin arte todavía).
             var hammer = Group("Mano_Martillo", hands);
-            hammer.localPosition = new Vector3(0.24f, -0.27f, 0.45f);
-            hammer.localRotation = Quaternion.Euler(30f, -14f, -10f);
+            hammer.localPosition = new Vector3(0.2f, -0.2f, 0.42f);
+            Vector3 hammerDir = new Vector3(0.1f, 0.82f, 0.56f).normalized; // el mango hacia arriba y adelante, la cabeza a la vista
+            hammer.localRotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(Vector3.forward, hammerDir), hammerDir);
             Material handle = LibraryMaterial("MT_Madera") ?? Mat("Martillo_Mango", new Color(0.55f, 0.4f, 0.24f));
             if (!ArtTool(hammer, "Martillo"))
             {
@@ -107,7 +109,7 @@ namespace SurvivalEnTren.EditorTools
 
             // Llave de montaje (2026-10-16): una llave fija larga, de acero, con una boca en cada punta (sin arte todavía).
             var wrench = Group("Mano_Llave", hands);
-            wrench.localPosition = new Vector3(0.24f, -0.25f, 0.42f);
+            wrench.localPosition = new Vector3(0.2f, -0.19f, 0.4f);
             wrench.localRotation = Quaternion.Euler(30f, -14f, -10f);
             if (!ArtTool(wrench, "Llave"))
             {

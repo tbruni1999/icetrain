@@ -19,12 +19,12 @@ MonoBehaviour:
     swingSeconds: 0.75
     hitAt: 0.42
     reachMeters: 2.2
-    windupPosition: {x: 0.1, y: 0.22, z: 0.02}
-    windupRotation: {x: -55, y: 0, z: -25}
-    strikePosition: {x: -0.12, y: -0.04, z: 0.2}
-    strikeRotation: {x: 35, y: 0, z: 15}
+    windupPosition: {x: 0.06, y: 0.2, z: -0.03}
+    windupRotation: {x: -62, y: 0, z: -22}
+    strikePosition: {x: -0.08, y: -0.03, z: 0.16}
+    strikeRotation: {x: 48, y: 0, z: 24}
     kickDegrees: 2.5
-    twoHanded: 1
+    twoHanded: 0
   - label: SIERRA
     kind: 0
     gear: 2

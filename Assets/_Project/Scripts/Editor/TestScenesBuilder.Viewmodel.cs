@@ -78,17 +78,19 @@ namespace SurvivalEnTren.EditorTools
             {
                 SerializedProperty slot = slots.GetArrayElementAtIndex(i);
                 if (slot.FindPropertyRelative("kind").enumValueIndex != (int)HandSlotKind.Gear) continue;
-                // Solo si no se ajustó a mano: vacío, o los valores de la primera versión (que estaban en los ejes del modelo).
+                // Solo si no se ajustó a mano: vacío, o valores de versiones anteriores de este armado (la primera estaba en los
+                // ejes del modelo; la barreta con dos manos quedó vieja: desde el 2026-10-16 va con una).
                 Vector3 current = slot.FindPropertyRelative("windupRotation").vector3Value;
-                bool firstVersion = current == new Vector3(-65f, -10f, 25f) || current == new Vector3(-8f, 0f, 0f) || current == new Vector3(-70f, 0f, -25f) ||
-                                    current == new Vector3(-70f, 0f, 10f) || current == new Vector3(-20f, 0f, 35f);
-                if (current != Vector3.zero && !firstVersion) continue;
+                bool oldVersion = current == new Vector3(-65f, -10f, 25f) || current == new Vector3(-8f, 0f, 0f) ||
+                                  current == new Vector3(-70f, 0f, -25f) || current == new Vector3(-55f, 0f, -25f) ||
+                                  current == new Vector3(-70f, 0f, 10f) || current == new Vector3(-20f, 0f, 35f);
+                if (current != Vector3.zero && !oldVersion) continue;
                 Vector3 wp, wr, sp, sr;
                 float kick;
                 bool two = false;
                 switch ((GearId)slot.FindPropertyRelative("gear").enumValueIndex)
                 {
-                    case GearId.Crowbar: wp = new Vector3(0.1f, 0.22f, 0.02f); wr = new Vector3(-55f, 0f, -25f); sp = new Vector3(-0.12f, -0.04f, 0.2f); sr = new Vector3(35f, 0f, 15f); kick = 2.5f; two = true; break;
+                    case GearId.Crowbar: wp = new Vector3(0.06f, 0.2f, -0.03f); wr = new Vector3(-62f, 0f, -22f); sp = new Vector3(-0.08f, -0.03f, 0.16f); sr = new Vector3(48f, 0f, 24f); kick = 2.5f; two = false; break; // con una mano (Tomi, 2026-10-16)
                     case GearId.Saw: wp = new Vector3(0f, 0.02f, -0.14f); wr = new Vector3(-5f, 0f, 0f); sp = new Vector3(0f, -0.04f, 0.2f); sr = new Vector3(8f, 0f, 0f); kick = 0.6f; break;
                     case GearId.Hammer: wp = new Vector3(0.04f, 0.22f, -0.08f); wr = new Vector3(-75f, 0f, -10f); sp = new Vector3(-0.04f, -0.05f, 0.16f); sr = new Vector3(50f, 0f, 5f); kick = 1.6f; break;
                     case GearId.Wrench: wp = new Vector3(0.02f, 0.04f, -0.04f); wr = new Vector3(0f, 0f, 30f); sp = new Vector3(-0.02f, -0.02f, 0.12f); sr = new Vector3(20f, 0f, -35f); kick = 0.8f; break;
@@ -166,7 +168,7 @@ namespace SurvivalEnTren.EditorTools
             {
                 var root = Group(left ? "Brazo_Izquierdo" : "Brazo_Derecho", hands);
                 var shoulder = Group("Hombro", root);
-                shoulder.localPosition = new Vector3(left ? -0.3f : 0.3f, -0.5f, -0.1f); // abajo y atrás: la manga no tapa la vista
+                shoulder.localPosition = new Vector3(left ? -0.38f : 0.38f, -0.62f, -0.18f); // abajo y atrás: la manga no tapa la vista
                 SerializedProperty side = so.FindProperty(left ? "left" : "right");
                 side.FindPropertyRelative("shoulder").objectReferenceValue = shoulder;
                 side.FindPropertyRelative("isLeft").boolValue = left;

@@ -7,6 +7,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: MT_Goma
+    second: {fileID: 2100000, guid: d7127667794bb9344895352272ddf892, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: MT_MetalGastado
     second: {fileID: 2100000, guid: 5668e2e3d30db5e4fa660f1886def029, type: 2}
   - first:

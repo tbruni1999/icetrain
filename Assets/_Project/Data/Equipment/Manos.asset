@@ -16,7 +16,7 @@ MonoBehaviour:
   bobVertical: 0.012
   bobHorizontal: 0.009
   stepLengthMeters: 0.75
-  runBobMultiplier: 1.7
+  runBobMultiplier: 1.35
   swayFollowSpeed: 11
   swayMaxDegrees: 5
   kickStiffness: 220

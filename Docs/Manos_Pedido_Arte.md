@@ -15,7 +15,7 @@ Claude hizo versiones provisorias en Blender (`Fuentes/Scripts_Manos/`). Ya est�
 - Son **piezas rígidas**, sin esqueleto: brazo, antebrazo y mano. El juego las acomoda solo cada cuadro:
   - pone la mano en el mango de la herramienta;
   - calcula el codo para que el brazo llegue desde el hombro.
-- Se modela **un solo brazo**. Hoy la mano del modelo es una **mano izquierda** y la derecha es la misma espejada. Si las finales vienen como mano derecha, avisar: es un solo valor en el armado.
+- Se modela **un solo brazo**. Desde el 2026-10-16 todas las herramientas se agarran con una mano. Hoy la mano del modelo es una **mano izquierda** y la derecha es la misma espejada. Si las finales vienen como mano derecha, avisar: es un solo valor en el armado.
 - Todo se dibuja con su propia cámara, encima de la escena. No hace falta cuidar choques con paredes.
 
 ## Archivo de brazos: `Assets/_Project/Art/Manos/Manos.fbx`
@@ -47,12 +47,12 @@ Exportar como los props: escala y ejes horneados, igual que `Fuentes/Scripts_Pul
 - Cada herramienta tiene el **origen donde la agarra la mano derecha**, y su largo a lo largo de +Z.
 - Vacíos que lee el juego:
   - `Agarre_Derecha`: en el origen.
-  - `Agarre_Izquierda`: dónde va la otra mano, solo la barreta.
+  - `Agarre_Izquierda`: dónde iría la otra mano (hoy ninguna herramienta se agarra con dos).
   - `Punta`: lo que golpea, para efectos futuros.
 
 | Archivo | Qué es | Medidas | Materiales hoy |
 |---|---|---|---|
-| `Barreta.fbx` | barreta de demolición: hierro hexagonal de 22 mm, cuello de ganso de unos 115°, uña partida en V, punta recta de cincel | 75 cm; `Agarre_Derecha` a 8 cm de la punta recta; `Agarre_Izquierda` 24 cm más arriba | `MT_PinturaRoja` (gastada en los agarres), `MT_MetalGastado` en las puntas |
+| `Barreta.fbx` | barreta de demolición: hierro hexagonal de 22 mm, cuello de ganso de unos 150°, uña aplanada partida en V, punta de cincel aplanada y doblada unos 12°, cinta negra en el mango | unos 78 cm; se agarra con UNA mano (decisión de Tomi del 2026-10-16): `Agarre_Derecha` en el medio de la cinta, a unos 15 cm de la punta de cincel | `MT_PinturaRoja`, `MT_MetalGastado` en las puntas, `MT_Goma` en la cinta (hoy: 568 triángulos, hecha con el skill de props: `Fuentes/Scripts_Manos/barreta_mr04.py`) |
 | `Martillo.fbx` | martillo de herrero de pena cruzada, de alrededor de 1 kg | 33 cm; agarre a 6 cm del extremo del mango | `MT_Madera`, `MT_AceroOscuro` |
 | `Llave.fbx` | llave combinada: boca abierta y estrella | 28 cm; agarre a 10 cm de la boca abierta | `MT_AceroGalvanizado` |
 
