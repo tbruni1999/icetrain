@@ -153,7 +153,7 @@ System.Collections.IEnumerator Run()
                 if (shelf.FindFreeSpot(piece.Item, out int x, out int y, out bool rot))
                 {
                     backpack.Grid.Remove(piece);
-                    shelf.TryPlace(piece.Item, x, y, rot);
+                    shelf.TryPlace(piece.Item, x, y, rot, piece.Count);
                     stored++;
                     break;
                 }
@@ -165,7 +165,7 @@ System.Collections.IEnumerator Run()
         foreach (var piece in new System.Collections.Generic.List<SurvivalEnTren.Items.GridItem>(backpack.Grid.Items))
         {
             backpack.Grid.Remove(piece);
-            SurvivalEnTren.Items.MaterialBundle.Spawn(bundleSettings, piece.Item, 1, trainBody.position + trainBody.rotation * new UnityEngine.Vector3(0.9f, 1.4f, 0.6f + 0.25f * (dropped % 4)), trainBody.linearVelocity);
+            SurvivalEnTren.Items.MaterialBundle.Spawn(bundleSettings, piece.Item, piece.Count, trainBody.position + trainBody.rotation * new UnityEngine.Vector3(0.9f, 1.4f, 0.6f + 0.25f * (dropped % 4)), trainBody.linearVelocity);
             dropped++;
         }
         // El banco arma con lo de la mochila, los estantes y el piso del tren.

@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5fed7d2a5666e549a6131bc49adfab0, type: 3}
+  m_Name: Chatarra
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalEnTren.Items.ItemDefinition
+  id: item_chatarra
+  displayName: chatarra
+  pieceName: chatarra
+  weightKg: 1.5
+  sizeCells: {x: 2, y: 1}
+  canRotate: 1
+  maxStack: 20
+  icon: {fileID: 6181211387512619082, guid: ebf20237b22d326408f6ce40061b66f2, type: 3}
+  color: {r: 0.5, g: 0.42, b: 0.35, a: 1}

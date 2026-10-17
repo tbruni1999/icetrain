@@ -273,7 +273,7 @@ namespace SurvivalEnTren.Save
         private static void CaptureGrid(ItemGrid grid, List<GridEntry> into)
         {
             foreach (GridItem piece in grid.Items)
-                into.Add(new GridEntry { item = piece.Item.Id, x = piece.X, y = piece.Y, rotated = piece.Rotated });
+                into.Add(new GridEntry { item = piece.Item.Id, x = piece.X, y = piece.Y, rotated = piece.Rotated, count = piece.Count });
         }
 
         // ---------------------------------------------------------------- Cargar
@@ -496,7 +496,10 @@ namespace SurvivalEnTren.Save
             {
                 ItemDefinition item = ItemById(entry.item);
                 if (item == null) continue;
-                if (grid.TryPlace(item, entry.x, entry.y, entry.rotated) == null) grid.TryAutoPlace(item); // por si cambió el tamaño
+                int count = Mathf.Max(1, entry.count);
+                GridItem placed = grid.TryPlace(item, entry.x, entry.y, entry.rotated, count);
+                int rest = placed != null ? count - placed.Count : count; // por si cambió el tamaño de la cuadrícula o de la pila
+                if (rest > 0) grid.AddUnits(item, rest);
             }
         }
 
@@ -517,8 +520,7 @@ namespace SurvivalEnTren.Save
         }
 
         // Adentro del tren (coordenadas locales del tren): de pared a pared y del piso al techo.
-        private static bool InsideTrain(Vector3 local) =>
-            Mathf.Abs(local.x) < 1.75f && Mathf.Abs(local.z) < 9.6f && local.y > 0.6f && local.y < 3.6f;
+        private static bool InsideTrain(Vector3 local) => TrainInterior.Contains(local);
 
         private Vector3 OriginOffset => origin != null ? new Vector3((float)origin.AbsoluteOriginX, 0f, (float)origin.AbsoluteOriginZ) : Vector3.zero;
         private Vector3 ToAbsolute(Vector3 world) => world + OriginOffset;

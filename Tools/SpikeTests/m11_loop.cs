@@ -162,7 +162,7 @@ System.Collections.IEnumerator Contribute()
         {
             if (shelf.StableId != "storage_tren_estante_precario_001" || shelf.Grid == null) continue;
             foreach (var piece in new System.Collections.Generic.List<SurvivalEnTren.Items.GridItem>(backpack.Grid.Items))
-                if (shelf.Grid.FindFreeSpot(piece.Item, out int sx, out int sy, out bool sr)) { backpack.Grid.Remove(piece); shelf.Grid.TryPlace(piece.Item, sx, sy, sr); }
+                if (shelf.Grid.FindFreeSpot(piece.Item, out int sx, out int sy, out bool sr)) { backpack.Grid.Remove(piece); shelf.Grid.TryPlace(piece.Item, sx, sy, sr, piece.Count); }
         }
         // Lo que no entró en el estante se deja en el piso del tren (el banco también lo usa).
         var dropSettings = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.BackpackSettings>("Assets/_Project/Data/Items/BackpackSettings.asset");
@@ -171,7 +171,7 @@ System.Collections.IEnumerator Contribute()
         foreach (var piece in new System.Collections.Generic.List<SurvivalEnTren.Items.GridItem>(backpack.Grid.Items))
         {
             backpack.Grid.Remove(piece);
-            SurvivalEnTren.Items.MaterialBundle.Spawn(dropSettings, piece.Item, 1, floorRb.position + floorRb.rotation * new UnityEngine.Vector3(0.9f, 1.4f, 0.4f + 0.25f * (floorDrops++ % 5)), floorRb.linearVelocity);
+            SurvivalEnTren.Items.MaterialBundle.Spawn(dropSettings, piece.Item, piece.Count, floorRb.position + floorRb.rotation * new UnityEngine.Vector3(0.9f, 1.4f, 0.4f + 0.25f * (floorDrops++ % 5)), floorRb.linearVelocity);
         }
         var recipe = new SurvivalEnTren.Crafting.BenchRecipe(site, site.Level);
         if (kitBench.Check(recipe, backpack, kitGear) != SurvivalEnTren.Crafting.CraftBlock.None) break;

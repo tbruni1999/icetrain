@@ -64,7 +64,7 @@ namespace SurvivalEnTren.Items
         private float _pressTime;
         private Vector2 _pressPos;
         private Rect _area;
-        private GUIStyle _label, _small, _tip;
+        private GUIStyle _label, _small, _tip, _count;
         private Texture2D _plate;
 
         public bool IsOpen => _open;
@@ -184,7 +184,7 @@ namespace SurvivalEnTren.Items
 
             if (_other == null)
             {
-                // Solo la mochila: soltar la pieza (o todas las del mismo material) en el piso.
+                // Solo la mochila: soltar la pila (o todo lo del mismo material) en el piso.
                 if (all) DropAllOfMaterial(view, item);
                 else DropToWorld(piece, view);
             }
@@ -213,25 +213,38 @@ namespace SurvivalEnTren.Items
 
         // ---------------------------------------------------------------- Mover piezas (lo usan el mouse, el teclado y las pruebas)
 
-        /// <summary>Pasa una pieza de una cuadrícula a otra en la primera posición libre. Devuelve si pudo.</summary>
+        /// <summary>
+        /// Pasa una pila de una cuadrícula a otra: completa las pilas del mismo material que haya del otro lado y lo demás va al
+        /// primer lugar libre. Lo que no entra se queda donde estaba. Devuelve si pasó algo.
+        /// </summary>
         private bool TransferAuto(GridItem piece, GridView from, GridView to)
         {
-            if (!to.Grid.FindFreeSpot(piece.Item, out int x, out int y, out bool rotated)) return false;
-            if (!from.Grid.Remove(piece)) return false;
-            to.Grid.TryPlace(piece.Item, x, y, rotated);
-            return true;
+            int moved = to.Grid.AddUnits(piece.Item, piece.Count);
+            if (moved > 0) from.Grid.TakeFrom(piece, moved);
+            return moved > 0;
         }
 
         /// <summary>
-        /// Mueve una pieza a una posición exacta (y la gira si se pide), en la misma cuadrícula o en la otra del panel.
-        /// Devuelve si pudo; si no entra, no cambia nada.
+        /// Mueve una pila a una posición exacta (y la gira si se pide), en la misma cuadrícula o en la otra del panel. Si ahí hay
+        /// una pila del mismo material, se le suma lo que entre (el resto queda donde estaba). Devuelve si pudo; si no entra, no
+        /// cambia nada.
         /// </summary>
         public bool TryMovePiece(GridItem piece, ItemGrid from, ItemGrid to, int x, int y, bool rotated)
         {
+            GridItem there = to.ItemAt(x, y);
+            if (there != null && there != piece && there.Item == piece.Item)
+            {
+                int put = to.AddToStack(there, piece.Count);
+                if (put <= 0) return false;
+                from.TakeFrom(piece, put);
+                return true;
+            }
             if (from == to) return from.TryMove(piece, x, y, rotated);
             if (!to.CanPlace(piece.Item, x, y, rotated)) return false;
+            ItemDefinition item = piece.Item;
+            int count = piece.Count;
             if (!from.Remove(piece)) return false;
-            to.TryPlace(piece.Item, x, y, rotated);
+            to.TryPlace(item, x, y, rotated, count);
             return true;
         }
 
@@ -239,11 +252,12 @@ namespace SurvivalEnTren.Items
         {
             if (!from.IsPlayerPack) { Say("del mueble no se tira al piso"); return; }
             ItemDefinition item = piece.Item;
+            int units = piece.Count;
             if (!from.Grid.Remove(piece)) return;
-            SpawnBundle(item, 1);
+            SpawnBundle(item, units);
         }
 
-        /// <summary>Suelta una pieza de la mochila al piso (un bulto de 1). Devuelve si pudo.</summary>
+        /// <summary>Suelta una pila de la mochila al piso (un bulto con todas sus piezas). Devuelve si pudo.</summary>
         public bool DropPiece(GridItem piece)
         {
             if (!System.Linq.Enumerable.Contains(backpack.Grid.Items, piece)) return false;
@@ -258,8 +272,8 @@ namespace SurvivalEnTren.Items
             foreach (GridItem candidate in new System.Collections.Generic.List<GridItem>(from.Grid.Items))
             {
                 if (candidate.Item != item) continue;
+                units += candidate.Count;
                 from.Grid.Remove(candidate);
-                units++;
             }
             if (units > 0) SpawnBundle(item, units);
             return units;
@@ -351,7 +365,7 @@ namespace SurvivalEnTren.Items
             {
                 if (piece == _dragItem) continue; // la que se arrastra se dibuja con el mouse
                 Rect r = PieceRect(view, piece.X, piece.Y, piece.Size);
-                DrawPiece(r, piece.Item, piece.Rotated, 1f);
+                DrawPiece(r, piece.Item, piece.Rotated, 1f, piece.Count);
             }
 
             // Cursor del teclado.
@@ -380,7 +394,15 @@ namespace SurvivalEnTren.Items
             new Rect(view.Origin.x + x * Cell + 1f, view.Origin.y + y * Cell + 1f, size.x * Cell - 2f, size.y * Cell - 2f);
 
         // Una pieza: fondo del color del material, su imagen (girada si hace falta) y, si no hay imagen, el nombre.
-        private void DrawPiece(Rect r, ItemDefinition item, bool rotated, float alpha)
+        // Los textos "×N" de las pilas, armados una sola vez (dibujar no genera memoria nueva en cada cuadro).
+        private static readonly System.Collections.Generic.Dictionary<int, string> CountTexts = new System.Collections.Generic.Dictionary<int, string>();
+        private static string CountText(int count)
+        {
+            if (!CountTexts.TryGetValue(count, out string text)) CountTexts[count] = text = "×" + count;
+            return text;
+        }
+
+        private void DrawPiece(Rect r, ItemDefinition item, bool rotated, float alpha, int count = 1)
         {
             GUI.color = new Color(item.Color.r * 0.35f, item.Color.g * 0.35f, item.Color.b * 0.35f, 0.85f * alpha);
             GUI.DrawTexture(r, Texture2D.whiteTexture);
@@ -410,6 +432,16 @@ namespace SurvivalEnTren.Items
             {
                 GUI.color = new Color(1f, 1f, 1f, alpha);
                 GUI.Label(r, item.PieceName, _small);
+            }
+            if (count > 1)
+            {
+                // Cuántas hay en la pila, abajo a la derecha (con sombra para leerse sobre cualquier dibujo).
+                var label = new Rect(r.x, r.y, r.width - 4f, r.height - 2f);
+                GUI.color = new Color(0f, 0f, 0f, 0.8f * alpha);
+                string text = CountText(count);
+                GUI.Label(new Rect(label.x + 1f, label.y + 1f, label.width, label.height), text, _count);
+                GUI.color = new Color(1f, 1f, 1f, alpha);
+                GUI.Label(label, text, _count);
             }
             GUI.color = Color.white;
         }
@@ -572,7 +604,7 @@ namespace SurvivalEnTren.Items
             }
 
             var r = new Rect(mouse.x - size.x * Cell * 0.5f, mouse.y - size.y * Cell * 0.5f, size.x * Cell, size.y * Cell);
-            DrawPiece(r, _dragItem.Item, _dragRotated, 0.9f);
+            DrawPiece(r, _dragItem.Item, _dragRotated, 0.9f, _dragItem.Count);
         }
 
         private void DrawFooter(Rect area, Vector2 mouse)
@@ -593,8 +625,9 @@ namespace SurvivalEnTren.Items
             else if (hover != null)
             {
                 ItemDefinition item = hover.Item;
+                string stack = item.MaxStack > 1 ? $"   ·   pila {hover.Count}/{item.MaxStack}, {hover.MassKg:0.0} kg" : "";
                 GUI.Label(new Rect(area.x + Pad, y, area.width - 2f * Pad, 24f),
-                    $"{item.PieceName} de {item.DisplayName}   ·   {item.SizeCells.x}×{item.SizeCells.y} casillas   ·   {item.WeightKg:0.0} kg", _tip);
+                    $"{item.PieceName} de {item.DisplayName}   ·   {item.SizeCells.x}×{item.SizeCells.y} casillas   ·   {item.WeightKg:0.0} kg c/u{stack}", _tip);
             }
             _small.normal.textColor = new Color(1f, 1f, 1f, 0.55f);
             string keys = _other != null
@@ -613,6 +646,7 @@ namespace SurvivalEnTren.Items
             _label = new GUIStyle(GUI.skin.label) { fontSize = 18, alignment = TextAnchor.UpperLeft };
             _small = new GUIStyle(GUI.skin.label) { fontSize = 12, alignment = TextAnchor.UpperLeft, wordWrap = true };
             _tip = new GUIStyle(GUI.skin.label) { fontSize = 15, alignment = TextAnchor.UpperLeft };
+            _count = new GUIStyle(GUI.skin.label) { fontSize = 13, fontStyle = FontStyle.Bold, alignment = TextAnchor.LowerRight };
         }
 
         private static void Bind(InputActionReference reference, System.Action<InputAction.CallbackContext> handler)

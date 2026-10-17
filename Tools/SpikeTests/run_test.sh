@@ -5,11 +5,13 @@
 # (cuando una prueba mide sin límite de cuadros, el editor deja de atender pedidos un rato), reintenta en vez de contar mal.
 F="--caller plugin --skill unity-cli --no-banner --result-only"
 
-# Lee la consola; devuelve vacío si Unity no contestó.
+# Lee la consola; devuelve vacío si Unity no contestó. (Se mira el error de la conexión, "Pipeline server returned...", y no el
+# texto "timed out": Unity también deja en la consola un aviso con ese texto cuando un pedido tarda, y con eso adentro se
+# descartaban todas las lecturas siguientes y la prueba parecía no dar resultado; pasó el 2026-10-17.)
 console() {
   local out
   out=$(unity command console $F 2>&1)
-  if echo "$out" | grep -q '"message"' && ! echo "$out" | grep -q 'timed out after'; then echo "$out"; fi
+  if echo "$out" | grep -q '"message"' && ! echo "$out" | grep -q 'Pipeline server returned'; then echo "$out"; fi
 }
 
 unity command editor_stop $F >/dev/null 2>&1; sleep 2

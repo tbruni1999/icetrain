@@ -25,6 +25,9 @@ namespace SurvivalEnTren.Items
         [SerializeField] private Vector2Int sizeCells = Vector2Int.one;
         [Tooltip("Si la pieza se puede girar (R) para que entre de costado.")]
         [SerializeField] private bool canRotate = true;
+        [Tooltip("Cuántas piezas iguales entran apiladas en una casilla (la pieza de la cuadrícula). 1 = no se apila. " +
+                 "DECISIÓN de Tomi (2026-10-16): la cuadrícula se queda, pero los materiales se apilan.")]
+        [SerializeField, Range(1, 200)] private int maxStack = 1;
         [Tooltip("Imagen de la pieza (se estira al tamaño en casillas). Vacío = se dibuja un recuadro de color.")]
         [SerializeField] private Sprite icon;
         [Tooltip("Color del bulto en el mundo y del recuadro de la pieza (provisorio, hasta el arte final).")]
@@ -37,6 +40,8 @@ namespace SurvivalEnTren.Items
         /// <summary>Tamaño en casillas sin girar (al menos 1 x 1).</summary>
         public Vector2Int SizeCells => new Vector2Int(Mathf.Max(1, sizeCells.x), Mathf.Max(1, sizeCells.y));
         public bool CanRotate => canRotate && sizeCells.x != sizeCells.y;
+        /// <summary>Cuántas piezas iguales entran en una pila (al menos 1).</summary>
+        public int MaxStack => Mathf.Max(1, maxStack);
         public Sprite Icon => icon;
         public Color Color => color;
     }

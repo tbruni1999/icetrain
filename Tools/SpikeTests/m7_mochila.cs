@@ -29,13 +29,12 @@ System.Collections.IEnumerator Run()
     for (int i = 0; i < 30; i++) yield return wait;
     log.Append($"DATOS: tablón {Sz(wood)} {wood.WeightKg} kg, chapa {Sz(metal)} {metal.WeightKg} kg, rollo de tela {Sz(cloth)} {cloth.WeightKg} kg, componente {Sz(parts)} {parts.WeightKg} kg; íconos: {(wood.Icon != null)}, {(metal.Icon != null)}, {(cloth.Icon != null)}, {(parts.Icon != null)}; mochila {backpack.Grid.Width}x{backpack.Grid.Height} = {backpack.CellCount} casillas, vacía pesa {backpack.MassKg:0.0} kg, caminar x{motor.SpeedMultiplier:0.00}.");
 
-    // 1) Llenar: 4 tablones (1x4) en vertical, 3 chapas (2x2) de las que solo entran 2, y los rollos de tela (1x2) que entran girados.
+    // 1) Llenar: 4 tablones (1x4), 3 chapas (2x2) y 3 rollos de tela (1x2). Desde G1 (2026-10-17) los materiales se apilan: cada
+    //    material queda en una sola pila (antes la tercera chapa no entraba).
     int a = backpack.Add(wood, 4);
     int b = backpack.Add(metal, 3);
-    int rotatedBefore = 0; foreach (var g in backpack.Grid.Items) if (g.Rotated) rotatedBefore++;
     int c = backpack.Add(cloth, 3);
-    int rotatedCloth = 0; foreach (var g in backpack.Grid.Items) if (g.Item == cloth && g.Rotated) rotatedCloth++;
-    log.Append($" LLENAR: tablones entraron {a} de 4; chapas {b} de 3 (la tercera no entra: no queda un hueco de 2x2); rollos de tela {c} de 3, girados {rotatedCloth} (en la fila de abajo solo caben acostados); usa {backpack.UsedCells} de {backpack.CellCount} casillas, pesa {backpack.MassKg:0.0} kg (esperado {4 * wood.WeightKg + 2 * metal.WeightKg + 3 * cloth.WeightKg:0.0}); Changed={changed}.");
+    log.Append($" LLENAR (con pilas): tablones entraron {a} de 4, chapas {b} de 3, rollos de tela {c} de 3, en {backpack.Grid.Items.Count} pilas (una por material); usa {backpack.UsedCells} de {backpack.CellCount} casillas (esperado {wood.SizeCells.x * wood.SizeCells.y + metal.SizeCells.x * metal.SizeCells.y + cloth.SizeCells.x * cloth.SizeCells.y}), pesa {backpack.MassKg:0.0} kg (esperado {4 * wood.WeightKg + 3 * metal.WeightKg + 3 * cloth.WeightKg:0.0}); Changed={changed}.");
     log.Append($" LLENA: caben más tablones={backpack.MaxAddable(wood)}, chapas={backpack.MaxAddable(metal)}, rollos={backpack.MaxAddable(cloth)}, componentes={backpack.MaxAddable(parts)}.");
     for (int i = 0; i < 10; i++) yield return wait;
     log.Append($" Caminar con {backpack.MassKg:0.0} kg: x{motor.SpeedMultiplier:0.00} (esperado {UnityEngine.Mathf.Max(0.45f, 1f - 0.02f * backpack.MassKg):0.00}).");
@@ -51,6 +50,19 @@ System.Collections.IEnumerator Run()
         backpack.Add(wood, w); backpack.Add(cloth, cl);
     }
     log.Append($" CONSERVAR: 5 vueltas de sacar y volver a meter: tablones {backpack.CountOf(wood)} (antes {woodBefore}), rollos {backpack.CountOf(cloth)} (antes {clothBefore}), peso {backpack.MassKg:0.0} (antes {massBefore:0.0}).");
+    while (backpack.Grid.Items.Count > 0) backpack.Grid.Remove(backpack.Grid.Items[0]);
+
+    // 2b) Las pilas (G1): 30 tablones = una pila llena y otra con el resto; sacar deja la cuenta justa; lo que no se apila (la
+    //     aguja de cambio) ocupa una pieza cada una.
+    string StacksOf(SurvivalEnTren.Items.ItemDefinition item) { var parts_ = new System.Collections.Generic.List<string>(); foreach (var g in backpack.Grid.Items) if (g.Item == item) parts_.Add(g.Count.ToString()); return string.Join("+", parts_); }
+    int w30 = backpack.Add(wood, 30);
+    string woodStacks = StacksOf(wood);
+    int took = backpack.Remove(wood, 27);
+    string woodAfter = StacksOf(wood);
+    var needle = UnityEditor.AssetDatabase.LoadAssetAtPath<SurvivalEnTren.Items.ItemDefinition>("Assets/_Project/Data/Items/AgujaCambio.asset");
+    int n2 = backpack.Add(needle, 2);
+    float stackMass = backpack.MassKg;
+    log.Append($" PILAS: tablones (pila de {wood.MaxStack}) entraron {w30} de 30 en pilas {woodStacks} (esperado {wood.MaxStack}+{30 - wood.MaxStack}); sacar 27: salieron {took}, quedan {woodAfter} (esperado 3); agujas de cambio (no se apilan) {n2} en pilas {StacksOf(needle)} (esperado 1+1); peso {stackMass:0.0} kg (esperado {3 * wood.WeightKg + 2 * needle.WeightKg:0.0}).");
     while (backpack.Grid.Items.Count > 0) backpack.Grid.Remove(backpack.Grid.Items[0]);
 
     // 3) La lógica de la cuadrícula en sí, en una chica de 4x3 (como un estante precario).

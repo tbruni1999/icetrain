@@ -84,6 +84,16 @@ namespace SurvivalEnTren.Crafting
         public float WorkMinutes => workMinutes;
         public GameObject PlaceablePrefab => placeablePrefab;
 
+        /// <summary>
+        /// El nombre de una herramienta con su artículo, para las indicaciones: "la barreta" / "una barreta", "el pico" / "un pico",
+        /// "el hacha" / "un hacha" (en castellano, femenino con a tónica lleva "el" y "un").
+        /// </summary>
+        public static string ToolWithArticle(GearId gear, bool definite)
+        {
+            bool masculine = gear == GearId.Hammer || gear == GearId.Pickaxe || gear == GearId.Axe;
+            return (definite ? (masculine ? "el " : "la ") : (masculine ? "un " : "una ")) + ToolName(gear);
+        }
+
         /// <summary>Nombre de una herramienta para mostrar.</summary>
         public static string ToolName(GearId gear)
         {
@@ -94,6 +104,8 @@ namespace SurvivalEnTren.Crafting
                 case GearId.Saw: return "sierra manual";
                 case GearId.Hammer: return "martillo";
                 case GearId.Wrench: return "llave de montaje";
+                case GearId.Axe: return "hacha";
+                case GearId.Pickaxe: return "pico";
                 default: return gear.ToString();
             }
         }

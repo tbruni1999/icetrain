@@ -121,6 +121,8 @@ namespace SurvivalEnTren.Save
         public string item;
         public int x, y;
         public bool rotated;
+        /// <summary>Cuántas en la pila (G1, 2026-10-17). Las partidas de antes no lo tienen: 0 cuenta como 1.</summary>
+        public int count;
     }
 
     [Serializable]

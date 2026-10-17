@@ -2,6 +2,7 @@ using System;
 using SurvivalEnTren.Crafting;
 using SurvivalEnTren.Equipment;
 using SurvivalEnTren.Interaction;
+using SurvivalEnTren.UI;
 using UnityEngine;
 
 namespace SurvivalEnTren.Items
@@ -16,6 +17,9 @@ namespace SurvivalEnTren.Items
     /// - Mirarlo con la herramienta al cinto: E la saca a la mano.
     /// - El avance queda (se puede volver más tarde) y se guarda (M12). Una vez roto ya no existe.
     /// - Va en la raíz del objeto (con el pivote en su base) y los colliders en sus hijos.
+    /// - Desde G1 (2026-10-17, "grindeo a lo 7 Days"): si la receta lo pide, cada golpe que sirve da su parte de los materiales
+    ///   directo a la mochila (lo que no entra cae como bulto al lado) y se avisa a la derecha de la pantalla (PickupFeed); el
+    ///   último golpe da lo que falta. Otras herramientas de la receta también sirven, pero pegan menos.
     /// </summary>
     public class SalvageProp : MonoBehaviour, IInteractable, IToolTarget
     {
@@ -42,6 +46,7 @@ namespace SurvivalEnTren.Items
         private Vector3 _shakeLocal;
         private float _shakeLeft;
         private Material _material;
+        private int[] _given; // cuánto de cada material de la receta ya se entregó golpe a golpe (G1)
 
         public string StableId => stableId;
         public bool IsDone { get; private set; }
@@ -82,44 +87,72 @@ namespace SurvivalEnTren.Items
         public void RestoreProgress(float progress)
         {
             _progress = Mathf.Clamp01(progress);
+            // Lo que ya se había entregado golpe a golpe sale del avance (la misma cuenta que al golpear): no se vuelve a dar.
+            if (recipe != null && recipe.YieldPerHit)
+            {
+                _given = new int[recipe.Yields.Length];
+                for (int i = 0; i < _given.Length; i++) _given[i] = Due(recipe.Yields[i].count);
+            }
             Pose();
+        }
+
+        // Cuánto de un material corresponde al avance de ahora (todo, al romperse).
+        private int Due(int count) => _progress >= 1f ? count : Mathf.FloorToInt(count * _progress + 0.0001f);
+
+        // La herramienta que le sirve más de las que tiene el jugador (la de la receta primero), o null si no tiene ninguna.
+        private GearId? BestToolOf(PlayerGear gear)
+        {
+            if (gear == null || recipe == null) return null;
+            if (gear.Has(recipe.RequiredTool)) return recipe.RequiredTool;
+            GearId? best = null;
+            float power = 0f;
+            foreach (ToolEfficiency t in recipe.OtherTools)
+                if (t.factor > power && gear.Has(t.tool)) { best = t.tool; power = t.factor; }
+            return best;
         }
 
         public string GetPrompt(PlayerInteractor interactor)
         {
             if (IsDone || recipe == null) return null;
             var equipment = interactor.GetComponent<PlayerGear>();
-            string tool = Blueprint.ToolName(recipe.RequiredTool);
-            if (equipment == null || !equipment.Has(recipe.RequiredTool)) return $"{recipe.DisplayName}: hace falta una {tool}";
+            var belt = interactor.GetComponent<ToolBelt>();
             string what = $"{recipe.YieldText()}, {recipe.TotalMassKg:0.0} kg";
             string progress = _progress > 0.01f ? $"   [{_progress * 100f:0}%]" : "";
-            var belt = interactor.GetComponent<ToolBelt>();
-            if (belt != null && belt.ActiveTool == recipe.RequiredTool)
-                return $"golpear para desarmar {recipe.DisplayName}   → {what}{progress}";
-            return $"sacar la {tool} para desarmar {recipe.DisplayName}   → {what}{progress}";
+            GearId? inHand = belt != null ? belt.ActiveTool : null;
+            if (inHand.HasValue && recipe.PowerOf(inHand.Value) > 0f)
+            {
+                string weak = inHand.Value != recipe.RequiredTool ? $" (con {Blueprint.ToolWithArticle(inHand.Value, false)} pega poco)" : "";
+                return $"golpear para {recipe.Verb} {recipe.DisplayName}{weak}   → {what}{progress}";
+            }
+            GearId? best = BestToolOf(equipment);
+            if (!best.HasValue) return $"{recipe.DisplayName}: hace falta {Blueprint.ToolWithArticle(recipe.RequiredTool, false)}";
+            return $"sacar {Blueprint.ToolWithArticle(best.Value, true)} para {recipe.Verb} {recipe.DisplayName}   → {what}{progress}";
         }
 
         public float GetHoldSeconds(PlayerInteractor interactor) => 0f;
 
-        // E: saca la herramienta que hace falta (si el jugador la tiene y no la lleva en la mano).
+        // E: saca la herramienta que mejor le sirve de las que tiene el jugador (si no la lleva ya en la mano).
         public void Interact(PlayerInteractor interactor)
         {
             var belt = interactor.GetComponent<ToolBelt>();
-            var equipment = interactor.GetComponent<PlayerGear>();
-            if (IsDone || recipe == null || belt == null || equipment == null || !equipment.Has(recipe.RequiredTool)) return;
-            if (belt.ActiveTool != recipe.RequiredTool) belt.Select(belt.SlotOf(recipe.RequiredTool));
+            GearId? best = BestToolOf(interactor.GetComponent<PlayerGear>());
+            if (IsDone || recipe == null || belt == null || !best.HasValue) return;
+            if (belt.ActiveTool != best.Value) belt.Select(belt.SlotOf(best.Value));
         }
 
         public bool OnToolHit(in ToolHit hit)
         {
-            if (IsDone || recipe == null || hit.Tool != recipe.RequiredTool) return false; // herramienta equivocada: rebota
-            _progress = Mathf.Min(1f, _progress + 1f / recipe.HitsToBreak + 0.0001f);
+            float power = recipe != null ? recipe.PowerOf(hit.Tool) : 0f;
+            if (IsDone || power <= 0f) return false; // herramienta que no sirve: rebota
+            _progress = Mathf.Min(1f, _progress + power / recipe.HitsToBreak + 0.0001f);
             _shakeLocal = transform.InverseTransformDirection(-hit.Normal) * shakeMeters;
             _shakeLeft = shakeSeconds;
             var breaker = hit.By != null ? hit.By.GetComponent<CharacterController>() : null;
             bool sparks = recipe.Surface == SalvageSurface.Metal || recipe.Surface == SalvageSurface.Electrico;
-            if (sparks) SpawnChips(hit.Point, hit.Normal, chipsPerHit + 2, 0.012f, 0.35f, 4f, breaker, SparkMaterial()); // chispas
-            else SpawnChips(hit.Point, hit.Normal, chipsPerHit, 0.03f, 2.5f, 1.5f, breaker, _material);                   // astillas, pelusa
+            if (sparks) SpawnChips(hit.Point, hit.Normal, chipsPerHit + 2, 0.012f, 0.35f, 4f, breaker, SparkMaterial());      // chispas
+            else if (recipe.Surface == SalvageSurface.Piedra) SpawnChips(hit.Point, hit.Normal, chipsPerHit + 2, 0.02f, 1.2f, 2.2f, breaker, _material); // polvo y lascas
+            else SpawnChips(hit.Point, hit.Normal, chipsPerHit, 0.03f, 2.5f, 1.5f, breaker, _material);                        // astillas, pelusa
+            if (recipe.YieldPerHit) GiveShares(hit);
             Hit?.Invoke(hit.Point, recipe.Surface);
             if (_progress >= 1f) Break(breaker);
             else Pose();
@@ -147,19 +180,46 @@ namespace SurvivalEnTren.Items
             }
         }
 
+        // La parte de cada material que corresponde a este golpe (G1): a la mochila del que golpea; lo que no entra, al piso.
+        private void GiveShares(in ToolHit hit)
+        {
+            if (_given == null || _given.Length != recipe.Yields.Length) _given = new int[recipe.Yields.Length];
+            Backpack pack = hit.By != null ? hit.By.GetComponent<Backpack>() : null;
+            PickupFeed feed = hit.By != null ? hit.By.GetComponent<PickupFeed>() : null;
+            for (int i = 0; i < recipe.Yields.Length; i++)
+            {
+                SalvageYield y = recipe.Yields[i];
+                if (y.item == null) continue;
+                int due = Due(y.count) - _given[i];
+                if (due <= 0) continue;
+                _given[i] += due;
+                int kept = pack != null ? pack.Add(y.item, due) : 0;
+                if (kept > 0 && feed != null) feed.Show(y.item, kept, pack.CountOf(y.item));
+                if (due > kept)
+                {
+                    MaterialBundle.Spawn(backpackSettings, y.item, due - kept, hit.Point + hit.Normal * 0.35f, Vector3.up * 0.5f);
+                    if (feed != null) feed.ShowDropped(y.item, due - kept);
+                }
+            }
+        }
+
         private void Break(CharacterController breaker)
         {
             IsDone = true; // antes de crear nada: que no se pueda repetir
             Salvaged?.Invoke();
             Vector3 center = transform.position + Vector3.up * 0.5f;
-            int bundles = 0;
-            foreach (SalvageYield y in recipe.Yields)
+            // Picando golpe a golpe (G1) ya se entregó todo; si no, los materiales salen ahora, juntos.
+            if (!recipe.YieldPerHit)
             {
-                if (y.item == null) continue;
-                // Los materiales caen al piso alrededor de donde estaba el objeto, para levantarlos con E.
-                float angle = bundles++ * 2.2f;
-                Vector3 offset = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * 0.45f;
-                MaterialBundle.Spawn(backpackSettings, y.item, y.count, center + offset, Vector3.up * 0.5f);
+                int bundles = 0;
+                foreach (SalvageYield y in recipe.Yields)
+                {
+                    if (y.item == null) continue;
+                    // Los materiales caen al piso alrededor de donde estaba el objeto, para levantarlos con E.
+                    float angle = bundles++ * 2.2f;
+                    Vector3 offset = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * 0.45f;
+                    MaterialBundle.Spawn(backpackSettings, y.item, y.count, center + offset, Vector3.up * 0.5f);
+                }
             }
             SpawnChips(center, Vector3.up, recipe.ShardCount, 0.08f, 8f, 1.5f, breaker, _material);
             Destroy(gameObject);

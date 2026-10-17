@@ -179,7 +179,7 @@ namespace SurvivalEnTren.Crafting
             {
                 if (bundle.Item != item || bundle.Count <= 0) continue;
                 Vector3 local = train.transform.InverseTransformPoint(bundle.transform.position);
-                if (Mathf.Abs(local.x) < 1.75f && Mathf.Abs(local.z) < 9.6f && local.y > 0.6f && local.y < 3.6f) list.Add(bundle);
+                if (TrainInterior.Contains(local)) list.Add(bundle);
             }
             return list;
         }
@@ -198,14 +198,8 @@ namespace SurvivalEnTren.Crafting
         {
             foreach (ItemGrid grid in Stores(backpack))
             {
-                for (int i = grid.Items.Count - 1; i >= 0 && count > 0; i--)
-                {
-                    GridItem piece = grid.Items[i];
-                    if (piece.Item != item) continue;
-                    grid.Remove(piece);
-                    count--;
-                }
-                if (count == 0) return;
+                count -= grid.Take(item, count);
+                if (count <= 0) return;
             }
             foreach (MaterialBundle bundle in FloorBundles(item))
             {

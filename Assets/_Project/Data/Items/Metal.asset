@@ -18,5 +18,6 @@ MonoBehaviour:
   weightKg: 3.5
   sizeCells: {x: 2, y: 2}
   canRotate: 1
+  maxStack: 10
   icon: {fileID: 2016147100763352453, guid: d795cfe632814a94586dca2abfc61cea, type: 3}
   color: {r: 0.55, g: 0.57, b: 0.6, a: 1}

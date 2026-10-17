@@ -119,7 +119,7 @@ namespace SurvivalEnTren.Items
             foreach (GridItem g in _grid.Items)
             {
                 if (!counts.ContainsKey(g.Item)) { counts[g.Item] = 0; order.Add(g.Item); }
-                counts[g.Item]++;
+                counts[g.Item] += g.Count;
             }
             for (int i = 0; i < _cubes.Length; i++)
             {

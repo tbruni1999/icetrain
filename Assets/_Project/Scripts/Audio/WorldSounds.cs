@@ -26,7 +26,7 @@ namespace SurvivalEnTren.Audio
         [SerializeField] private Transform listener;
 
         private AudioClip _lever, _switch, _door, _ice, _build, _salvage, _paper, _craft;
-        private AudioClip _hitWood, _hitMetal, _hitCloth, _hitElectric, _hitIce, _anvilHot, _anvilCold;
+        private AudioClip _hitWood, _hitMetal, _hitCloth, _hitElectric, _hitIce, _hitStone, _anvilHot, _anvilCold;
 
         /// <summary>Cuántos sonidos de cosas sonaron (lo usan las pruebas).</summary>
         public int Played { get; private set; }
@@ -48,6 +48,7 @@ namespace SurvivalEnTren.Audio
             _hitCloth = ProceduralClips.Thud("Golpe_Tela", 0.14f, 113);
             _hitElectric = ProceduralClips.Clank("Golpe_Tablero", 690f, 0.2f, 127);
             _hitIce = ProceduralClips.Crack("Golpe_Hielo", 0.22f, 131);
+            _hitStone = ProceduralClips.Crack("Golpe_Piedra", 0.1f, 137); // G1: seco y corto
             _anvilHot = ProceduralClips.Clank("Yunque_Caliente", 610f, 0.45f, 137);
             _anvilCold = ProceduralClips.Clank("Yunque_Frio", 880f, 0.3f, 139);
 
@@ -94,7 +95,8 @@ namespace SurvivalEnTren.Audio
         }
 
         private AudioClip HitClip(SalvageSurface surface) =>
-            surface == SalvageSurface.Metal ? _hitMetal : surface == SalvageSurface.Tela ? _hitCloth : surface == SalvageSurface.Electrico ? _hitElectric : _hitWood;
+            surface == SalvageSurface.Metal ? _hitMetal : surface == SalvageSurface.Tela ? _hitCloth : surface == SalvageSurface.Electrico ? _hitElectric :
+            surface == SalvageSurface.Piedra ? _hitStone : _hitWood;
 
         private void Play(AudioClip clip, Vector3 where, float volume, string what)
         {

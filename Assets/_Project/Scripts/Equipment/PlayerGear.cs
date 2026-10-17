@@ -13,7 +13,11 @@ namespace SurvivalEnTren.Equipment
         /// <summary>El martillo de la forja (H4): se fabrica en el banco y se usa en el yunque.</summary>
         Hammer,
         /// <summary>La llave de montaje (2026-10-16): mueve los muebles que el jugador colocó (decisión de Tomi).</summary>
-        Wrench
+        Wrench,
+        /// <summary>El hacha (G1, 2026-10-17): corta árboles muertos y troncos. Primero improvisada (piedra y palo).</summary>
+        Axe,
+        /// <summary>El pico (G1, 2026-10-17): pica rocas, mineral y carbón. Primero improvisado (piedra y palo).</summary>
+        Pickaxe
     }
 
     /// <summary>

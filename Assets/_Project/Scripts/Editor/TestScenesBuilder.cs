@@ -407,6 +407,7 @@ namespace SurvivalEnTren.EditorTools
             var backpackSettings = LoadBackpackSettings();
             var backpack = motor.gameObject.AddComponent<Backpack>();
             SetReference(backpack, "settings", backpackSettings);
+            motor.gameObject.AddComponent<PickupFeed>(); // G1: lo que entra a la mochila al picar, a la derecha de la pantalla
             SetReference(motor.GetComponent<PlayerCarrier>(), "backpack", backpack);
             SetReference(overlay, "backpack", backpack);
 
@@ -502,33 +503,57 @@ namespace SurvivalEnTren.EditorTools
             public ItemDefinition Bar;
             /// <summary>La pieza especial del M10 (aguja de cambio): no es un material, pero vive en el mismo lugar de datos.</summary>
             public ItemDefinition SwitchPoint;
+            /// <summary>G1 (2026-10-17): lo que se pica en el mundo (lista del grindeo, sección 2.1).</summary>
+            public ItemDefinition Stone, IronOre, Coal, Scrap, Cable, MechParts;
+
+            /// <summary>Todos los materiales (para el guardado: lo que no está acá no se puede volver a cargar).</summary>
+            public ItemDefinition[] All => new[] { Wood, Metal, Cloth, Parts, SwitchPoint, Bar, Stone, IronOre, Coal, Scrap, Cable, MechParts };
         }
 
 
         // Materiales de la V1 con su tamaño en casillas (DECISIÓN de Tomi: inventario en cuadrícula): el tablón es largo
-        // (1 x 4) y no entra en un estante chico, la chapa es 2 x 2, el rollo de tela 1 x 2 y el componente 1 x 1.
+        // (1 x 4) y no entra en un estante chico, la chapa es 2 x 2, el rollo de tela 1 x 2 y el componente 1 x 1. Desde G1
+        // (2026-10-17, DECISIÓN de Tomi: cuadrícula con pilas) cada material dice cuántos entran apilados en su pieza, y se suman
+        // los que se pican en el mundo (piedra, mineral de hierro, carbón, chatarra, cable y piezas mecánicas). Todo PROPUESTA.
         private static MaterialSet LoadMaterials()
         {
             EnsureFolder(ItemsFolderPath, "Iconos");
             return new MaterialSet
             {
-                Wood = LoadOrCreateItem("Madera", "item_madera", "madera", "tablón", 2f, new Vector2Int(1, 4), new Color(0.62f, 0.45f, 0.26f), DrawPlankIcon),
-                Metal = LoadOrCreateItem("Metal", "item_metal", "metal", "chapa", 3.5f, new Vector2Int(2, 2), new Color(0.55f, 0.57f, 0.6f), DrawSheetIcon),
-                Cloth = LoadOrCreateItem("Tela", "item_tela", "tela", "rollo de tela", 0.8f, new Vector2Int(1, 2), new Color(0.55f, 0.62f, 0.72f), DrawClothIcon),
-                Parts = LoadOrCreateItem("Componentes", "item_componentes", "componentes", "componente", 0.3f, new Vector2Int(1, 1), new Color(0.3f, 0.7f, 0.45f), DrawChipIcon),
-                SwitchPoint = LoadOrCreateItem("AgujaCambio", "item_aguja_cambio", "aguja de cambio", "aguja de cambio", 5f, new Vector2Int(1, 3), new Color(0.78f, 0.45f, 0.18f), DrawSwitchPointIcon),
-                Bar = LoadOrCreateItem("Planchuela", "item_planchuela", "planchuela", "planchuela", 1.5f, new Vector2Int(1, 3), new Color(0.35f, 0.37f, 0.42f), DrawBarIcon),
+                Wood = LoadOrCreateItem("Madera", "item_madera", "madera", "tablón", 2f, new Vector2Int(1, 4), new Color(0.62f, 0.45f, 0.26f), DrawPlankIcon, 25),
+                Metal = LoadOrCreateItem("Metal", "item_metal", "metal", "chapa", 3.5f, new Vector2Int(2, 2), new Color(0.55f, 0.57f, 0.6f), DrawSheetIcon, 10),
+                Cloth = LoadOrCreateItem("Tela", "item_tela", "tela", "rollo de tela", 0.8f, new Vector2Int(1, 2), new Color(0.55f, 0.62f, 0.72f), DrawClothIcon, 30),
+                Parts = LoadOrCreateItem("Componentes", "item_componentes", "componentes", "componente", 0.3f, new Vector2Int(1, 1), new Color(0.3f, 0.7f, 0.45f), DrawChipIcon, 30),
+                SwitchPoint = LoadOrCreateItem("AgujaCambio", "item_aguja_cambio", "aguja de cambio", "aguja de cambio", 5f, new Vector2Int(1, 3), new Color(0.78f, 0.45f, 0.18f), DrawSwitchPointIcon, 1),
+                Bar = LoadOrCreateItem("Planchuela", "item_planchuela", "planchuela", "planchuela", 1.5f, new Vector2Int(1, 3), new Color(0.35f, 0.37f, 0.42f), DrawBarIcon, 10),
+                Stone = LoadOrCreateItem("Piedra", "item_piedra", "piedra", "piedra", 1f, new Vector2Int(1, 1), new Color(0.55f, 0.56f, 0.58f), DrawStoneIcon, 25),
+                IronOre = LoadOrCreateItem("MineralHierro", "item_mineral_hierro", "mineral de hierro", "mineral", 1.5f, new Vector2Int(1, 1), new Color(0.58f, 0.32f, 0.22f), DrawOreIcon, 20),
+                Coal = LoadOrCreateItem("Carbon", "item_carbon", "carbón", "carbón", 0.5f, new Vector2Int(1, 1), new Color(0.2f, 0.2f, 0.22f), DrawCoalIcon, 30),
+                Scrap = LoadOrCreateItem("Chatarra", "item_chatarra", "chatarra", "chatarra", 1.5f, new Vector2Int(2, 1), new Color(0.5f, 0.42f, 0.35f), DrawScrapIcon, 20),
+                Cable = LoadOrCreateItem("Cable", "item_cable", "cable", "rollo de cable", 0.3f, new Vector2Int(1, 1), new Color(0.78f, 0.47f, 0.26f), DrawCableIcon, 30),
+                MechParts = LoadOrCreateItem("PiezasMecanicas", "item_piezas_mecanicas", "piezas mecánicas", "pieza mecánica", 1f, new Vector2Int(1, 1), new Color(0.45f, 0.5f, 0.56f), DrawGearIcon, 10),
             };
         }
 
         // Un material como archivo de datos. Se crea una sola vez: si Tomi cambia el peso, el tamaño o el icono en el
-        // archivo (por ejemplo, para poner arte final), reconstruir la escena no lo pisa.
+        // archivo (por ejemplo, para poner arte final), reconstruir la escena no lo pisa. La pila (G1) se pone en los materiales
+        // que ya existían si todavía están en 1 (el valor de antes de que existieran las pilas).
         private static ItemDefinition LoadOrCreateItem(string fileName, string id, string displayName, string pieceName, float weightKg,
-            Vector2Int size, Color color, System.Action<Texture2D, Color> drawIcon)
+            Vector2Int size, Color color, System.Action<Texture2D, Color> drawIcon, int maxStack)
         {
             string path = $"{ItemsFolderPath}/{fileName}.asset";
             var item = AssetDatabase.LoadAssetAtPath<ItemDefinition>(path);
-            if (item != null) return item;
+            if (item != null)
+            {
+                if (item.MaxStack == 1 && maxStack > 1)
+                {
+                    var existing = new SerializedObject(item);
+                    existing.FindProperty("maxStack").intValue = maxStack;
+                    existing.ApplyModifiedPropertiesWithoutUndo();
+                    EditorUtility.SetDirty(item);
+                }
+                return item;
+            }
             item = ScriptableObject.CreateInstance<ItemDefinition>();
             AssetDatabase.CreateAsset(item, path);
             var so = new SerializedObject(item);
@@ -538,6 +563,7 @@ namespace SurvivalEnTren.EditorTools
             so.FindProperty("weightKg").floatValue = weightKg;
             so.FindProperty("sizeCells").vector2IntValue = size;
             so.FindProperty("color").colorValue = color;
+            so.FindProperty("maxStack").intValue = maxStack;
             so.FindProperty("icon").objectReferenceValue = MakePlaceholderIcon($"{ItemsFolderPath}/Iconos/Icono_{fileName}.png", size, color, drawIcon);
             so.ApplyModifiedPropertiesWithoutUndo();
             return item;
@@ -998,7 +1024,7 @@ namespace SurvivalEnTren.EditorTools
             SetReference(saver, "loadAction", FindActionReference("Partida/Cargar"));
             var so = new SerializedObject(saver);
             var list = so.FindProperty("items");
-            ItemDefinition[] known = { materials.Wood, materials.Metal, materials.Cloth, materials.Parts, materials.SwitchPoint };
+            ItemDefinition[] known = materials.All; // todos: antes faltaba la planchuela (H4) y se perdía al cargar
             list.arraySize = known.Length;
             for (int i = 0; i < known.Length; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = known[i];
             so.ApplyModifiedPropertiesWithoutUndo();

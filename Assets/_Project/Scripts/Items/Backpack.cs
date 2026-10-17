@@ -67,7 +67,7 @@ namespace SurvivalEnTren.Items
                 foreach (GridItem g in Grid.Items)
                 {
                     if (!counts.ContainsKey(g.Item)) { counts[g.Item] = 0; order.Add(g.Item); }
-                    counts[g.Item]++;
+                    counts[g.Item] += g.Count;
                 }
                 var stacks = new List<ItemStack>(order.Count);
                 foreach (ItemDefinition item in order) stacks.Add(new ItemStack(item, counts[item]));
@@ -96,30 +96,13 @@ namespace SurvivalEnTren.Items
             return true;
         }
 
-        /// <summary>Guarda piezas donde haya lugar; devuelve cuántas entraron de verdad (el resto no se guardó).</summary>
-        public int Add(ItemDefinition item, int count)
-        {
-            int added = 0;
-            for (int i = 0; i < count; i++)
-            {
-                if (Grid.TryAutoPlace(item) == null) break;
-                added++;
-            }
-            return added;
-        }
+        /// <summary>
+        /// Guarda piezas donde haya lugar (completando pilas del mismo material primero); devuelve cuántas entraron de verdad
+        /// (el resto no se guardó).
+        /// </summary>
+        public int Add(ItemDefinition item, int count) => count > 0 ? Grid.AddUnits(item, count) : 0;
 
-        /// <summary>Saca piezas (las últimas que entraron); devuelve cuántas salieron de verdad.</summary>
-        public int Remove(ItemDefinition item, int count)
-        {
-            int removed = 0;
-            for (int i = Grid.Items.Count - 1; i >= 0 && removed < count; i--)
-            {
-                GridItem g = Grid.Items[i];
-                if (g.Item != item) continue;
-                Grid.Remove(g);
-                removed++;
-            }
-            return removed;
-        }
+        /// <summary>Saca piezas (de las últimas pilas que entraron); devuelve cuántas salieron de verdad.</summary>
+        public int Remove(ItemDefinition item, int count) => count > 0 ? Grid.Take(item, count) : 0;
     }
 }

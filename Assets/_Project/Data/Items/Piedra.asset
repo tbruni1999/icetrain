@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5fed7d2a5666e549a6131bc49adfab0, type: 3}
+  m_Name: Piedra
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalEnTren.Items.ItemDefinition
+  id: item_piedra
+  displayName: piedra
+  pieceName: piedra
+  weightKg: 1
+  sizeCells: {x: 1, y: 1}
+  canRotate: 1
+  maxStack: 25
+  icon: {fileID: 4455623445234644600, guid: 4723728f415ef9248b174671e0c5f98e, type: 3}
+  color: {r: 0.55, g: 0.56, b: 0.58, a: 1}

@@ -1,0 +1,121 @@
+        // ---------------------------------------------------------------- Zonas para picar (G1 paso 5)
+
+        // Las zonas de recursos (lista del grindeo, sección 3.2), con nieve vacía entre medio: la cantera junto a la vía (rocas
+        // fáciles, algunas con veta de hierro o de carbón) y un bosque muerto (árboles secos, troncos caídos y tocones). No son
+        // señales de la sonda (la piedra y la madera no emiten: sección 13.1); se ven desde el tren. Todo lo que se pica tiene
+        // su receta en datos (Data/Items/Desmontaje_*.asset): herramienta, golpes, qué da y qué otras herramientas sirven a medias.
+        // Los modelos son de Fuentes/Scripts_Props/picables.py (provisorios hasta el arte final). PROPUESTA: cantidades y lugares.
+        private static void BuildGrindZones()
+        {
+            MaterialSet m = LoadMaterials();
+            BackpackSettings settings = LoadBackpackSettings();
+            var rockTools = new[] { (GearId.Crowbar, 0.25f), (GearId.Hammer, 0.3f) };
+            var woodTools = new[] { (GearId.Saw, 0.5f), (GearId.Crowbar, 0.12f) };
+            SalvageRecipe smallRock = LoadOrCreatePickRecipe("RocaChica", "roca chica", "picar", GearId.Pickaxe, 6, SalvageSurface.Piedra, rockTools, (m.Stone, 6));
+            SalvageRecipe bigRock = LoadOrCreatePickRecipe("RocaGrande", "roca", "picar", GearId.Pickaxe, 18, SalvageSurface.Piedra, rockTools, (m.Stone, 15));
+            SalvageRecipe ironRock = LoadOrCreatePickRecipe("RocaHierro", "roca con veta de hierro", "picar", GearId.Pickaxe, 22, SalvageSurface.Piedra, rockTools, (m.Stone, 10), (m.IronOre, 8));
+            SalvageRecipe coalRock = LoadOrCreatePickRecipe("RocaCarbon", "roca con veta de carbón", "picar", GearId.Pickaxe, 20, SalvageSurface.Piedra, rockTools, (m.Stone, 8), (m.Coal, 10));
+            SalvageRecipe tree = LoadOrCreatePickRecipe("ArbolMuerto", "árbol muerto", "cortar", GearId.Axe, 16, SalvageSurface.Madera, woodTools, (m.Wood, 10));
+            SalvageRecipe log = LoadOrCreatePickRecipe("TroncoCaido", "tronco caído", "cortar", GearId.Axe, 10, SalvageSurface.Madera, woodTools, (m.Wood, 6));
+            SalvageRecipe stump = LoadOrCreatePickRecipe("Tocon", "tocón", "cortar", GearId.Axe, 6, SalvageSurface.Madera, woodTools, (m.Wood, 3));
+
+            var root = new GameObject("Zonas_Picar").transform;
+            Transform quarry = ZoneRoot("Cantera", root, "Tramo_1a_Recta", 330f, 42f);
+            ScatterPickables(quarry, "cantera", settings, 26f, 16f, 4.5f, 7,
+                ("Roca_Chica", smallRock, 10), ("Roca_Grande", bigRock, 5), ("Roca_Grande_Hierro", ironRock, 3), ("Roca_Grande_Carbon", coalRock, 2));
+            Transform forest = ZoneRoot("Bosque_Muerto", root, "Tramo_1b_Recta", 160f, 48f);
+            ScatterPickables(forest, "bosque", settings, 34f, 22f, 5f, 13,
+                ("Arbol_Muerto", tree, 12), ("Tronco_Caido", log, 4), ("Tocon", stump, 5));
+        }
+
+        // El centro de una zona: a "along" metros de un tramo de vía y "aside" metros al costado (del lado más lejos de los lugares
+        // que ya hay cerca, para no pisar la estación ni el taller).
+        private static Transform ZoneRoot(string name, Transform parent, string segmentName, float along, float aside)
+        {
+            var segment = GameObject.Find(segmentName).GetComponent<RailSegment>();
+            float d = Mathf.Min(along, segment.Length - 5f);
+            Vector3 at = segment.GetPosition(d);
+            Vector3 forward = (segment.GetPosition(Mathf.Min(d + 1f, segment.Length)) - at).normalized;
+            Vector3 side = Vector3.Cross(Vector3.up, forward);
+            float Crowd(Vector3 p)
+            {
+                float nearest = float.MaxValue;
+                foreach (var signal in Object.FindObjectsByType<ProbeSignal>()) nearest = Mathf.Min(nearest, Vector3.Distance(signal.transform.position, p));
+                return nearest;
+            }
+            if (Crowd(at - side * aside) > Crowd(at + side * aside)) side = -side;
+            var zone = new GameObject(name).transform;
+            zone.SetParent(parent, false);
+            zone.position = at + side * aside;
+            zone.rotation = Quaternion.LookRotation(forward, Vector3.up);
+            return zone;
+        }
+
+        // Reparte lo que se pica en una elipse (radios en metros), sin que dos cosas queden a menos de "spacing" metros.
+        private static void ScatterPickables(Transform zone, string zoneId, BackpackSettings settings, float radiusX, float radiusZ, float spacing, int seed,
+            params (string model, SalvageRecipe recipe, int count)[] kinds)
+        {
+            var random = new System.Random(seed);
+            var placed = new System.Collections.Generic.List<Vector3>();
+            int n = 0;
+            foreach ((string model, SalvageRecipe recipe, int count) in kinds)
+                for (int i = 0; i < count; i++)
+                {
+                    Vector3 local = Vector3.zero;
+                    for (int attempt = 0; attempt < 40; attempt++)
+                    {
+                        double a = random.NextDouble() * System.Math.PI * 2.0, r = System.Math.Sqrt(random.NextDouble());
+                        local = new Vector3((float)(System.Math.Cos(a) * r * radiusX), 0f, (float)(System.Math.Sin(a) * r * radiusZ));
+                        bool free = true;
+                        foreach (Vector3 other in placed) if ((other - local).sqrMagnitude < spacing * spacing) { free = false; break; }
+                        if (free) break;
+                    }
+                    placed.Add(local);
+                    float yaw = (float)random.NextDouble() * 360f;
+                    string id = $"pica_{zoneId}_{model.ToLowerInvariant()}_{++n:000}";
+                    Transform prop = NewSalvageProp(model, zone, local, yaw, recipe, settings, id);
+                    GameObject art = PropArt(model, prop);
+                    if (art != null)
+                    {
+                        art.transform.localPosition = Vector3.zero;
+                        art.transform.localRotation = Quaternion.identity;
+                        // Se golpea lo que se ve (LOD0); la nieve no estorba.
+                        foreach (MeshFilter filter in art.GetComponentsInChildren<MeshFilter>(true))
+                            if (filter.name.EndsWith("_LOD0") && !filter.name.StartsWith("Nieve")) filter.gameObject.AddComponent<MeshCollider>();
+                    }
+                    else
+                    {
+                        // Sin el modelo: una forma simple que se puede golpear igual.
+                        bool isTree = recipe.RequiredTool == GearId.Axe;
+                        var shape = GameObject.CreatePrimitive(isTree ? PrimitiveType.Cylinder : PrimitiveType.Sphere);
+                        shape.name = "Forma";
+                        shape.transform.SetParent(prop, false);
+                        shape.transform.localScale = isTree ? new Vector3(0.35f, 2.2f, 0.35f) : Vector3.one * 1.1f;
+                        shape.transform.localPosition = Vector3.up * (isTree ? 2.2f : 0.35f);
+                    }
+                }
+        }
+
+        // Una receta de lo que se pica (G1): como las de desmontar, con el verbo, la herramienta buena y las que sirven a medias.
+        // Se crea una sola vez: si se ajusta en el archivo, reconstruir no la pisa.
+        private static SalvageRecipe LoadOrCreatePickRecipe(string fileName, string displayName, string verb, GearId tool, int hits, SalvageSurface surface,
+            (GearId tool, float factor)[] others, params (ItemDefinition item, int count)[] yields)
+        {
+            string path = $"{ItemsFolderPath}/Desmontaje_{fileName}.asset";
+            if (AssetDatabase.LoadAssetAtPath<SalvageRecipe>(path) != null) return AssetDatabase.LoadAssetAtPath<SalvageRecipe>(path);
+            SalvageRecipe recipe = LoadOrCreateRecipe(fileName, displayName, hits, surface, yields);
+            var so = new SerializedObject(recipe);
+            so.FindProperty("requiredTool").enumValueIndex = (int)tool;
+            so.FindProperty("verb").stringValue = verb;
+            so.FindProperty("shardCount").intValue = surface == SalvageSurface.Piedra ? 12 : 8;
+            var list = so.FindProperty("otherTools");
+            list.arraySize = others.Length;
+            for (int i = 0; i < others.Length; i++)
+            {
+                list.GetArrayElementAtIndex(i).FindPropertyRelative("tool").enumValueIndex = (int)others[i].tool;
+                list.GetArrayElementAtIndex(i).FindPropertyRelative("factor").floatValue = others[i].factor;
+            }
+            so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(recipe);
+            return recipe;
+        }

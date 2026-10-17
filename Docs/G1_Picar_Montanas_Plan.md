@@ -50,7 +50,11 @@ Bajar del tren y **picar** lo que hay (rocas, árboles muertos, autos, chatarra,
    - el rendimiento con las montañas, medido;
    - la regresión completa.
 
-## Decisión de Tomi que hace falta (antes del paso 4)
+## Decisión de Tomi (2026-10-17): montañas con su propia niebla, más suave
+Tomi eligió la opción 1. Las montañas se ven como siluetas azuladas recortadas contra el cielo, y la niebla de cerca queda igual.
+
+Lo que se le preguntó:
+
 **La niebla tapa las montañas.** Con la niebla de hoy, a 200 m se ve solo el 4 % y a 300 m nada. Una cordillera a 1,5 km no se vería nunca. Opciones:
 
 1. **Montañas con su propia niebla, más suave (recomendado).** Se ven como siluetas azuladas recortadas contra el cielo, le dan escala al mundo, y la niebla de cerca queda igual.

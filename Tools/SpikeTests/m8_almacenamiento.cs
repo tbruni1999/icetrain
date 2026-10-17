@@ -91,14 +91,15 @@ System.Collections.IEnumerator Run()
     for (int i = 0; i < 10; i++) yield return wait;
     log.Append($" Abrió: panel abierto={panel.IsOpen}, con la cuadrícula del estante al lado={panel.HasOtherGrid}.");
 
-    // 2) Pasar los tablones largos (1x4) con Supr (todos los del material): en 4x3 solo caben acostados y apenas 3.
+    // 2) Pasar los tablones largos (1x4) con Supr (todos los del material): en 4x3 solo caben acostados; desde G1 (pilas) los 4
+    //    van en una sola pila acostada.
     yield return Tap(UnityEngine.InputSystem.Key.Delete);
     for (int i = 0; i < 10; i++) yield return wait;
     int planksIn = starter.Grid.CountOf(wood);
     bool lying = true; foreach (var g in starter.Grid.Items) if (g.Item == wood && !g.Rotated) lying = false;
-    log.Append($" SUPR sobre un tablón: pasaron {planksIn} de 4 (el estante es de 4x3: solo entran acostados, uno por fila); acostados={lying}; en la mochila quedan {backpack.CountOf(wood)}; estante {starter.Grid.UsedCells}/{starter.Grid.CellCount} casillas.");
+    log.Append($" SUPR sobre un tablón: pasaron {planksIn} de 4 (el estante es de 4x3: entran acostados, los 4 en una pila); acostados={lying}; en la mochila quedan {backpack.CountOf(wood)}; estante {starter.Grid.UsedCells}/{starter.Grid.CellCount} casillas.");
 
-    // 3) Una chapa (2x2) ya no entra (el estante está lleno): se queda en la mochila.
+    // 3) La pila de chapas (2x2): con las pilas entra en lo que queda del estante (antes el estante quedaba lleno con los tablones).
     SurvivalEnTren.Items.GridItem metalPiece = null;
     foreach (var g in backpack.Grid.Items) if (g.Item == metal && metalPiece == null) metalPiece = g;
     panel.Close();
@@ -106,7 +107,7 @@ System.Collections.IEnumerator Run()
     for (int i = 0; i < metalPiece.X; i++) yield return Tap(UnityEngine.InputSystem.Key.RightArrow);
     for (int i = 0; i < metalPiece.Y; i++) yield return Tap(UnityEngine.InputSystem.Key.DownArrow);
     yield return Tap(UnityEngine.InputSystem.Key.Enter);
-    log.Append($" ENTER sobre una chapa con el estante lleno: chapas en el estante {starter.Grid.CountOf(metal)} (no entra), en la mochila {backpack.CountOf(metal)}.");
+    log.Append($" ENTER sobre la pila de chapas: chapas en el estante {starter.Grid.CountOf(metal)} (entran las 2 en una pila), en la mochila {backpack.CountOf(metal)}; estante {starter.Grid.UsedCells}/{starter.Grid.CellCount} casillas.");
 
     // 4) Sacar un tablón del estante a la mochila (la mochila tiene lugar acostando...): cursor al estante y Enter.
     panel.Close();
