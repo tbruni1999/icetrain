@@ -135,6 +135,7 @@ Si un día hay días despejados con menos niebla, el sombreador ya tiene prepara
   - `m6_combustible`: esperaba el gasto por hora. Ahora mide litros por km.
   - `m6_interactor_e`: esperaba el sifón viejo. Ahora lo lee de los datos.
   - La medición de cajas del M1 (`SpikePropMetrics`) contaba como "afuera" las cajas cerca de las paredes nuevas.
+- **La regresión completa final** (47 pruebas, 2026-10-17, con todo lo de este documento y la prueba nueva `velocidad_alta`): las 47 devolvieron resultado y no hubo ningún error. Las diferencias con la corrida anterior son las esperadas (velocidad, combustible por km, medidas del tren nuevo) y variaciones chicas de números. Se tomó como "bien" lo que coincide con lo esperado por cada prueba, igual que en las regresiones anteriores.
 - **Rendimiento:** la prueba marcó 7,6 ms por cuadro. Pero es por la vista Game en 4K: en 1080p, el mismo juego da 3,3 a 3,8 ms. Con un monitor de 1080, dibujar en 4K cuesta el doble y no se ve mejor.
 - Pruebas corridas de nuevo después de los arreglos y de la velocidad nueva:
 
