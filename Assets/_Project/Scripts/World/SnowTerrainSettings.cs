@@ -34,6 +34,18 @@ namespace SurvivalEnTren.World
         [Tooltip("Cuánto tarda en subir de plano a la duna completa, en metros.")]
         [SerializeField, Range(1f, 80f)] private float blend = 35f;
 
+        [Header("Capas de nieve (Parte 1b)")]
+        [Tooltip("Tamaño de las manchas de nieve compactada por el viento en el campo, en metros.")]
+        [SerializeField, Range(10f, 300f)] private float windPatchSize = 45f;
+        [Tooltip("Qué parte del campo tiene manchas (0 = nada, 1 = todo).")]
+        [SerializeField, Range(0f, 1f)] private float windPatchCover = 0.4f;
+        [Tooltip("Cuánto se ve la nieve compactada en las manchas (0 a 1).")]
+        [SerializeField, Range(0f, 1f)] private float windPatchStrength = 0.65f;
+        [Tooltip("Ancho de la nieve sucia a cada lado de la vía, en metros.")]
+        [SerializeField, Range(0f, 20f)] private float dirtyTrackWidth = 5f;
+        [Tooltip("Cuánto se ve la nieve sucia pegada a la vía (0 a 1).")]
+        [SerializeField, Range(0f, 1f)] private float dirtyTrackStrength = 0.4f;
+
         [Header("Restos en el horizonte")]
         [Tooltip("Cuántos restos altos (torres, chimeneas, postes, un tanque) hay alrededor.")]
         [SerializeField, Range(0, 40)] private int remnants = 12;
@@ -50,6 +62,11 @@ namespace SurvivalEnTren.World
         public float TrackFlat => trackFlat;
         public float PlaceFlat => placeFlat;
         public float Blend => blend;
+        public float WindPatchSize => windPatchSize;
+        public float WindPatchCover => windPatchCover;
+        public float WindPatchStrength => windPatchStrength;
+        public float DirtyTrackWidth => Mathf.Max(0.5f, dirtyTrackWidth);
+        public float DirtyTrackStrength => dirtyTrackStrength;
         public int Remnants => remnants;
         public float RemnantMinDistance => remnantMinDistance;
         public float RemnantMaxDistance => Mathf.Max(remnantMinDistance + 10f, remnantMaxDistance);

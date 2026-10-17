@@ -166,7 +166,9 @@ System.Collections.IEnumerator Run()
     log.Append($" PLANO: apuntando la hoja el objetivo era {Name(tSheet)}; ahora el plano del estante {book.Knows(shelfPlan)}, el banco ofrece el estante={ShelfOffered()}.");
 
     // 3) De vuelta en el tren, al banco: E, sierra, bidón.
-    FaceInTrain(new UnityEngine.Vector3(-0.2f, 1.05f, 0f), new UnityEngine.Vector3(-1.1f, 1.9f, 0f));
+    // (al banco de verdad, donde esté: desde el 2026-10-16 el tren es más ancho y el banco quedó contra la pared nueva)
+    var benchLocal = trainBody.transform.InverseTransformPoint(CenterOf(UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Crafting.Workbench>()));
+    FaceInTrain(new UnityEngine.Vector3(benchLocal.x + 1.3f, 1.05f, benchLocal.z), new UnityEngine.Vector3(benchLocal.x + 0.3f, 1.9f, benchLocal.z));
     yield return Frames(40);
     var known = new System.Collections.Generic.HashSet<SurvivalEnTren.Train.FuelCan>(UnityEngine.Object.FindObjectsByType<SurvivalEnTren.Train.FuelCan>());
     int woodBefore = backpack.CountOf(wood), metalBefore = backpack.CountOf(metal);

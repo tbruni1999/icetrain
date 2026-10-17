@@ -124,8 +124,8 @@ namespace SurvivalEnTren.UI
 
         // ---------------------------------------------------------------- Diseño (espacio propio del menú)
 
-        private static float Scale => Mathf.Min(1f, (Screen.width - 30f) / W, (Screen.height - 30f) / H);
-        private static Vector2 Origin => new Vector2((Screen.width - W * Scale) * 0.5f, (Screen.height - H * Scale) * 0.5f);
+        private static float Scale => Mathf.Min(1f, (UiScale.Width - 30f) / W, (UiScale.Height - 30f) / H);
+        private static Vector2 Origin => new Vector2((UiScale.Width - W * Scale) * 0.5f, (UiScale.Height - H * Scale) * 0.5f);
         private static Rect OptionRect(int i) => new Rect(40f, 80f + i * 52f, W - 80f, 44f);
 
         private static Vector2 MenuMouse()
@@ -133,14 +133,14 @@ namespace SurvivalEnTren.UI
             Mouse mouse = Mouse.current;
             if (mouse == null) return new Vector2(-1000f, -1000f);
             Vector2 p = mouse.position.ReadValue();
-            return (new Vector2(p.x, Screen.height - p.y) - Origin) / Scale;
+            return (UiScale.ScreenToGui(p) - Origin) / Scale;
         }
 
         /// <summary>Dónde está el centro de una opción en coordenadas del mouse (lo usan las pruebas).</summary>
         public Vector2 OptionCenterScreen(int i)
         {
             Vector2 gui = Origin + OptionRect(i).center * Scale;
-            return new Vector2(gui.x, Screen.height - gui.y);
+            return UiScale.GuiToScreen(gui);
         }
 
         private void Update()
@@ -180,6 +180,13 @@ namespace SurvivalEnTren.UI
 
         private void OnGUI()
         {
+            Matrix4x4 uiOld = UiScale.Begin(); // la interfaz en puntos, agrandada según la pantalla
+            DrawGui();
+            GUI.matrix = uiOld;
+        }
+
+        private void DrawGui()
+        {
             if (!_open) return;
             _title ??= new GUIStyle(GUI.skin.label) { fontSize = 22, alignment = TextAnchor.MiddleCenter };
             _item ??= new GUIStyle(GUI.skin.label) { fontSize = 18, alignment = TextAnchor.MiddleCenter };
@@ -188,10 +195,10 @@ namespace SurvivalEnTren.UI
 
             // Oscurece la pantalla detrás del menú.
             GUI.color = new Color(0f, 0f, 0f, 0.55f);
-            GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(0f, 0f, UiScale.Width, UiScale.Height), Texture2D.whiteTexture);
 
             Matrix4x4 saved = GUI.matrix;
-            GUI.matrix = Matrix4x4.TRS(new Vector3(Origin.x, Origin.y, 0f), Quaternion.identity, new Vector3(Scale, Scale, 1f));
+            GUI.matrix = saved * Matrix4x4.TRS(new Vector3(Origin.x, Origin.y, 0f), Quaternion.identity, new Vector3(Scale, Scale, 1f));
             GUI.color = new Color(0.08f, 0.09f, 0.1f, 0.97f);
             GUI.DrawTexture(new Rect(0f, 0f, W, H), Texture2D.whiteTexture);
             GUI.color = Color.white;

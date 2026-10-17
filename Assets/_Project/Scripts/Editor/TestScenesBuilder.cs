@@ -81,18 +81,20 @@ namespace SurvivalEnTren.EditorTools
         private const float RouteStraightLength = 800f;
 
         // Locomotora. Coordenadas locales: y = 0 es la cara superior del riel, z+ es adelante.
-        private const float BodyHalfWidth = 1.7f;   // 3,4 m de ancho exterior (Tomi: con 3 m se sentía angosto)
+        // 4,4 m de ancho exterior y 2,9 m de alto interior (Tomi, 2026-10-16: "se ve muy chico, muy angosto"; antes 3,4 m y 2,4 m;
+        // con 3 m también se sentía angosto). El arte del vagón se adapta solo (TestScenesBuilder.ArtWiden.cs).
+        private const float BodyHalfWidth = 2.2f;
         private const float BodyHalfLength = 9.5f;
         private const float FloorTop = 1.0f;
-        private const float RoofBottom = 3.4f;
+        private const float RoofBottom = 3.9f;
         private const float WallThickness = 0.1f;
         private const float InnerHalfWidth = BodyHalfWidth - WallThickness; // cara interior de las paredes
         private const float BogieOffsetZ = 6.5f;
         private const float DoorCenterZ = -6f;
         private const float DoorHalfWidth = 0.5f;
-        private const float DoorHeight = 2.1f;
-        private const float WindowBottom = FloorTop + 0.9f;
-        private const float WindowTop = FloorTop + 1.8f;
+        private const float DoorHeight = 2.54f;     // 2,1 m con el techo de antes, estirada como la puerta del arte
+        private const float WindowBottom = FloorTop + 1.09f;   // 0,9 y 1,8 m sobre el piso con el techo de antes, estiradas
+        private const float WindowTop = FloorTop + 2.175f;
         private const float EngineRoomFrontZ = -7.5f;
         private const float StepRise = 0.32f;
         private const float StepDepth = 0.28f;
@@ -293,8 +295,9 @@ namespace SurvivalEnTren.EditorTools
             SetReference(climate, "clock", clock);
             SetReference(climate, "fuel", train.GetComponent<FuelTank>());
 
-            // El motor gasta combustible con el reloj del juego (la calefacción gasta en el clima).
+            // El motor gasta combustible por kilómetro recorrido (la calefacción gasta en el clima, por hora de juego).
             var burner = train.AddComponent<TrainFuelBurner>();
+            SetReference(burner, "mover", train.GetComponent<TrainMover>());
             SetReference(burner, "tank", train.GetComponent<FuelTank>());
             SetReference(burner, "controls", train.GetComponent<TrainControls>());
             SetReference(burner, "clock", clock);
@@ -1845,7 +1848,7 @@ namespace SurvivalEnTren.EditorTools
 
             var engine = Group("Zona_SalaMaquinas", interior);
             BoxMinMax("SalaMaquinas_Tabique", engine, new Vector3(-BodyHalfWidth + WallThickness, FloorTop, EngineRoomFrontZ - 0.1f), new Vector3(BodyHalfWidth - WallThickness, RoofBottom, EngineRoomFrontZ), p.Body);
-            BoxMinMax("SalaMaquinas_MotorTanque", engine, new Vector3(-1.2f, FloorTop, -9.3f), new Vector3(1.2f, FloorTop + 2.0f, EngineRoomFrontZ - 0.2f), p.Track);
+            BoxMinMax("SalaMaquinas_MotorTanque", engine, new Vector3(-1.2f * BodyHalfWidth / 1.7f, FloorTop, -9.3f), new Vector3(1.2f * BodyHalfWidth / 1.7f, FloorTop + 2.0f, EngineRoomFrontZ - 0.2f), p.Track);
 
             AddInteriorLight(interior, new Vector3(0f, RoofBottom - 0.3f, 4f));
             AddInteriorLight(interior, new Vector3(0f, RoofBottom - 0.3f, -2.5f));
@@ -1919,7 +1922,7 @@ namespace SurvivalEnTren.EditorTools
             face.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
             face.transform.localScale = new Vector3(0.3f, 0.01f, 0.3f);
             face.GetComponent<MeshRenderer>().sharedMaterial = p.Furniture;
-            const float gaugeMaxKmh = 60f, sweep = 120f;
+            const float gaugeMaxKmh = 90f, sweep = 120f; // el tren llega a 80 (2026-10-17)
             for (int kmh = 0; kmh <= gaugeMaxKmh; kmh += 10)
             {
                 float angle = Mathf.Lerp(sweep, -sweep, kmh / gaugeMaxKmh);

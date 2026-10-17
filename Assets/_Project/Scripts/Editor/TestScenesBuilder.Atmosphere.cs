@@ -171,6 +171,7 @@ namespace SurvivalEnTren.EditorTools
         private const float TerrainSize = 3000f;      // como el suelo plano de antes: 3 x 3 km
         private const float TerrainMaxHeight = 20f;
         private const int TerrainResolution = 513;    // 5,9 m entre muestras
+        private const string SnowTerrainShader = "Survival en tren/Terreno Nieve"; // Shaders/TerrenoNieve.shader
 
         // 5) El suelo nevado con relieve (Terrain de Unity, sin paquetes): dunas suaves alargadas por el viento, planas cerca de la
         // vía y de los lugares (lo que se camina no cambia); nieve compacta junto a la vía y pisada cerca de los lugares; y restos
@@ -258,7 +259,8 @@ namespace SurvivalEnTren.EditorTools
                     for (int x = 0; x < TerrainResolution; x++) heights[z, x] *= flatten;
             Debug.Log($"[Terreno] pendiente más empinada {Mathf.Atan(steepest * flatten) * Mathf.Rad2Deg:0.0}° (máximo {settings.MaxSlopeDegrees:0}°; sin achatar {Mathf.Atan(steepest) * Mathf.Rad2Deg:0.0}°)");
 
-            // Las capas de textura de la librería (a tamaño real): nieve, nieve compacta (junto a la vía) y pisada (cerca de los lugares).
+            // Las capas de textura de la librería (a tamaño real): nieve, nieve compacta (junto a la vía y en manchas que junta el
+            // viento), pisada (cerca de los lugares) y sucia (pegada a la vía).
             TerrainLayer Layer(string material, float tileMeters)
             {
                 string path = $"{TerrainFolder}/{material}.terrainlayer";
@@ -282,7 +284,7 @@ namespace SurvivalEnTren.EditorTools
                 EditorUtility.SetDirty(layer);
                 return layer;
             }
-            TerrainLayer[] layers = { Layer("MT_Nieve", 2f), Layer("MT_NieveCompacta", 2.5f), Layer("MT_NievePisada", 2f) };
+            TerrainLayer[] layers = { Layer("MT_Nieve", 2f), Layer("MT_NieveCompacta", 2.5f), Layer("MT_NievePisada", 2f), Layer("MT_NieveSucia", 2f) };
 
             string dataPath = $"{TerrainFolder}/Terreno_Nieve.asset";
             var data = AssetDatabase.LoadAssetAtPath<TerrainData>(dataPath);
@@ -293,15 +295,23 @@ namespace SurvivalEnTren.EditorTools
             data.terrainLayers = layers;
             data.alphamapResolution = TerrainResolution - 1;
             int splat = data.alphamapResolution;
-            var weights = new float[splat, splat, 3];
+            var weights = new float[splat, splat, 4];
             for (int z = 0; z < splat; z++)
                 for (int x = 0; x < splat; x++)
                 {
+                    // Manchas de nieve compactada por el viento en el campo (rompen el blanco parejo a lo lejos).
+                    float px = corner.x + (x + 0.5f) * TerrainSize / splat, pz = corner.z + (z + 0.5f) * TerrainSize / splat;
+                    float wind = Mathf.PerlinNoise(s * 1.7f + px / settings.WindPatchSize, s * 0.3f + pz / settings.WindPatchSize) * 0.75f
+                               + Mathf.PerlinNoise(s * 0.4f + px / (settings.WindPatchSize * 0.37f), s * 2.1f + pz / (settings.WindPatchSize * 0.37f)) * 0.25f;
+                    float windPatch = Mathf.SmoothStep(0f, 1f, (wind - (1f - settings.WindPatchCover)) / 0.18f) * settings.WindPatchStrength;
                     float compact = 1f - Mathf.SmoothStep(0f, 1f, (trackDistance[z, x] - 3f) / 10f);
+                    compact = Mathf.Max(compact, windPatch);
                     float trodden = (1f - Mathf.SmoothStep(0f, 1f, (placeDistance[z, x] - 4f) / 14f)) * (1f - compact);
-                    weights[z, x, 0] = Mathf.Max(0f, 1f - compact - trodden);
-                    weights[z, x, 1] = compact;
-                    weights[z, x, 2] = trodden;
+                    float dirty = (1f - Mathf.SmoothStep(0f, 1f, (trackDistance[z, x] - 1f) / settings.DirtyTrackWidth)) * settings.DirtyTrackStrength;
+                    weights[z, x, 0] = Mathf.Max(0f, 1f - compact - trodden) * (1f - dirty);
+                    weights[z, x, 1] = compact * (1f - dirty);
+                    weights[z, x, 2] = trodden * (1f - dirty);
+                    weights[z, x, 3] = dirty;
                 }
             data.SetAlphamaps(0, 0, weights);
             EditorUtility.SetDirty(data);
@@ -310,9 +320,15 @@ namespace SurvivalEnTren.EditorTools
             var material = AssetDatabase.LoadAssetAtPath<Material>(materialPath);
             if (material == null)
             {
-                material = new Material(Shader.Find("Universal Render Pipeline/Terrain/Lit")) { name = "Terreno_Lit" };
+                material = new Material(Shader.Find(SnowTerrainShader)) { name = "Terreno_Lit" };
                 AssetDatabase.CreateAsset(material, materialPath);
             }
+            // La nieve sin repetición (Parte 1b, 2026-10-17): el sombreador propio. Los valores de la mezcla quedan en el material
+            // (se ajustan ahí y no se pisan al reconstruir); solo se pone el lado del terreno.
+            Shader snowShader = Shader.Find(SnowTerrainShader);
+            if (snowShader != null && material.shader != snowShader) material.shader = snowShader;
+            material.SetFloat("_NieveTerrenoTamano", TerrainSize);
+            EditorUtility.SetDirty(material);
 
             GameObject terrainObject = Terrain.CreateTerrainGameObject(data);
             terrainObject.name = "Terreno_Nieve";
@@ -320,7 +336,7 @@ namespace SurvivalEnTren.EditorTools
             var terrain = terrainObject.GetComponent<Terrain>();
             terrain.materialTemplate = material;
             terrain.heightmapPixelError = 6f;
-            terrain.basemapDistance = 250f;
+            terrain.basemapDistance = 250f; // desde acá Unity usa su imagen de lejos (sin la nieve sin repetición), pero la niebla ya tapa el 97 %
             terrain.drawInstanced = true;
             if (oldGround != null) Object.DestroyImmediate(oldGround); // el plano de nieve de antes
 
@@ -464,6 +480,7 @@ namespace SurvivalEnTren.EditorTools
                 var material = AssetDatabase.LoadAssetAtPath<Material>(path);
                 if (material == null) { material = new Material(source) { name = name }; AssetDatabase.CreateAsset(material, path); }
                 else material.CopyPropertiesFromMaterial(source);
+                material.SetFloat("_QueueOffset", 10f); // URP recalcula la cola desde acá al revisar el material: sin esto vuelve a 3000
                 material.renderQueue = (int)RenderQueue.Transparent + 10;
                 EditorUtility.SetDirty(material);
                 return material;

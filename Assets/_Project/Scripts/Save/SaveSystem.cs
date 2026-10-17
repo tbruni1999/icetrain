@@ -14,6 +14,7 @@ using SurvivalEnTren.Rail;
 using SurvivalEnTren.Survival;
 using SurvivalEnTren.Train;
 using SurvivalEnTren.World;
+using SurvivalEnTren.UI;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
@@ -543,10 +544,17 @@ namespace SurvivalEnTren.Save
 
         private void OnGUI()
         {
+            Matrix4x4 uiOld = UiScale.Begin(); // la interfaz en puntos, agrandada según la pantalla
+            DrawGui();
+            GUI.matrix = uiOld;
+        }
+
+        private void DrawGui()
+        {
             if (Time.unscaledTime >= _noticeUntil) return;
             _style ??= new GUIStyle(GUI.skin.label) { fontSize = 18, alignment = TextAnchor.MiddleCenter };
             float fade = Mathf.Clamp01((_noticeUntil - Time.unscaledTime) / 0.5f);
-            var rect = new Rect(Screen.width * 0.5f - 200f, 20f, 400f, 36f);
+            var rect = new Rect(UiScale.Width * 0.5f - 200f, 20f, 400f, 36f);
             GUI.color = new Color(0.08f, 0.09f, 0.1f, 0.85f * fade);
             GUI.DrawTexture(rect, Texture2D.whiteTexture);
             GUI.color = Color.white;

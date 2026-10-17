@@ -78,23 +78,23 @@ namespace SurvivalEnTren.UI
 
         // ---------------------------------------------------------------- Diseño: el panel a la izquierda, la vista a la derecha
 
-        private static float Scale => Mathf.Min(1f, (Screen.width - 30f) / W, (Screen.height - 30f) / H);
-        private static Vector2 Origin => new Vector2(Mathf.Max(15f, Screen.width * 0.08f), (Screen.height - H * Scale) * 0.5f);
-        private static Rect OptionRect(int i) => new Rect(30f, 150f + i * 56f, W - 60f, 46f);
+        private static float Scale => Mathf.Min(1f, (UiScale.Width - 30f) / W, (UiScale.Height - 30f) / H);
+        private static Vector2 Origin => new Vector2(Mathf.Max(15f, UiScale.Width * 0.08f), (UiScale.Height - H * Scale) * 0.5f);
+        private static Rect OptionRect(int i) => new Rect(30f, 130f + i * 46f, W - 60f, 40f);
 
         private static Vector2 MenuMouse()
         {
             Mouse mouse = Mouse.current;
             if (mouse == null) return new Vector2(-1000f, -1000f);
             Vector2 p = mouse.position.ReadValue();
-            return (new Vector2(p.x, Screen.height - p.y) - Origin) / Scale;
+            return (UiScale.ScreenToGui(p) - Origin) / Scale;
         }
 
         /// <summary>Dónde está el centro de una opción en coordenadas del mouse (lo usan las pruebas).</summary>
         public Vector2 OptionCenterScreen(int i)
         {
             Vector2 gui = Origin + OptionRect(i).center * Scale;
-            return new Vector2(gui.x, Screen.height - gui.y);
+            return UiScale.GuiToScreen(gui);
         }
 
         private void Update()
@@ -132,13 +132,20 @@ namespace SurvivalEnTren.UI
 
         private void OnGUI()
         {
+            Matrix4x4 uiOld = UiScale.Begin(); // la interfaz en puntos, agrandada según la pantalla
+            DrawGui();
+            GUI.matrix = uiOld;
+        }
+
+        private void DrawGui()
+        {
             _title ??= new GUIStyle(GUI.skin.label) { fontSize = 34, alignment = TextAnchor.MiddleLeft, fontStyle = FontStyle.Bold };
             _subtitle ??= new GUIStyle(GUI.skin.label) { fontSize = 15, alignment = TextAnchor.MiddleLeft };
             _item ??= new GUIStyle(GUI.skin.label) { fontSize = 19, alignment = TextAnchor.MiddleCenter };
             _value ??= new GUIStyle(GUI.skin.label) { fontSize = 17, alignment = TextAnchor.MiddleCenter };
 
             Matrix4x4 saved = GUI.matrix;
-            GUI.matrix = Matrix4x4.TRS(new Vector3(Origin.x, Origin.y, 0f), Quaternion.identity, new Vector3(Scale, Scale, 1f));
+            GUI.matrix = saved * Matrix4x4.TRS(new Vector3(Origin.x, Origin.y, 0f), Quaternion.identity, new Vector3(Scale, Scale, 1f));
             GUI.color = new Color(0.06f, 0.07f, 0.08f, 0.82f);
             GUI.DrawTexture(new Rect(0f, 0f, W, H), Texture2D.whiteTexture);
             GUI.color = Color.white;

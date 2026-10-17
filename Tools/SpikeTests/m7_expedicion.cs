@@ -285,7 +285,7 @@ System.Collections.IEnumerator Run()
     while (Flat(motor.transform.position, inside) > 0.5f && climb < 20f) { yield return wait; climb += UnityEngine.Time.fixedDeltaTime; Step(YawTo(inside)); }
     HoldW(false);
     var localNow = trainBody.transform.InverseTransformPoint(motor.transform.position);
-    log.Append($" SUBIÓ AL TREN cargado: adentro={localNow.y > 0.9f && System.Math.Abs(localNow.x) < 1.6f} (local {localNow.x:0.00}, {localNow.y:0.00}, {localNow.z:0.00}) en {climb:0.0} s.");
+    log.Append($" SUBIÓ AL TREN cargado: adentro={localNow.y > 0.9f && System.Math.Abs(localNow.x) < 2.1f} (local {localNow.x:0.00}, {localNow.y:0.00}, {localNow.z:0.00}) en {climb:0.0} s.");
 
     // 5) Dejar todo en el piso del tren con el panel (Tab y Supr, con el teclado real): queda en bultos adentro.
     yield return Tap(UnityEngine.InputSystem.Key.Tab);
@@ -301,7 +301,7 @@ System.Collections.IEnumerator Run()
         if (b.Item != null && b.transform.parent == null)
         {
             total++;
-            if (System.Math.Abs(l.x) < 1.7f && l.z > -7.5f && l.z < 9.5f && l.y > 0.9f) insideCount++;
+            if (System.Math.Abs(l.x) < 2.1f && l.z > -7.5f && l.z < 9.5f && l.y > 0.9f) insideCount++;
         }
     }
     log.Append($" DEJAR EN EL TREN: panel abierto={opened}, mochila vacía={backpack.Grid.Items.Count == 0}, caminar x{motor.SpeedMultiplier:0.00}; bultos sueltos en el mundo (sin contar los de la estación) {total}, de los cuales adentro del tren {insideCount}.");

@@ -35,3 +35,5 @@ MT_LonaMarron: Poly Haven · hessian_380 · colormass, Rico Cilliers · https://
 MT_TelaManta: Poly Haven · knitted_fleece · colormass, Rico Cilliers · https://polyhaven.com/a/knitted_fleece
 MT_TelaGris: Poly Haven · poly_wool_herringbone · colormass, Rico Cilliers · https://polyhaven.com/a/poly_wool_herringbone
 MT_Cuero: Poly Haven · brown_leather · Rob Tuytel · https://polyhaven.com/a/brown_leather
+MT_RocaOscura: Poly Haven · dark_rock · Amal Kumar · https://polyhaven.com/a/dark_rock
+MT_RocaGris: Poly Haven · rock_01 · Rob Tuytel · https://polyhaven.com/a/rock_01

@@ -1,4 +1,5 @@
 using SurvivalEnTren.Player;
+using SurvivalEnTren.UI;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -163,6 +164,13 @@ namespace SurvivalEnTren.Interaction
 
         private void OnGUI()
         {
+            Matrix4x4 uiOld = UiScale.Begin(); // la interfaz en puntos, agrandada según la pantalla
+            DrawGui();
+            GUI.matrix = uiOld;
+        }
+
+        private void DrawGui()
+        {
             if (_promptStyle == null)
             {
                 _promptStyle = new GUIStyle(GUI.skin.label)
@@ -172,7 +180,7 @@ namespace SurvivalEnTren.Interaction
                 };
             }
 
-            var center = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+            var center = new Vector2(UiScale.Width * 0.5f, UiScale.Height * 0.5f);
             IInteractable shown = _engaged != null && !_usableWhileEngaged ? _engaged : _target;
             // El editor puede dibujar entre un cuadro y otro: lo que se apuntaba pudo destruirse recién (un kit instalado).
             if (shown is Object gone && gone == null) shown = null;

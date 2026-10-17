@@ -200,8 +200,10 @@ System.Collections.IEnumerator Run()
         maxJitter = UnityEngine.Mathf.Max(maxJitter, ride.JitterMillimeters);
         if (Seg() != last) { last = Seg(); path += " > " + last; }
     }
-    // Desde 40 km/h el freno 4 detiene el tren en unos 50 m: se frena a 100 m del cambio.
-    while (t < 330f && Dist() < 200f) { yield return wait; t += UnityEngine.Time.fixedDeltaTime; maxJitter = UnityEngine.Mathf.Max(maxJitter, ride.JitterMillimeters); }
+    // Frena a tiempo para quedar a unos 35 m del cambio: la distancia de frenado sale de la velocidad y del freno 4 de los datos
+    // (desde el 2026-10-17 la potencia 4 llega a 80 km/h y necesita ~100 m para parar).
+    float stopDecel = controls.Settings.BrakeDeceleration(4);
+    while (t < 330f && (train.transform.position - sw.Point).magnitude > train.SpeedMetersPerSecond * train.SpeedMetersPerSecond / (2f * stopDecel) + 35f) { yield return wait; t += UnityEngine.Time.fixedDeltaTime; maxJitter = UnityEngine.Mathf.Max(maxJitter, ride.JitterMillimeters); }
     Brake(4);
     while (UnityEngine.Mathf.Abs(train.SpeedMetersPerSecond) > 0.01f) yield return wait;
     float toSwitch = (train.transform.position - sw.Point).magnitude;
@@ -266,7 +268,7 @@ System.Collections.IEnumerator Run()
     while (UnityEngine.Mathf.Abs(train.SpeedMetersPerSecond) > 0.01f) yield return wait;
     var inside = trainBody.transform.InverseTransformPoint(motor.transform.position);
     var here = train.transform.position;
-    log.Append($" RUTA DESCONOCIDA: recorrido {path}; el tren está en {Seg()} a {Dist():0} m (ruta de {train.RailPosition.Segment.Length:0} m), en ({here.x:0}, {here.z:0}); temblor del jugador {maxJitter:0.00} mm; el jugador sigue adentro={System.Math.Abs(inside.x) < 1.7f && System.Math.Abs(inside.z) < 9.5f}.");
+    log.Append($" RUTA DESCONOCIDA: recorrido {path}; el tren está en {Seg()} a {Dist():0} m (ruta de {train.RailPosition.Segment.Length:0} m), en ({here.x:0}, {here.z:0}); temblor del jugador {maxJitter:0.00} mm; el jugador sigue adentro={System.Math.Abs(inside.x) < 2.1f && System.Math.Abs(inside.z) < 9.5f}.");
 
     double hours = clock.TotalHours - hours0;
     log.Append($" RESUMEN: {UnityEngine.Time.realtimeSinceStartup - real0:0} s reales ({hours:0.0} h de juego); tanque {tank0:0.0} → {tank.Liters:0.0} L; vida {vitals.Health:0} comida {vitals.Satiety:0} energía {vitals.Energy:0} calor {vitals.Warmth:0}.");

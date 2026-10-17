@@ -12,14 +12,14 @@ namespace SurvivalEnTren.Train
     {
         [Tooltip("Velocidad máxima que alcanza cada posición de potencia (1, 2, 3, 4...), en km/h. " +
                  "La cantidad de posiciones sale del largo de esta lista.")]
-        [SerializeField] private float[] powerNotchTopSpeedsKmh = { 10f, 20f, 30f, 40f };
+        [SerializeField] private float[] powerNotchTopSpeedsKmh = { 20f, 40f, 60f, 80f }; // 2026-10-17, Tomi: "que vaya más rápido el tren" (medido estable hasta 90)
 
         [Tooltip("Cuánto acelera el tren con potencia, en metros por segundo cada segundo.")]
-        [SerializeField, Range(0.05f, 2f)] private float tractionAccelerationMetersPerSecondSquared = 0.35f;
+        [SerializeField, Range(0.05f, 2f)] private float tractionAccelerationMetersPerSecondSquared = 0.8f;
 
         [Tooltip("Cuánto frena cada posición de freno (1, 2, 3, 4...), en metros por segundo cada segundo. " +
                  "La cantidad de posiciones sale del largo de esta lista.")]
-        [SerializeField] private float[] brakeNotchDecelerationsMetersPerSecondSquared = { 0.25f, 0.5f, 0.8f, 1.2f };
+        [SerializeField] private float[] brakeNotchDecelerationsMetersPerSecondSquared = { 0.5f, 1.0f, 1.6f, 2.4f };
 
         [Tooltip("Cuánta velocidad pierde el tren solo por rozamiento (sin potencia ni freno), en m/s cada segundo.")]
         [SerializeField, Range(0f, 0.5f)] private float rollingResistanceMetersPerSecondSquared = 0.03f;

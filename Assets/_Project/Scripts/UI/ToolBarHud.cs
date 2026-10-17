@@ -27,6 +27,13 @@ namespace SurvivalEnTren.UI
 
         private void OnGUI()
         {
+            Matrix4x4 uiOld = UiScale.Begin(); // la interfaz en puntos, agrandada según la pantalla
+            DrawGui();
+            GUI.matrix = uiOld;
+        }
+
+        private void DrawGui()
+        {
             if (belt == null || belt.Settings == null) return;
             if (_name == null)
             {
@@ -38,7 +45,7 @@ namespace SurvivalEnTren.UI
 
             ToolSlot[] slots = belt.Settings.Slots;
             float total = slots.Length * SlotWidth + (slots.Length - 1) * Gap;
-            float x = (Screen.width - total) * 0.5f, y = Screen.height - 18f - SlotHeight;
+            float x = (UiScale.Width - total) * 0.5f, y = UiScale.Height - 18f - SlotHeight;
             for (int i = 0; i < slots.Length; i++)
             {
                 var r = new Rect(x + i * (SlotWidth + Gap), y, SlotWidth, SlotHeight);

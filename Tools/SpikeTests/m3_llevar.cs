@@ -61,7 +61,7 @@ System.Collections.IEnumerator Run()
     float maxRel = 0f;
     for (int i = 0; i < 100; i++) { yield return wait; maxRel = UnityEngine.Mathf.Max(maxRel, RelSpeed(big.Body)); }
     var rest = train.transform.InverseTransformPoint(big.transform.position);
-    log.Append($" Soltarla en marcha: velocidad máx. respecto del tren {maxRel:0.00} m/s (caída), quedó adentro={UnityEngine.Mathf.Abs(rest.x) < 1.6f && rest.y > 0.8f}.");
+    log.Append($" Soltarla en marcha: velocidad máx. respecto del tren {maxRel:0.00} m/s (caída), quedó adentro={UnityEngine.Mathf.Abs(rest.x) < 2.1f && rest.y > 0.8f}.");
 
     // 4) Lanzar la chica (3 kg) hacia adelante del tren.
     PlaceLocal(new UnityEngine.Vector3(0.6f, 1.05f, 5.8f), 180f);
@@ -91,9 +91,9 @@ System.Collections.IEnumerator Run()
     small.Interact(who);
     for (int i = 0; i < 10; i++) yield return wait;
     bool heldBefore = carrier.Holding == small;
-    PlaceLocal(new UnityEngine.Vector3(1.2f, 1.05f, 2.0f), 90f); // mirando la pared derecha, a 0,4 m
+    PlaceLocal(new UnityEngine.Vector3(1.7f, 1.05f, 2.0f), 90f); // mirando la pared derecha (cara interior en 2,1), a 0,4 m
     for (int i = 0; i < 60; i++) yield return wait;
-    log.Append($" Contra la pared: la tenía={heldBefore}, la sigue teniendo apoyada contra la pared={carrier.Holding == small}, no la atravesó (sigue adentro del tren)={UnityEngine.Mathf.Abs(train.transform.InverseTransformPoint(small.transform.position).x) < 1.65f}.");
+    log.Append($" Contra la pared: la tenía={heldBefore}, la sigue teniendo apoyada contra la pared={carrier.Holding == small}, no la atravesó (sigue adentro del tren)={UnityEngine.Mathf.Abs(train.transform.InverseTransformPoint(small.transform.position).x) < 2.15f}.");
 
     while (controls.PowerNotch > 0) controls.MovePowerBrake(-1);
     while (controls.BrakeNotch < 4) controls.MovePowerBrake(-1);

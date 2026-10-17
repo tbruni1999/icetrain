@@ -909,5 +909,39 @@
   "escala_m": 1.0,
   "tipo": "procedural",
   "fuente": "texturas.py"
+ },
+ {
+  "nombre": "roca_oscura",
+  "material": "MT_RocaOscura",
+  "categoria": "rocas",
+  "BaseColor": "MT_RocaOscura_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Roca oscura con grietas: paredes de montaña y rocas grandes para picar.",
+  "escala_m": 2.4,
+  "fuente": "Poly Haven",
+  "asset": "dark_rock",
+  "autores": [
+   "Amal Kumar"
+  ],
+  "url": "https://polyhaven.com/a/dark_rock",
+  "licencia": "CC0",
+  "tipo": "escaneada"
+ },
+ {
+  "nombre": "roca_gris",
+  "material": "MT_RocaGris",
+  "categoria": "rocas",
+  "BaseColor": "MT_RocaGris_BaseColor.jpg",
+  "alfa": false,
+  "descripcion": "Roca gris más clara y lisa: piedras sueltas, cantera y pie de la montaña.",
+  "escala_m": 1.5,
+  "fuente": "Poly Haven",
+  "asset": "rock_01",
+  "autores": [
+   "Rob Tuytel"
+  ],
+  "url": "https://polyhaven.com/a/rock_01",
+  "licencia": "CC0",
+  "tipo": "escaneada"
  }
 ]

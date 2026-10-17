@@ -8,7 +8,8 @@ using UnityEngine.Rendering.Universal;
 namespace SurvivalEnTren.UI
 {
     /// <summary>
-    /// Las opciones del jugador (producción P3): volumen, sensibilidad del mouse, calidad gráfica y pantalla completa. Se guardan
+    /// Las opciones del jugador (producción P3): volumen, sensibilidad del mouse, calidad gráfica, pantalla completa y (desde el
+    /// 2026-10-16, pedido de Tomi) el tamaño de la interfaz y el campo de visión. Se guardan
     /// en un archivo propio (opciones.json, al lado de las partidas; nada de PlayerPrefs) y se aplican al arrancar y al cambiarlas.
     /// La calidad cambia cosas de la escena, no la configuración del proyecto: sombras de la cámara, cuánta nieve cae y el detalle
     /// del terreno lejano.
@@ -22,6 +23,8 @@ namespace SurvivalEnTren.UI
         public float sensitivity = 1f;     // 0,3 a 3 (veces la sensibilidad de base)
         public Quality quality = Quality.Alta;
         public bool fullscreen = true;
+        public float uiScale = 1f;         // 0,7 a 1,6 (veces el tamaño de diseño de la interfaz)
+        public float fieldOfView = 70f;    // 60 a 100 grados (vertical), la cámara y la de las manos
 
         private static string FilePath => Path.Combine(Application.persistentDataPath, "opciones.json");
 
@@ -54,6 +57,7 @@ namespace SurvivalEnTren.UI
         public void ApplyGlobal()
         {
             AudioListener.volume = Mathf.Clamp01(volume);
+            UiScale.User = uiScale <= 0f ? 1f : uiScale;
             if (!Application.isEditor && Screen.fullScreen != fullscreen) Screen.fullScreen = fullscreen;
         }
 
@@ -64,7 +68,14 @@ namespace SurvivalEnTren.UI
             if (look != null) look.SensitivityScale = Mathf.Clamp(sensitivity, 0.3f, 3f);
             Camera camera = Camera.main;
             if (camera != null && camera.TryGetComponent(out UniversalAdditionalCameraData data))
+            {
                 data.renderShadows = quality != Quality.Baja;
+                // El campo de visión, igual en la cámara de las manos (si no, lo que se carga no calza con las manos).
+                float fov = Mathf.Clamp(fieldOfView <= 0f ? 70f : fieldOfView, 60f, 100f);
+                camera.fieldOfView = fov;
+                foreach (Camera overlay in data.cameraStack)
+                    if (overlay != null) overlay.fieldOfView = fov;
+            }
             SnowWeather snow = UnityEngine.Object.FindAnyObjectByType<SnowWeather>();
             if (snow != null) snow.DensityScale = quality == Quality.Alta ? 1f : quality == Quality.Media ? 0.6f : 0.35f;
             Terrain terrain = Terrain.activeTerrain;

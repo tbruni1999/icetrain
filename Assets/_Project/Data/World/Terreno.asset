@@ -21,6 +21,11 @@ MonoBehaviour:
   trackFlat: 12
   placeFlat: 14
   blend: 35
+  windPatchSize: 45
+  windPatchCover: 0.4
+  windPatchStrength: 0.65
+  dirtyTrackWidth: 5
+  dirtyTrackStrength: 0.4
   remnants: 12
   remnantMinDistance: 140
   remnantMaxDistance: 650

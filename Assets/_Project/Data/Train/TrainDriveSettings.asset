@@ -13,15 +13,18 @@ MonoBehaviour:
   m_Name: TrainDriveSettings
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalEnTren.Train.TrainDriveSettings
   powerNotchTopSpeedsKmh:
-  - 10
   - 20
-  - 30
   - 40
-  tractionAccelerationMetersPerSecondSquared: 0.35
+  - 60
+  - 80
+  tractionAccelerationMetersPerSecondSquared: 0.8
   brakeNotchDecelerationsMetersPerSecondSquared:
-  - 0.25
   - 0.5
-  - 0.8
-  - 1.2
+  - 1
+  - 1.6
+  - 2.4
   rollingResistanceMetersPerSecondSquared: 0.03
   reverserMaxSpeedKmh: 0.5
+  bufferStiffnessPerSecondSquared: 30
+  bufferDampingPerSecond: 10
+  bufferDampingRampMeters: 0.12

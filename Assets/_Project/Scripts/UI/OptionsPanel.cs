@@ -6,15 +6,15 @@ namespace SurvivalEnTren.UI
 {
     /// <summary>
     /// El panel de opciones (producción P3), compartido por el menú principal y el de pausa: volumen, sensibilidad del mouse,
-    /// calidad y pantalla completa. Se dibuja dentro del espacio del menú que lo usa (OnGUI, sin GUILayout) y se maneja con el
+    /// calidad, pantalla completa, tamaño de la interfaz y campo de visión. Se dibuja dentro del espacio del menú que lo usa (OnGUI, sin GUILayout) y se maneja con el
     /// mouse (clic en la barra o en el valor) o con el teclado (flechas arriba/abajo para elegir, izquierda/derecha para cambiar,
     /// Enter en "Volver"). Al cambiar algo se guarda y se aplica enseguida.
     /// </summary>
     public class OptionsPanel
     {
         private static readonly Color Amber = new Color(1f, 0.72f, 0.2f);
-        private static readonly string[] Labels = { "Volumen", "Sensibilidad del mouse", "Calidad", "Pantalla completa", "Volver" };
-        private const int BackRow = 4;
+        private static readonly string[] Labels = { "Volumen", "Sensibilidad del mouse", "Calidad", "Pantalla completa", "Tamaño de la interfaz", "Campo de visión", "Volver" };
+        private const int BackRow = 6;
 
         private readonly Func<int, Rect> _rowRect;
         private GameOptions _options;
@@ -60,6 +60,8 @@ namespace SurvivalEnTren.UI
                     _options.quality = (GameOptions.Quality)Mathf.Clamp(q, 0, 2);
                     break;
                 case 3: _options.fullscreen = t.HasValue ? !_options.fullscreen : dir > 0; break;
+                case 4: _options.uiScale = Mathf.Clamp(t.HasValue ? Mathf.Lerp(UiScale.MinUser, UiScale.MaxUser, t.Value) : _options.uiScale + dir * 0.05f, UiScale.MinUser, UiScale.MaxUser); break;
+                case 5: _options.fieldOfView = Mathf.Clamp(t.HasValue ? Mathf.Lerp(60f, 100f, t.Value) : _options.fieldOfView + dir * 5f, 60f, 100f); break;
                 default: return;
             }
             Changed();
@@ -122,7 +124,9 @@ namespace SurvivalEnTren.UI
                 item.alignment = TextAnchor.MiddleLeft;
                 GUI.Label(new Rect(r.x + 14f, r.y, r.width * 0.5f, r.height), Labels[i], item);
                 Rect c = ControlRect(r);
-                float fill = i == 0 ? _options.volume : i == 1 ? Mathf.InverseLerp(0.3f, 3f, _options.sensitivity) : -1f;
+                float fill = i == 0 ? _options.volume : i == 1 ? Mathf.InverseLerp(0.3f, 3f, _options.sensitivity)
+                    : i == 4 ? Mathf.InverseLerp(UiScale.MinUser, UiScale.MaxUser, _options.uiScale)
+                    : i == 5 ? Mathf.InverseLerp(60f, 100f, _options.fieldOfView) : -1f;
                 if (fill >= 0f)
                 {
                     GUI.color = new Color(1f, 1f, 1f, 0.15f);

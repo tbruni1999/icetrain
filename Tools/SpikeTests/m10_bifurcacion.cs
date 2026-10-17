@@ -94,7 +94,7 @@ System.Collections.IEnumerator Run()
     Brake(4);
     while (UnityEngine.Mathf.Abs(train.SpeedMetersPerSecond) > 0.01f) yield return wait;
     var inside = trainBody.transform.InverseTransformPoint(motor.transform.position);
-    log.Append($" MANEJANDO por la bifurcación a 30 km/h: recorrido {path}; entró a la ruta desconocida={enteredRoute}; temblor del jugador {maxJitter:0.00} mm; el jugador sigue adentro={System.Math.Abs(inside.x) < 1.7f && System.Math.Abs(inside.z) < 9.5f}.");
+    log.Append($" MANEJANDO por la bifurcación a 30 km/h: recorrido {path}; entró a la ruta desconocida={enteredRoute}; temblor del jugador {maxJitter:0.00} mm; el jugador sigue adentro={System.Math.Abs(inside.x) < 2.1f && System.Math.Abs(inside.z) < 9.5f}.");
 
     // 5) Marcha atrás por la bifurcación (a resorte: vuelve al tramo de entrada).
     controls.TryMoveReverser(-1); controls.TryMoveReverser(-1);

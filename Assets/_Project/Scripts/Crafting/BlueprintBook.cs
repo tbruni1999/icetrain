@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using SurvivalEnTren.UI;
 using UnityEngine;
 
 namespace SurvivalEnTren.Crafting
@@ -48,6 +49,13 @@ namespace SurvivalEnTren.Crafting
 
         private void OnGUI()
         {
+            Matrix4x4 uiOld = UiScale.Begin(); // la interfaz en puntos, agrandada según la pantalla
+            DrawGui();
+            GUI.matrix = uiOld;
+        }
+
+        private void DrawGui()
+        {
             if (Time.unscaledTime >= _noticeUntil) return;
             if (_style == null)
             {
@@ -57,7 +65,7 @@ namespace SurvivalEnTren.Crafting
                 _style = new GUIStyle(GUI.skin.label) { fontSize = 20, alignment = TextAnchor.MiddleCenter };
             }
             float fade = Mathf.Clamp01((_noticeUntil - Time.unscaledTime) / 0.6f);
-            var rect = new Rect(Screen.width * 0.5f - 260f, 56f, 520f, 44f);
+            var rect = new Rect(UiScale.Width * 0.5f - 260f, 56f, 520f, 44f);
             GUI.color = new Color(1f, 1f, 1f, 0.85f * fade);
             GUI.DrawTexture(rect, _plate);
             _style.normal.textColor = new Color(1f, 0.72f, 0.2f, fade);

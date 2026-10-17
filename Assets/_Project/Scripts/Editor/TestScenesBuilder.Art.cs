@@ -171,6 +171,7 @@ namespace SurvivalEnTren.EditorTools
             if (art == null) return;
             art.name = "Arte_MR04";
             art.transform.localRotation = Quaternion.Euler(0f, 180f, 0f); // el FBX trae la cabina hacia -Z (la guía de arte lo avisa)
+            WidenWagonArt(art); // el tren más ancho y alto (2026-10-16): el arte se estira sin deformar ruedas, cabina ni muebles
             Transform A(string name) => art.transform.Find(name);
             Transform G(string path) => root.transform.Find(path);
 
@@ -303,8 +304,8 @@ namespace SurvivalEnTren.EditorTools
                 var panel = new GameObject("Panel");
                 panel.transform.SetParent(leaf, false);
                 var box = panel.AddComponent<BoxCollider>();
-                box.center = new Vector3(0f, 1.09f, 0.55f);
-                box.size = new Vector3(0.08f, 2.18f, 1.1f);
+                box.center = new Vector3(0f, 1.09f * ArtRaise, 0.55f);   // la puerta del arte, estirada con el techo
+                box.size = new Vector3(0.08f, 2.18f * ArtRaise, 1.1f);
                 artDoor.SetParent(leaf, true);
                 artDoor.name = "Arte_" + doorName; // que no se confunda con la puerta del juego al buscarla por nombre
                 var doorSo = new SerializedObject(door.GetComponent<SlidingDoor>());
@@ -317,7 +318,8 @@ namespace SurvivalEnTren.EditorTools
             // más sobre la pared y no tanto sobre la ventana"). En el modelo viene pegada a la malla de la cabina, en el borde de la
             // ventana (z 6,8 a 7,6) y con la pantalla a 0,9 m del piso. Se separa de la cabina, se corre a la pared lisa entre dos
             // ventanas (z 5,9 a 6,7) y se sube sobre una base de acero: la pantalla queda a 1,5 m del piso (los ojos, a 1,65 m).
-            Vector3 consoleMove = new Vector3(0f, ConsoleRaise, ConsoleShiftZ);
+            // (Con el tren más ancho, también se corre hasta la pared izquierda nueva: la cabina del arte no se ensancha.)
+            Vector3 consoleMove = new Vector3(-ArtSideShift, ConsoleRaise, ConsoleShiftZ);
             Transform cabin = A("Cabina_LOD0");
             Mesh[] parts = SplitMesh(cabin.GetComponent<MeshFilter>().sharedMesh, "Cabina", "Consola_Sonda",
                 c => -c.x >= -1.7f && -c.x <= -0.8f && -c.z >= 6.5f && -c.z <= 7.9f); // el FBX está girado 180°: x y z al revés

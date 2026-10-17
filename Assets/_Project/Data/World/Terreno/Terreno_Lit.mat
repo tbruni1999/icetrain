@@ -21,7 +21,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Terreno_Lit
-  m_Shader: {fileID: 4800000, guid: 69c1f799e772cb6438f56c23efccb782, type: 3}
+  m_Shader: {fileID: 4800000, guid: 668cbd9c105da314aaf6e2a5a949e664, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -105,6 +105,15 @@ Material:
     - _Metallic1: 0
     - _Metallic2: 0
     - _Metallic3: 0
+    - _NieveLejosAncho: 60
+    - _NieveLejosDesde: 20
+    - _NieveLejosEscala: 0.15
+    - _NieveLejosMezcla: 0.7
+    - _NieveMacroEscala: 70
+    - _NieveMacroFuerza: 0.06
+    - _NieveRuidoEscala: 0.15
+    - _NieveSimpleDesde: 250
+    - _NieveTerrenoTamano: 3000
     - _NumLayersCount: 1
     - _Smoothness0: 0.5
     - _Smoothness1: 0.5

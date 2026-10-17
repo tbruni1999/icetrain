@@ -35,6 +35,13 @@ namespace SurvivalEnTren.UI
 
         private void OnGUI()
         {
+            Matrix4x4 uiOld = UiScale.Begin(); // la interfaz en puntos, agrandada según la pantalla
+            DrawGui();
+            GUI.matrix = uiOld;
+        }
+
+        private void DrawGui()
+        {
             if (_label == null)
                 _label = new GUIStyle(GUI.skin.label) { fontSize = 12, alignment = TextAnchor.MiddleLeft };
 
@@ -43,7 +50,7 @@ namespace SurvivalEnTren.UI
             _alpha = Mathf.MoveTowards(_alpha, target, Time.unscaledDeltaTime * 2f);
 
             bool cooling = vitals.AmbientTemperatureC < vitals.Settings.ComfortTemperatureC;
-            float x = 18f, y = Screen.height - 18f - 4 * RowHeight;
+            float x = 18f, y = UiScale.Height - 18f - 4 * RowHeight;
 
             // Placa oscura translúcida detrás, para que se lea sobre la nieve.
             GUI.color = new Color(0.04f, 0.05f, 0.07f, backingOpacity * _alpha);

@@ -77,7 +77,9 @@ System.Collections.IEnumerator Run()
     for (int i = 0; i < 30; i++) yield return wait;
 
     // 1) Apuntar al banco (pared izquierda del taller) y abrirlo con E.
-    Face(new UnityEngine.Vector3(-0.2f, 1.05f, 0f), new UnityEngine.Vector3(-1.1f, 1.9f, 0f));
+    // (al banco de verdad, donde esté: desde el 2026-10-16 el tren es más ancho y el banco quedó contra la pared nueva)
+    var benchLocal = trainBody.transform.InverseTransformPoint(bench.transform.position);
+    Face(new UnityEngine.Vector3(benchLocal.x + 1.3f, 1.05f, benchLocal.z), new UnityEngine.Vector3(benchLocal.x + 0.3f, 1.9f, benchLocal.z));
     for (int i = 0; i < 40; i++) yield return wait;
     log.Append($"EL BANCO: apuntándolo el objetivo es {Name(Target())}, indicación \"{bench.GetPrompt(who)}\"; sierra colgada visible={DisplayOn()}; planos en el banco {bench.Catalog.Length}.");
     yield return Tap(UnityEngine.InputSystem.Key.E);
@@ -148,7 +150,7 @@ System.Collections.IEnumerator Run()
     if (fresh != null)
     {
         UnityEngine.Vector3 local = trainBody.transform.InverseTransformPoint(fresh.transform.position);
-        onBench = local.x < -0.8f && local.x > -1.6f && local.y > 1.85f && local.y < 2.3f && UnityEngine.Mathf.Abs(local.z - 0.1f) < 0.4f;
+        onBench = local.x < -0.8f && local.x > -2.1f && local.y > 1.85f && local.y < 2.3f && UnityEngine.Mathf.Abs(local.z - 0.1f) < 0.4f;
         where = $"en el tren x {local.x:0.00}, y {local.y:0.00}, z {local.z:0.00}";
     }
     log.Append($" BIDÓN: terminó a los {took:0.0} s (plano: 8 s); chapas {backpack.CountOf(metal)}; bidones {Cans()} (antes {cansBefore}); sale vacío={(fresh != null && fresh.Liters == 0f)}; se lleva a una mano={(fresh != null && fresh.GetComponent<SurvivalEnTren.Interaction.Carryable>() != null)}; posición {where} → sobre la mesa y quieto={onBench}; sierra todavía al cinto={gear.Has(SurvivalEnTren.Equipment.GearId.Saw)}; mensaje \"{panel.LastMessage}\".");

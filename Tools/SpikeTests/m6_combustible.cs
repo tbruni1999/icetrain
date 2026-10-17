@@ -1,5 +1,5 @@
 // Prueba del M6 paso 1: combustible del tren (gasto de la calefacción y del motor, tanque vacío,
-// recarga, saltar horas dormido, medidor y luz de reserva).
+// recarga, saltar horas dormido, medidor y luz de reserva). Desde el 2026-10-16 el motor gasta por kilómetro (se mide con el reloj quieto).
 // Cómo correrla: escena M2_Conduccion recién puesta en Play (esperar ~6 s),
 //   unity command eval_file --file "Tools/SpikeTests/m6_combustible.cs"
 // Resultado en la Console, líneas [Combustible].
@@ -14,6 +14,7 @@ var climate = train.GetComponent<SurvivalEnTren.Survival.TrainInteriorClimate>()
 var needle = (UnityEngine.Transform)typeof(SurvivalEnTren.Train.FuelGauge).GetField("needlePivot", flags).GetValue(gauge);
 var lamp = (UnityEngine.Renderer)typeof(SurvivalEnTren.Train.FuelGauge).GetField("lamp", flags).GetValue(gauge);
 var log = new System.Text.StringBuilder();
+var fuel = tank.Settings;
 UnityEngine.Application.runInBackground = true;
 UnityEngine.QualitySettings.vSyncCount = 0;
 UnityEngine.Application.targetFrameRate = 60;
@@ -29,6 +30,18 @@ System.Collections.IEnumerator Burn(double hours, float[] result)
     result[0] = l0 - tank.Liters; result[1] = (float)(clock.TotalHours - h0);
 }
 
+// Maneja con el reloj quieto (la calefacción no gasta) durante unos segundos reales y devuelve (litros, km).
+System.Collections.IEnumerator Drive(float seconds, float[] result)
+{
+    float l0 = tank.Liters, km = 0f;
+    for (float t = 0f; t < seconds; t += UnityEngine.Time.deltaTime)
+    {
+        yield return null;
+        km += UnityEngine.Mathf.Abs(train.SpeedMetersPerSecond) * UnityEngine.Time.deltaTime / 1000f;
+    }
+    result[0] = l0 - tank.Liters; result[1] = km;
+}
+
 System.Collections.IEnumerator Run()
 {
     var r = new float[2];
@@ -37,30 +50,33 @@ System.Collections.IEnumerator Run()
 
     // 1) Solo calefacción, tren parado con todo el freno.
     yield return Burn(2.0, r);
-    log.Append($" PARADO: gastó {r[0]:0.00} L en {r[1]:0.00} h = {r[0] / r[1]:0.00} L/h (calefacción 1,5).");
+    log.Append($" PARADO: gastó {r[0]:0.00} L en {r[1]:0.00} h = {r[0] / r[1]:0.00} L/h (calefacción {fuel.HeaterLitersPerHour:0.0}).");
 
     // 2) Motor adelante, potencia 2.
     controls.TryMoveReverser(+1);
     while (controls.BrakeNotch > 0) controls.MovePowerBrake(+1);
     while (controls.PowerNotch < 2) controls.MovePowerBrake(+1);
-    yield return Burn(2.0, r);
-    log.Append($" POTENCIA 2: {r[0] / r[1]:0.00} L/h (esperado 1,5 + 4 = 5,5), velocidad {train.SpeedMetersPerSecond * 3.6f:0} km/h.");
+    clock.SpeedMultiplier = 0f; // desde el 2026-10-16 el motor gasta por kilómetro: se mide con el reloj quieto (sin calefacción)
+    yield return Drive(8f, r);  // que tome velocidad
+    yield return Drive(15f, r);
+    log.Append($" POTENCIA 2: {r[0] / r[1]:0.00} L/km en {r[1]:0.00} km (esperado {fuel.DriveLitersPerKm(2):0.00}), velocidad {train.SpeedMetersPerSecond * 3.6f:0} km/h.");
 
     // 3) Potencia 4.
     while (controls.PowerNotch < 4) controls.MovePowerBrake(+1);
-    yield return Burn(1.0, r);
-    log.Append($" POTENCIA 4: {r[0] / r[1]:0.00} L/h (esperado 9,5).");
+    yield return Drive(10f, r);
+    yield return Drive(15f, r);
+    log.Append($" POTENCIA 4: {r[0] / r[1]:0.00} L/km en {r[1]:0.00} km (esperado {fuel.DriveLitersPerKm(4):0.00}), velocidad {train.SpeedMetersPerSecond * 3.6f:0} km/h.");
 
     // 4) Frenar y parar: el motor no gasta.
     while (controls.PowerNotch > 0) controls.MovePowerBrake(-1);
     while (controls.BrakeNotch < 4) controls.MovePowerBrake(-1);
-    for (int i = 0; i < 400 && System.Math.Abs(train.SpeedMetersPerSecond) > 0.01f; i++) yield return null;
+    for (int i = 0; i < 1500 && System.Math.Abs(train.SpeedMetersPerSecond) > 0.01f; i++) yield return null;
     // 4b) Reversor en neutro con potencia: no hay tracción, no gasta el motor.
     controls.TryMoveReverser(-1);
     while (controls.BrakeNotch > 0) controls.MovePowerBrake(+1);
     while (controls.PowerNotch < 3) controls.MovePowerBrake(+1);
-    yield return Burn(1.0, r);
-    log.Append($" NEUTRO con potencia 3: {r[0] / r[1]:0.00} L/h (esperado 1,5), velocidad {train.SpeedMetersPerSecond * 3.6f:0.0} km/h.");
+    yield return Drive(3f, r);
+    log.Append($" NEUTRO con potencia 3: gastó {r[0]:0.000} L (esperado 0), velocidad {train.SpeedMetersPerSecond * 3.6f:0.0} km/h.");
     while (controls.PowerNotch > 0) controls.MovePowerBrake(-1);
     while (controls.BrakeNotch < 4) controls.MovePowerBrake(-1);
 
@@ -84,7 +100,7 @@ System.Collections.IEnumerator Run()
     clock.SpeedMultiplier = 1f;
     float beforeSkip = tank.Liters;
     clock.Skip(8f);
-    log.Append($" SALTAR 8 h: gastó {beforeSkip - tank.Liters:0.0} L (esperado 12,0).");
+    log.Append($" SALTAR 8 h: gastó {beforeSkip - tank.Liters:0.0} L (esperado {8f * fuel.HeaterLitersPerHour:0.0}).");
 
     // 7) Tanque vacío: sin tracción y sin calefacción.
     clock.SpeedMultiplier = 60f;

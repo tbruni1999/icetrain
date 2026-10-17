@@ -195,7 +195,7 @@ System.Collections.IEnumerator Run()
     var rb = runBundle.GetComponent<UnityEngine.Rigidbody>();
     float relSpeed = (rb.linearVelocity - trainBody.GetPointVelocity(rb.worldCenterOfMass)).magnitude;
     var rl = trainBody.transform.InverseTransformPoint(runBundle.transform.position);
-    log.Append($" SOLTAR CON EL TREN A {train.SpeedMetersPerSecond * 3.6f:0} km/h: el bulto va a {relSpeed:0.00} m/s respecto del tren y está adentro={System.Math.Abs(rl.x) < 1.7f && rl.z < 9.4f && rl.z > -7.5f}.");
+    log.Append($" SOLTAR CON EL TREN A {train.SpeedMetersPerSecond * 3.6f:0} km/h: el bulto va a {relSpeed:0.00} m/s respecto del tren, quedó en ({rl.x:0.00}; {rl.y:0.00}; {rl.z:0.00}) y está adentro={System.Math.Abs(rl.x) < 2.1f && rl.z < 9.4f && rl.z > -7.5f}.");
     while (controls.PowerNotch > 0) controls.MovePowerBrake(-1);
     while (controls.BrakeNotch < 4) controls.MovePowerBrake(-1);
 

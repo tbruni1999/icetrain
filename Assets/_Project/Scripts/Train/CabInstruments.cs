@@ -17,7 +17,7 @@ namespace SurvivalEnTren.Train
         [SerializeField] private Transform needlePivot;
 
         [Tooltip("Velocidad del final de la escala del velocímetro, en km/h.")]
-        [SerializeField] private float gaugeMaxKmh = 60f;
+        [SerializeField] private float gaugeMaxKmh = 90f;
         [Tooltip("Inclinación máxima de las palancas, en grados.")]
         [SerializeField] private float leverMaxDegrees = 35f;
         [Tooltip("Ángulo de la aguja en 0 y en el máximo de la escala, en grados (0 = apunta arriba).")]

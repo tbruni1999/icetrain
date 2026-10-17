@@ -3,6 +3,7 @@ using SurvivalEnTren.Equipment;
 using SurvivalEnTren.Interaction;
 using SurvivalEnTren.Player;
 using SurvivalEnTren.Train;
+using SurvivalEnTren.UI;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -389,13 +390,20 @@ namespace SurvivalEnTren.Building
 
         private void OnGUI()
         {
+            Matrix4x4 uiOld = UiScale.Begin(); // la interfaz en puntos, agrandada según la pantalla
+            DrawGui();
+            GUI.matrix = uiOld;
+        }
+
+        private void DrawGui()
+        {
             if (!Active || Time.timeScale <= 0f) return;
             _style ??= new GUIStyle(GUI.skin.label) { alignment = TextAnchor.LowerCenter, fontSize = 16 };
             string text = _moving ? "clic: dejar acá   ·   rueda: girar   ·   otra herramienta: cancelar" : "";
             if (!_valid && !string.IsNullOrEmpty(_reason)) text = string.IsNullOrEmpty(text) ? _reason : _reason + "\n" + text;
             if (string.IsNullOrEmpty(text)) return;
             _style.normal.textColor = _valid ? Color.white : new Color(1f, 0.55f, 0.45f);
-            GUI.Label(new Rect(Screen.width * 0.5f - 300f, Screen.height * 0.5f - 70f, 600f, 50f), text, _style);
+            GUI.Label(new Rect(UiScale.Width * 0.5f - 300f, UiScale.Height * 0.5f - 70f, 600f, 50f), text, _style);
         }
     }
 }

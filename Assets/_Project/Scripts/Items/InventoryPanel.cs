@@ -1,5 +1,6 @@
 using SurvivalEnTren.Interaction;
 using SurvivalEnTren.Player;
+using SurvivalEnTren.UI;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -295,6 +296,13 @@ namespace SurvivalEnTren.Items
 
         private void OnGUI()
         {
+            Matrix4x4 uiOld = UiScale.Begin(); // la interfaz en puntos, agrandada según la pantalla
+            DrawGui();
+            GUI.matrix = uiOld;
+        }
+
+        private void DrawGui()
+        {
             if (!_open) return;
             EnsureStyles();
             Layout(out Rect area);
@@ -318,7 +326,7 @@ namespace SurvivalEnTren.Items
             float width = Pad + w1 + Pad + (_other != null ? 40f + _other.Grid.Width * Cell + Pad : 0f);
             width = Mathf.Max(width, 380f);
             float height = 66f + h + 94f;
-            area = new Rect((Screen.width - width) * 0.5f, (Screen.height - height) * 0.5f, width, height);
+            area = new Rect((UiScale.Width - width) * 0.5f, (UiScale.Height - height) * 0.5f, width, height);
             _pack.Origin = new Rect(area.x + Pad, area.y + 66f, w1, _pack.Grid.Height * Cell);
             if (_other != null)
                 _other.Origin = new Rect(_pack.Origin.xMax + 40f, area.y + 66f, _other.Grid.Width * Cell, _other.Grid.Height * Cell);
@@ -392,7 +400,7 @@ namespace SurvivalEnTren.Items
                     // El dibujo es de ancho x alto sin girar: se dibuja con esas medidas y se gira 90° dentro del rectángulo.
                     Matrix4x4 saved = GUI.matrix;
                     Vector2 center = inner.center;
-                    GUIUtility.RotateAroundPivot(90f, center);
+                    GUI.matrix = saved * Matrix4x4.TRS(center, Quaternion.Euler(0f, 0f, 90f), Vector3.one) * Matrix4x4.TRS(-center, Quaternion.identity, Vector3.one);
                     var turned = new Rect(center.x - inner.height * 0.5f, center.y - inner.width * 0.5f, inner.height, inner.width);
                     GUI.DrawTexture(turned, icon.texture, ScaleMode.StretchToFill, true);
                     GUI.matrix = saved;
@@ -424,7 +432,7 @@ namespace SurvivalEnTren.Items
             Mouse mouse = Mouse.current;
             if (mouse == null) return new Vector2(-1000f, -1000f);
             Vector2 p = mouse.position.ReadValue();
-            return new Vector2(p.x, Screen.height - p.y);
+            return UiScale.ScreenToGui(p);
         }
 
         /// <summary>Dónde está el centro de una casilla en coordenadas del mouse (origen abajo a la izquierda). Lo usan las pruebas.</summary>
@@ -432,7 +440,7 @@ namespace SurvivalEnTren.Items
         {
             Layout(out _area);
             GridView view = View(gridIndex);
-            return new Vector2(view.Origin.x + (cx + 0.5f) * Cell, Screen.height - (view.Origin.y + (cy + 0.5f) * Cell));
+            return UiScale.GuiToScreen(new Vector2(view.Origin.x + (cx + 0.5f) * Cell, view.Origin.y + (cy + 0.5f) * Cell));
         }
 
         /// <summary>Hay una pieza agarrada con el mouse (arrastrándola o "en la mano" después de un clic).</summary>

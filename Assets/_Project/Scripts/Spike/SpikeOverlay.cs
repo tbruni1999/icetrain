@@ -4,6 +4,7 @@ using SurvivalEnTren.Player;
 using SurvivalEnTren.Survival;
 using SurvivalEnTren.Train;
 using SurvivalEnTren.World;
+using SurvivalEnTren.UI;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -97,6 +98,13 @@ namespace SurvivalEnTren.Spike
         }
 
         private void OnGUI()
+        {
+            Matrix4x4 uiOld = UiScale.Begin(); // la interfaz en puntos, agrandada según la pantalla
+            DrawGui();
+            GUI.matrix = uiOld;
+        }
+
+        private void DrawGui()
         {
             if (!_visible) return;
             if (_style == null)

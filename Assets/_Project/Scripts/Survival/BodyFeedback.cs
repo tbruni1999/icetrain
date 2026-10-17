@@ -1,3 +1,4 @@
+using SurvivalEnTren.UI;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -103,10 +104,17 @@ namespace SurvivalEnTren.Survival
         // Escarcha: cristales de hielo que crecen desde los bordes de la pantalla.
         private void OnGUI()
         {
+            Matrix4x4 uiOld = UiScale.Begin(); // la interfaz en puntos, agrandada según la pantalla
+            DrawGui();
+            GUI.matrix = uiOld;
+        }
+
+        private void DrawGui()
+        {
             if (Frost <= 0.01f) return;
             GUI.depth = 10; // por debajo del HUD
             GUI.color = new Color(1f, 1f, 1f, Mathf.SmoothStep(0f, 1f, Frost));
-            GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), _frostTexture, ScaleMode.StretchToFill, true);
+            GUI.DrawTexture(new Rect(0f, 0f, UiScale.Width, UiScale.Height), _frostTexture, ScaleMode.StretchToFill, true);
             GUI.color = Color.white;
         }
 

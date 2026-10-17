@@ -3,6 +3,7 @@ using SurvivalEnTren.Equipment;
 using SurvivalEnTren.Interaction;
 using SurvivalEnTren.Items;
 using SurvivalEnTren.Player;
+using SurvivalEnTren.UI;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -234,8 +235,8 @@ namespace SurvivalEnTren.Crafting
 
         // ---------------------------------------------------------------- Diseño (en el espacio propio del panel, 820 x 480)
 
-        private static float Scale => Mathf.Min(1f, (Screen.width - 30f) / W, (Screen.height - 30f) / H);
-        private static Vector2 Origin => new Vector2((Screen.width - W * Scale) * 0.5f, (Screen.height - H * Scale) * 0.5f);
+        private static float Scale => Mathf.Min(1f, (UiScale.Width - 30f) / W, (UiScale.Height - 30f) / H);
+        private static Vector2 Origin => new Vector2((UiScale.Width - W * Scale) * 0.5f, (UiScale.Height - H * Scale) * 0.5f);
 
         private static Rect RowRect(int i) => new Rect(20f, 64f + i * 46f, 260f, 42f);
         private static Rect ButtonRect => new Rect(316f, 392f, 240f, 46f);
@@ -249,7 +250,7 @@ namespace SurvivalEnTren.Crafting
             Mouse mouse = Mouse.current;
             if (mouse == null) return new Vector2(-1000f, -1000f);
             Vector2 p = mouse.position.ReadValue();
-            Vector2 gui = new Vector2(p.x, Screen.height - p.y);
+            Vector2 gui = UiScale.ScreenToGui(p);
             return (gui - Origin) / Scale;
         }
 
@@ -257,7 +258,7 @@ namespace SurvivalEnTren.Crafting
         private static Vector2 ToMouseScreen(Vector2 panelPoint)
         {
             Vector2 gui = Origin + panelPoint * Scale;
-            return new Vector2(gui.x, Screen.height - gui.y);
+            return UiScale.GuiToScreen(gui);
         }
 
         public Vector2 RowCenterScreen(int index) => ToMouseScreen(RowRect(index).center);
@@ -281,10 +282,17 @@ namespace SurvivalEnTren.Crafting
 
         private void OnGUI()
         {
+            Matrix4x4 uiOld = UiScale.Begin(); // la interfaz en puntos, agrandada según la pantalla
+            DrawGui();
+            GUI.matrix = uiOld;
+        }
+
+        private void DrawGui()
+        {
             if (!_open) return;
             EnsureStyles();
             Matrix4x4 saved = GUI.matrix;
-            GUI.matrix = Matrix4x4.TRS(new Vector3(Origin.x, Origin.y, 0f), Quaternion.identity, new Vector3(Scale, Scale, 1f));
+            GUI.matrix = saved * Matrix4x4.TRS(new Vector3(Origin.x, Origin.y, 0f), Quaternion.identity, new Vector3(Scale, Scale, 1f));
             Vector2 mouse = PanelMouse();
 
             GUI.color = new Color(0.08f, 0.09f, 0.1f, 0.97f);

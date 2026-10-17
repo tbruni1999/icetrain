@@ -68,7 +68,7 @@ System.Collections.IEnumerator Run()
     PutCanInHand();
     for (int i = 0; i < 30; i++) yield return wait;
 
-    // 1) Mantener E 5 s: tiene que sifonar ~2 L; soltar E: se corta.
+    // 1) Mantener E 6 s: tiene que sifonar lo que dice FuelSettings (litros por segundo x 6: 300 pasos de física); soltar E: se corta.
     float v0 = vehicle.Liters;
     Press(true);
     for (int i = 0; i < 300; i++) { PutCanInHand(); yield return wait; }
@@ -77,7 +77,7 @@ System.Collections.IEnumerator Run()
     for (int i = 0; i < 60; i++) yield return wait;
     float v2 = vehicle.Liters;
     bool inputArrived = v1 < v0;
-    log.Append($"SIFÓN con E mantenido 5 s: vehículo {v0:0.00} → {v1:0.00} L (esperado ~-2,0), bidón {can1.Liters:0.00} L; E soltado: sigue sifonando={(v2 < v1 - 0.01f)}, sostiene el bidón={carrier.Holding == canCarry}.");
+    log.Append($"SIFÓN con E mantenido 6 s: vehículo {v0:0.00} → {v1:0.00} L (esperado ~-{UnityEngine.Object.FindAnyObjectByType<SurvivalEnTren.Train.FuelTank>().Settings.SiphonLitersPerSecond * 6f:0.0}), bidón {can1.Liters:0.00} L; E soltado: sigue sifonando={(v2 < v1 - 0.01f)}, sostiene el bidón={carrier.Holding == canCarry}.");
     if (!inputArrived) log.Append(" (NO LLEGÓ LA TECLA: Unity sin foco; pedir un clic en la ventana de Unity y repetir)");
 
     // 2) Tocar E fuera del vehículo con el bidón en la mano: lo suelta.
